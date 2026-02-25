@@ -1,0 +1,10 @@
+{
+  "network": "devnet",
+  "rpcUrl": "https://api.devnet.solana.com",
+  "driftProgramId": "EvKyHhYjCgpu335GdKZtfRsfu4VoUyjHn3kF3wgA5eXE",
+  "adminPublicKey": "DXosop8DZbV7VU6ZxQitnDs7GBR4D5Nktw2uqSduNd5G",
+  "usdcMint": "4MEQENKXftyy3yaWKs7ip4ZWwfp79GV63y2teWoBnQRn",
+  "solOracle": "8pb2q6teRzjpYM19sEQiAxfX4ynmZEpALyQiyWddaPpG",
+  "initialized": true,
+  "timestamp": "2026-02-25T10:37:41.796Z"
+}

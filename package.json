@@ -1,0 +1,38 @@
+{
+  "name": "drift-clone-perps",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Drift Protocol Perps Exchange - SOL/USDC on Solana",
+  "main": "initialize-drift.ts",
+  "scripts": {
+    "init": "ts-node initialize-drift.ts",
+    "create-markets": "ts-node create-markets.ts",
+    "status": "ts-node check-status.ts",
+    "setup-bots": "ts-node setup-keeper-bots.ts",
+    "test-trade": "ts-node test-trading.ts",
+    "init-localnet": "node scripts/init-drift-localnet.mjs",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "keywords": [
+    "solana",
+    "drift",
+    "perps",
+    "defi"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.29.0",
+    "@drift-labs/sdk": "^2.148.0",
+    "@solana/spl-token": "^0.3.11",
+    "@solana/web3.js": "^1.87.6",
+    "bn.js": "^5.2.1",
+    "rpc-websockets": "^7.5.1"
+  },
+  "devDependencies": {
+    "@types/bn.js": "^5.1.5",
+    "@types/node": "^20.10.6",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}

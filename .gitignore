@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+target/
+.anchor/
+
+# Build outputs
+dist/
+build/
+*.so
+
+# Keys and secrets
+keys/*.json
+.env
+.env.local
+*.key
+*-keypair.json
+
+# Logs
+*.log
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Anchor
+.anchor/
+test-ledger/
+
+# Temporary files
+tmp/
+temp/
+*.tmp

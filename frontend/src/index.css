@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Reset ─────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+  background: #030712;
+  color: #f9fafb;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Scrollbar ─────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* ── Input resets ──────────────────────────────── */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+input[type="number"] { -moz-appearance: textfield; }
+
+button { cursor: pointer; border: none; outline: none; background: none; color: inherit; font: inherit; }
+input, select { outline: none; border: none; background: none; color: inherit; font: inherit; }
+
+/* ── Range slider ──────────────────────────────── */
+input[type="range"] {
+  -webkit-appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.1);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #6366F1;
+  border: 2px solid #0f1117;
+  cursor: pointer;
+}
+
+/* ── Wallet adapter overrides ──────────────────── */
+.wallet-adapter-button {
+  background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #B45BEE 100%) !important;
+  color: #fff !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  height: 34px !important;
+  padding: 0 16px !important;
+  font-weight: 600 !important;
+  line-height: 34px !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 1px 3px rgba(99,102,241,0.3) !important;
+}
+.wallet-adapter-button:hover { opacity: 0.9 !important; transform: translateY(-1px) !important; }
+.wallet-adapter-modal-wrapper {
+  background: #0f1117 !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  border-radius: 16px !important;
+}
+.wallet-adapter-modal-title { color: #f9fafb !important; }
+.wallet-adapter-modal-list li { background: #1a1d27 !important; border-radius: 10px !important; }
+.wallet-adapter-modal-list li:hover { background: #1f2937 !important; }
+
+/* ── Sonner toast overrides for dark mode ──────── */
+[data-sonner-toaster] [data-sonner-toast] {
+  font-family: 'Inter', system-ui, sans-serif !important;
+}
