@@ -123,8 +123,8 @@ export const PriceChart: React.FC = () => {
     const chart = createChart(chartContainerRef.current, {
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: '#6C7A8E',
-        fontFamily: "'Inter', system-ui, sans-serif",
+        textColor: '#71717a',
+        fontFamily: "'Geist', system-ui, sans-serif",
         fontSize: 11,
       },
       grid: {
@@ -133,8 +133,8 @@ export const PriceChart: React.FC = () => {
       },
       crosshair: {
         mode: CrosshairMode.Normal,
-        vertLine: { color: 'rgba(99,102,241,0.3)', width: 1, style: 3, labelBackgroundColor: '#6366F1' },
-        horzLine: { color: 'rgba(99,102,241,0.3)', width: 1, style: 3, labelBackgroundColor: '#6366F1' },
+        vertLine: { color: 'rgba(161,161,170,0.2)', width: 1, style: 3, labelBackgroundColor: '#19191d' },
+        horzLine: { color: 'rgba(161,161,170,0.2)', width: 1, style: 3, labelBackgroundColor: '#19191d' },
       },
       rightPriceScale: {
         borderColor: 'rgba(255,255,255,0.08)',
@@ -185,12 +185,12 @@ export const PriceChart: React.FC = () => {
 
     if (chartMode === 'candle') {
       const candleSeries = chart.addSeries(CandlestickSeries, {
-        upColor: '#31D0AA',
-        downColor: '#F84960',
-        borderUpColor: '#31D0AA',
-        borderDownColor: '#F84960',
-        wickUpColor: '#31D0AA',
-        wickDownColor: '#F84960',
+        upColor: '#34d399',
+        downColor: '#f87171',
+        borderUpColor: '#34d399',
+        borderDownColor: '#f87171',
+        wickUpColor: '#34d399',
+        wickDownColor: '#f87171',
       });
 
       const candleData: CandlestickData[] = candles.map(c => ({
@@ -214,19 +214,19 @@ export const PriceChart: React.FC = () => {
       const volData = candles.map(c => ({
         time: c.time as Time,
         value: c.volume,
-        color: c.close >= c.open ? 'rgba(49,208,170,0.15)' : 'rgba(248,73,96,0.15)',
+        color: c.close >= c.open ? 'rgba(52,211,153,0.15)' : 'rgba(248,113,113,0.15)',
       }));
       volumeSeries.setData(volData);
       volumeSeriesRef.current = volumeSeries;
     } else {
       // Line mode
       const lineSeries = chart.addSeries(LineSeries, {
-        color: '#6366F1',
+        color: '#a1a1aa',
         lineWidth: 2,
         crosshairMarkerVisible: true,
         crosshairMarkerRadius: 4,
-        crosshairMarkerBackgroundColor: '#6366F1',
-        priceLineColor: '#6366F1',
+        crosshairMarkerBackgroundColor: '#e4e4e7',
+        priceLineColor: '#a1a1aa',
       });
       const lineData: LineData[] = candles.map(c => ({
         time: c.time as Time,
@@ -265,31 +265,31 @@ export const PriceChart: React.FC = () => {
   const change = last ? ((last.close - last.open) / last.open * 100) : 0;
 
   return (
-    <div className="flex flex-col h-full bg-gray-950/50 rounded-xl border border-white/5 overflow-hidden">
+    <div className="flex flex-col h-full bg-drift-bg rounded-xl border border-drift-border overflow-hidden">
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 py-2 shrink-0 border-b border-white/5 bg-gray-900/40">
+      <div className="flex items-center justify-between px-4 py-2 shrink-0 border-b border-drift-border bg-drift-panel/50">
         <div className="flex items-center gap-3">
           {/* Timeframe buttons */}
-          <div className="flex items-center gap-0.5 bg-gray-800/50 rounded-lg p-0.5">
+          <div className="flex items-center gap-0.5 bg-drift-surface rounded-lg p-0.5">
             {TF.map(t => (
               <button key={t} onClick={() => setTf(t)}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all
-                  ${tf === t ? 'bg-indigo-500/20 text-indigo-400 shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all duration-150
+                  ${tf === t ? 'bg-drift-input text-txt-0 shadow-sm' : 'text-txt-3 hover:text-txt-1'}`}
               >{t}</button>
             ))}
           </div>
 
           {/* Chart mode toggle */}
-          <div className="flex items-center gap-0.5 bg-gray-800/50 rounded-lg p-0.5">
+          <div className="flex items-center gap-0.5 bg-drift-surface rounded-lg p-0.5">
             <button onClick={() => setChartMode('candle')}
-              className={`px-2 py-1 rounded-md text-[11px] font-medium transition-all
-                ${chartMode === 'candle' ? 'bg-indigo-500/20 text-indigo-400' : 'text-gray-500 hover:text-gray-300'}`}
+              className={`px-2 py-1 rounded-md text-[11px] font-medium transition-all duration-150
+                ${chartMode === 'candle' ? 'bg-drift-input text-txt-0' : 'text-txt-3 hover:text-txt-1'}`}
             >
               <BarChart2 className="w-3.5 h-3.5" />
             </button>
             <button onClick={() => setChartMode('line')}
-              className={`px-2 py-1 rounded-md text-[11px] font-medium transition-all
-                ${chartMode === 'line' ? 'bg-indigo-500/20 text-indigo-400' : 'text-gray-500 hover:text-gray-300'}`}
+              className={`px-2 py-1 rounded-md text-[11px] font-medium transition-all duration-150
+                ${chartMode === 'line' ? 'bg-drift-input text-txt-0' : 'text-txt-3 hover:text-txt-1'}`}
             >
               <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <path d="M2 12L6 6L10 9L14 3" strokeLinecap="round" strokeLinejoin="round" />
@@ -297,23 +297,23 @@ export const PriceChart: React.FC = () => {
             </button>
           </div>
 
-          <div className="w-px h-4 bg-white/10" />
+          <div className="w-px h-4 bg-drift-border" />
 
-          <span className="text-[11px] text-gray-500">
+          <span className="text-[11px] text-txt-2">
             SOL/USD
           </span>
 
-          {loading && <RefreshCw className="w-3 h-3 text-gray-500 animate-spin" />}
+          {loading && <RefreshCw className="w-3 h-3 text-txt-3 animate-spin" />}
         </div>
 
         {/* OHLC display */}
         {last && (
           <div className="flex items-center gap-3 text-[11px]">
-            <span className="text-gray-500">O <span className="text-gray-300 tabular-nums font-mono">{last.open.toFixed(2)}</span></span>
-            <span className="text-gray-500">H <span className="text-emerald-400 tabular-nums font-mono">{last.high.toFixed(2)}</span></span>
-            <span className="text-gray-500">L <span className="text-red-400 tabular-nums font-mono">{last.low.toFixed(2)}</span></span>
-            <span className="text-gray-500">C <span className={`tabular-nums font-mono ${last.close >= last.open ? 'text-emerald-400' : 'text-red-400'}`}>{(currentPrice > 0 ? currentPrice : last.close).toFixed(2)}</span></span>
-            <span className={`tabular-nums font-mono ${change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            <span className="text-txt-3">O <span className="text-txt-1 tabular-nums font-mono">{last.open.toFixed(2)}</span></span>
+            <span className="text-txt-3">H <span className="text-bull tabular-nums font-mono">{last.high.toFixed(2)}</span></span>
+            <span className="text-txt-3">L <span className="text-bear tabular-nums font-mono">{last.low.toFixed(2)}</span></span>
+            <span className="text-txt-3">C <span className={`tabular-nums font-mono ${last.close >= last.open ? 'text-bull' : 'text-bear'}`}>{(currentPrice > 0 ? currentPrice : last.close).toFixed(2)}</span></span>
+            <span className={`tabular-nums font-mono ${change >= 0 ? 'text-bull' : 'text-bear'}`}>
               {change >= 0 ? '+' : ''}{change.toFixed(2)}%
             </span>
           </div>
@@ -324,21 +324,21 @@ export const PriceChart: React.FC = () => {
       <div className="flex-1 relative">
         <div ref={chartContainerRef} className="absolute inset-0" />
         {error && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-950/90">
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-drift-bg/90">
             <div className="text-center">
-              <BarChart2 className="w-8 h-8 text-gray-700 mx-auto mb-2" />
-              <span className="text-xs text-red-400">{error}</span>
-              <button onClick={() => loadCandles(tf)} className="block mx-auto mt-2 text-xs text-indigo-400 hover:text-indigo-300">
+              <BarChart2 className="w-8 h-8 text-txt-3 mx-auto mb-2" />
+              <span className="text-xs text-bear">{error}</span>
+              <button onClick={() => loadCandles(tf)} className="block mx-auto mt-2 text-xs text-txt-1 hover:text-txt-0 transition-colors duration-150">
                 Retry
               </button>
             </div>
           </div>
         )}
         {!error && loading && candles.length === 0 && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-950/90">
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-drift-bg/90">
             <div className="text-center">
-              <RefreshCw className="w-6 h-6 text-gray-600 mx-auto mb-2 animate-spin" />
-              <span className="text-xs text-gray-500">Loading SOL/USD chart…</span>
+              <RefreshCw className="w-6 h-6 text-txt-3 mx-auto mb-2 animate-spin" />
+              <span className="text-xs text-txt-2">Loading SOL/USD chart…</span>
             </div>
           </div>
         )}
