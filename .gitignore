@@ -37,3 +37,7 @@ test-ledger/
 tmp/
 temp/
 *.tmp
+dlob-server/
+drift-common/
+keeper-bots-v2/
+protocol-v2/
