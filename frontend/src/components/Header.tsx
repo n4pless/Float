@@ -28,9 +28,11 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Left: Logo + Nav */}
       <div className="flex items-center gap-2 sm:gap-8 min-w-0">
         <div className="flex items-center gap-2.5 shrink-0">
-          <div className="w-7 h-7 rounded-lg bg-drift-surface border border-drift-border flex items-center justify-center">
-            <span className="text-txt-2 font-bold text-xs">F</span>
-          </div>
+          <svg className="w-7 h-7" viewBox="12 6 42 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M25 25 L52 10 L52 18 L25 33Z" stroke="currentColor" strokeWidth="0.7" strokeLinejoin="round" fill="currentColor" fillOpacity="0.06"/>
+            <path d="M25 25 L16 20 L16 44 L25 49Z" stroke="currentColor" strokeWidth="0.7" strokeLinejoin="round" fill="currentColor" fillOpacity="0.06"/>
+            <path d="M25 37 L43 27 L43 35 L25 45Z" stroke="currentColor" strokeWidth="0.7" strokeLinejoin="round" fill="currentColor" fillOpacity="0.06"/>
+          </svg>
           <span className="font-semibold text-[15px] text-txt-0 tracking-tight">Float</span>
         </div>
 
