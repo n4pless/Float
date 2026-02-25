@@ -867,7 +867,7 @@ export class DriftTradingClient {
     limitPrice?: number,
   ): Promise<string> {
     if (!this._userInitialized) {
-      throw new Error('No Drift account. Please set up your account first.');
+      throw new Error('No Float account. Please set up your account first.');
     }
 
     const baseAmount = new BN(Math.floor(sizeBase * BASE_PRECISION.toNumber()));

@@ -156,7 +156,7 @@ const CreateUserForm: React.FC<{
             <div>
               <h4 className="text-[11px] font-bold text-accent mb-1.5">What happens next?</h4>
               <div className="text-[10px] text-txt-2 space-y-1 leading-relaxed">
-                <p>• A new Drift account will be created for you</p>
+                <p>• A new Float account will be created for you</p>
                 <p>• {amount || '0'} USDC will be deposited as collateral</p>
                 <p>• You'll be able to trade SOL-PERP perpetuals</p>
               </div>
@@ -457,7 +457,7 @@ export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack }) => {
               <div>
                 <h1 className="text-xl font-bold text-txt-0">User Management</h1>
                 <p className="text-[12px] text-txt-3">
-                  Create a new Drift account and make your first deposit to start trading.
+                  Create a new Float account and make your first deposit to start trading.
                 </p>
               </div>
             </div>

@@ -26,8 +26,8 @@ module.exports = {
         },
         bull: '#31D0AA',
         bear: '#F84960',
-        accent: '#6366F1',
-        purple: '#B45BEE',
+        accent: '#06B6D4',
+        purple: '#22D3EE',
       },
       fontSize: {
         '2xs': ['10px', '14px'],

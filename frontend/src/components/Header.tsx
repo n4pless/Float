@@ -29,9 +29,9 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-2 mr-1">
           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-accent to-purple flex items-center justify-center">
-            <span className="text-white font-bold text-xs">D</span>
+            <span className="text-white font-bold text-xs">F</span>
           </div>
-          <span className="font-bold text-sm text-txt-0 tracking-tight">Drift</span>
+          <span className="font-bold text-sm text-txt-0 tracking-tight">Float</span>
         </div>
 
         <nav className="flex items-center gap-1">

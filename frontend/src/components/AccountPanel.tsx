@@ -212,7 +212,7 @@ export const AccountPanel: React.FC<Props> = ({ trading }) => {
           </div>
         </Section>
 
-        {/* ── Drift Account ── */}
+        {/* ── Float Account ── */}
         <Section icon={Shield} title="Trading Account">
           <div className="px-3 py-3 space-y-3">
             {/* Status */}
