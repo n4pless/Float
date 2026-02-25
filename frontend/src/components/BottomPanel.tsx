@@ -204,7 +204,7 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
               </tr>
             </thead>
             <tbody>
-              <BalanceRow sym="SOL" color="#9945FF" bal={solBalance ?? 0} price={oraclePrice > 0 ? oraclePrice : 178.42} />
+              <BalanceRow sym="SOL" color="#9945FF" bal={solBalance ?? 0} price={oraclePrice > 0 ? oraclePrice : 0} />
               <BalanceRow sym="USDC" color="#2775CA" bal={usdcBalance ?? 0} price={1} icon="$" />
             </tbody>
           </table>

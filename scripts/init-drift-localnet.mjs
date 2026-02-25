@@ -24,7 +24,7 @@ const FRONTEND = path.resolve(ROOT, 'frontend');
 
 // ─── Constants ──────────────────────────────────────────────────────────────────
 const RPC_URL = 'http://localhost:8899';
-const DRIFT_PROGRAM_ID = new PublicKey('dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH');
+const DRIFT_PROGRAM_ID = new PublicKey('EvKyHhYjCgpu335GdKZtfRsfu4VoUyjHn3kF3wgA5eXE');
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
 function loadKeypair(filePath) {
@@ -34,6 +34,20 @@ function loadKeypair(filePath) {
 
 function sleep(ms) {
   return new Promise(r => setTimeout(r, ms));
+}
+
+// ─── Fetch live SOL price ────────────────────────────────────────────────────────
+async function fetchSolPrice() {
+  try {
+    const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=SOLUSDT');
+    const data = await res.json();
+    const price = Math.round(parseFloat(data.price));
+    console.log(`[ok] Fetched live SOL price: $${price}`);
+    return price;
+  } catch (e) {
+    console.warn('[!!] Failed to fetch live SOL price, defaulting to $150:', e.message);
+    return 150;
+  }
 }
 
 // ─── Main ───────────────────────────────────────────────────────────────────────
@@ -104,6 +118,9 @@ async function main() {
   console.log('[..] Loading Drift SDK...');
   const sdk = await import('@drift-labs/sdk');
   const { AdminClient, BulkAccountLoader, OracleSource, initialize: sdkInit, PRICE_PRECISION, PEG_PRECISION, BASE_PRECISION, QUOTE_PRECISION } = sdk;
+
+  // Fetch live SOL price from Binance
+  const solPrice = await fetchSolPrice();
 
   // Initialize SDK config — use devnet env but override the program ID
   sdkInit({ env: 'devnet', overrideEnv: { DRIFT_PROGRAM_ID: DRIFT_PROGRAM_ID.toString() } });
@@ -200,69 +217,45 @@ async function main() {
     }
   }
 
-  // 9. Set up oracle for SOL price using mock Pyth program
-  const PYTH_PROGRAM_ID = new PublicKey('FsJ3A3u2vn5cTVofAjvy6y5kwABJAqYWpe4975bi2epH');
+  // 9. Set up oracle for SOL price using Prelaunch Oracle (built into Drift)
   let oraclePublicKey;
+  let oracleSource;
 
   if (existingConfig.solOracle && existingConfig.solOracle !== PublicKey.default.toString()) {
     const pubkey = new PublicKey(existingConfig.solOracle);
     const acct = await connection.getAccountInfo(pubkey);
     if (acct) {
       oraclePublicKey = pubkey;
+      oracleSource = OracleSource.Prelaunch;
       console.log(`[ok] Reusing SOL oracle: ${oraclePublicKey.toString()}`);
     }
   }
 
-  let oracleSource = OracleSource.PYTH;
   if (!oraclePublicKey) {
-    console.log('[..] Creating mock Pyth oracle for SOL ($178)...');
+    console.log(`[..] Creating Prelaunch oracle for SOL ($${solPrice})...`);
     try {
-      // Load the mock Pyth IDL
-      const pythIdlPath = path.resolve(ROOT, 'protocol-v2/sdk/src/idl/pyth.json');
-      const pythIDL = JSON.parse(fs.readFileSync(pythIdlPath, 'utf-8'));
-
-      // Create Anchor provider and program for the mock Pyth
-      const provider = new anchor.AnchorProvider(connection, wallet, {
-        commitment: 'confirmed',
-        preflightCommitment: 'confirmed',
-      });
-      const pythProgram = new anchor.Program(pythIDL, PYTH_PROGRAM_ID, provider);
-
-      // Create a new account for the price feed
-      const priceFeedKeypair = Keypair.generate();
-      const price = 178;
-      const expo = -4;
-      const conf = new BN(Math.floor(price / 10) * (10 ** (-expo)));
-      const initPrice = new BN(price * (10 ** (-expo)));
-
-      const space = 3312; // Pyth price account size
-      const lamports = await connection.getMinimumBalanceForRentExemption(space);
-
-      const txSig = await pythProgram.rpc.initialize(
-        initPrice,
-        expo,
-        conf,
-        {
-          accounts: { price: priceFeedKeypair.publicKey },
-          signers: [priceFeedKeypair],
-          instructions: [
-            anchor.web3.SystemProgram.createAccount({
-              fromPubkey: adminKeypair.publicKey,
-              newAccountPubkey: priceFeedKeypair.publicKey,
-              space,
-              lamports,
-              programId: PYTH_PROGRAM_ID,
-            }),
-          ],
-        }
+      // Use the Drift program's built-in prelaunch oracle
+      // Create a perp market index 0 oracle via initializePrelaunchOracle
+      const perpMarketIndex = 0;
+      const txSig = await adminClient.initializePrelaunchOracle(
+        perpMarketIndex,
+        PRICE_PRECISION.mul(new BN(solPrice)),  // live price
+        PRICE_PRECISION.mul(new BN(10000)),  // maxPrice $10,000
       );
-      oraclePublicKey = priceFeedKeypair.publicKey;
-      console.log(`[ok] Mock oracle created at: ${oraclePublicKey.toString()}`);
-      console.log(`     Tx: ${txSig}`);
+      console.log(`[ok] Prelaunch oracle created! Tx: ${txSig}`);
+
+      // Derive the prelaunch oracle PDA
+      const oraclePda = sdk.getPrelaunchOraclePublicKey(DRIFT_PROGRAM_ID, perpMarketIndex);
+      oraclePublicKey = oraclePda;
+      oracleSource = OracleSource.Prelaunch;
+      console.log(`[ok] Oracle address: ${oraclePublicKey.toString()}`);
       await sleep(2000);
     } catch (err) {
-      console.error('[!!] Failed to create mock oracle:', err.message || err);
-      throw err;
+      console.error('[!!] Failed to create prelaunch oracle:', err.message || err);
+      // Fallback: use QuoteAsset oracle (no external price, just peg)
+      console.log('[..] Falling back to QuoteAsset oracle...');
+      oraclePublicKey = PublicKey.default;
+      oracleSource = OracleSource.QUOTE_ASSET;
     }
   }
 
@@ -280,11 +273,11 @@ async function main() {
     console.log('[..] Creating SOL-PERP market (index 0)...');
     try {
       // Price = pegMultiplier / PRICE_PRECISION * (quoteReserve / baseReserve)
-      // We want initial price ≈ $178 (spot price). With equal reserves and peg = 178 * PEG_PRECISION:
+      // We want initial price ≈ live SOL price. With equal reserves and peg = solPrice * PEG_PRECISION:
       const ammBaseReserve = new BN(1_000).mul(BASE_PRECISION);
       const ammQuoteReserve = new BN(1_000).mul(BASE_PRECISION);
       const ammPeriodicity = new BN(3600); // 1hr funding period
-      const pegMultiplier = new BN(178).mul(PEG_PRECISION); // ~$178
+      const pegMultiplier = new BN(solPrice).mul(PEG_PRECISION); // live price
 
       const txSig = await adminClient.initializePerpMarket(
         0,                   // marketIndex

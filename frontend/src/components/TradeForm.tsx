@@ -57,7 +57,7 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
 
   const market = DRIFT_CONFIG.markets[selectedMarket as keyof typeof DRIFT_CONFIG.markets];
   const sym = market.symbol.replace('-PERP', '');
-  const markPrice = oraclePrice > 0 ? oraclePrice : 178.42;
+  const markPrice = oraclePrice > 0 ? oraclePrice : 0;
 
   const sizeNum = parseFloat(size) || 0;
   const notional = sizeNum * markPrice;
