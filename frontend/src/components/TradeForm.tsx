@@ -330,7 +330,7 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
         {/* Order details */}
         <div className="space-y-2 rounded-lg p-3 bg-drift-surface/30 border border-drift-border">
           <span className="text-[11px] font-semibold text-txt-1 block mb-1">Order Summary</span>
-          <Detail label="Mark Price" value={`$${markPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}`} />
+          <Detail label="Mark Price" value={markPrice > 0 ? `$${markPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '—'} />
           <Detail label="Margin Required" value={`$${marginReq.toFixed(2)}`} />
           <Detail label="Est. Liq. Price" value={liqPrice > 0 ? `$${liqPrice.toFixed(2)}` : '—'} />
           <Detail label="Funding Rate" value={`${(fundingRate * 100).toFixed(4)}%`}
