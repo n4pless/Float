@@ -7,27 +7,30 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['Geist', 'system-ui', '-apple-system', 'sans-serif'],
+        mono: ['Geist Mono', 'ui-monospace', 'monospace'],
       },
       colors: {
         drift: {
-          bg:      '#030712',   // gray-950
-          panel:   '#0f1117',   // darker than gray-900
-          surface: '#1a1d27',   // between gray-800 and gray-900
-          input:   '#1f2937',   // gray-800
-          border:  'rgba(255,255,255,0.08)',
-          'border-lt': 'rgba(255,255,255,0.12)',
+          bg:      '#08080a',   // --bg-base
+          panel:   '#111114',   // --bg-surface
+          surface: '#19191d',   // --bg-elevated
+          input:   '#222226',   // --bg-hover
+          active:  '#2a2a2f',   // --bg-active
+          border:  'rgba(255,255,255,0.08)',   // --border-default
+          'border-lt': 'rgba(255,255,255,0.14)', // --border-strong
+          'border-sub': 'rgba(255,255,255,0.05)', // --border-subtle
         },
         txt: {
-          0: '#f9fafb',   // gray-50
-          1: '#d1d5db',   // gray-300
-          2: '#9ca3af',   // gray-400
-          3: '#6b7280',   // gray-500
+          0: '#fafafa',   // --text-primary
+          1: '#a1a1aa',   // --text-secondary (zinc-400)
+          2: '#71717a',   // --text-tertiary (zinc-500)
+          3: '#3f3f46',   // --text-muted (zinc-700)
         },
-        bull: '#31D0AA',
-        bear: '#F84960',
-        accent: '#06B6D4',
-        purple: '#22D3EE',
+        bull:   '#34d399',  // --success (emerald-400)
+        bear:   '#f87171',  // --danger (red-400)
+        accent: '#e4e4e7',  // --accent (zinc-200, neutral)
+        purple: '#d4d4d8',  // --accent-hover (zinc-300)
       },
       fontSize: {
         '2xs': ['10px', '14px'],
