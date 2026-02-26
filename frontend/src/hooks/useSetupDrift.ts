@@ -21,7 +21,10 @@ import DRIFT_CONFIG from '../config';
 const SYNC_INTERVAL = 1500; // ms — unified sync cycle
 const BALANCE_INTERVAL = 10000; // ms — less frequent for on-chain balance
 
-export function useSetupDrift(wallet: WalletContextState) {
+export function useSetupDrift(
+  wallet: WalletContextState,
+  readOnlyCallbacks?: { pauseReadOnly: () => void; restoreReadOnly: () => void },
+) {
   const clientRef = useRef<DriftTradingClient | null>(null);
   const syncRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const balanceSyncRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -120,10 +123,15 @@ export function useSetupDrift(wallet: WalletContextState) {
       balanceSyncRef.current = null;
       lastPriceRef.current = 0;
 
-      // Reset store but keep selected market
+      // Reset user-specific state but restore read-only client for market data
       const market = useDriftStore.getState().selectedMarket;
+      const priceHistory = useDriftStore.getState().priceHistory;
+      const recentTrades = useDriftStore.getState().recentTrades;
       reset();
-      useDriftStore.setState({ selectedMarket: market });
+      useDriftStore.setState({ selectedMarket: market, priceHistory, recentTrades });
+
+      // Restore read-only client so orderbook + prices stay visible
+      readOnlyCallbacks?.restoreReadOnly();
       return;
     }
 
@@ -135,6 +143,9 @@ export function useSetupDrift(wallet: WalletContextState) {
       try {
         setLoading(true);
         setError(null);
+
+        // Pause read-only sync while we set up the real client
+        readOnlyCallbacks?.pauseReadOnly();
 
         const client = new DriftTradingClient({
           rpcUrl: DRIFT_CONFIG.rpc,
@@ -150,7 +161,7 @@ export function useSetupDrift(wallet: WalletContextState) {
           return;
         }
 
-        // Tear down old client
+        // Tear down old client — but DON'T disconnect the read-only client
         if (clientRef.current) {
           clientRef.current.disconnect().catch(() => {});
         }
@@ -179,8 +190,8 @@ export function useSetupDrift(wallet: WalletContextState) {
       } catch (err: any) {
         if (!cancelled) {
           setError(err.message ?? String(err));
-          setClient(null);
-          setSubscribed(false);
+          // Restore read-only client so market data stays visible
+          readOnlyCallbacks?.restoreReadOnly();
         }
       } finally {
         if (!cancelled) setLoading(false);

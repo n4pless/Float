@@ -11,6 +11,7 @@ import DRIFT_CONFIG from './config';
 import { useDriftStore } from './stores/useDriftStore';
 import { useSetupDrift } from './hooks/useSetupDrift';
 import { useTrading } from './hooks/useTrading';
+import { useReadOnlyDrift } from './hooks/useReadOnlyDrift';
 import { Header } from './components/Header';
 import { MarketBar } from './components/MarketBar';
 import { PriceChart } from './components/PriceChart';
@@ -27,8 +28,11 @@ type Page = 'trade' | 'user';
 function TradingApp() {
   const wallet = useWallet();
 
+  // Read-only client — provides market data without wallet
+  const { pauseReadOnly, restoreReadOnly } = useReadOnlyDrift();
+
   // Core setup: connects SDK, syncs all data into Zustand stores
-  const { forceRefresh } = useSetupDrift(wallet);
+  const { forceRefresh } = useSetupDrift(wallet, { pauseReadOnly, restoreReadOnly });
 
   // Trading actions with toast notifications
   const trading = useTrading(forceRefresh);
