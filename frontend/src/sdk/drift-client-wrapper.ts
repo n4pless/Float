@@ -1026,16 +1026,57 @@ export class DriftTradingClient {
         ? PositionDirection.SHORT
         : PositionDirection.LONG;
 
-      const txSig = await this.driftClient.placePerpOrder({
-        marketIndex,
-        direction: closeDir,
-        baseAssetAmount: pos.baseAssetAmount.abs(),
-        orderType: OrderType.MARKET,
-        reduceOnly: true,
-      });
+      // Use placeAndTakePerpOrder (same as market orders) so the position
+      // is filled immediately against the AMM instead of waiting for a filler bot.
+      await this._refreshAllUserAccounts();
+
+      const makerInfo = this._getMakerInfoForOrder(marketIndex, closeDir);
+      const oraclePriceBN = this._getOraclePriceBN(marketIndex);
+      const oracleNum = oraclePriceBN.toNumber();
+      const slippageBps = 500; // 5 %
+
+      let worstCasePrice: BN;
+      let auctionStartPrice: BN;
+      let auctionEndPrice: BN;
+
+      if (closeDir === PositionDirection.LONG) {
+        worstCasePrice = new BN(Math.ceil(oracleNum * (1 + slippageBps / 10000)));
+        auctionStartPrice = oraclePriceBN;
+        auctionEndPrice = worstCasePrice;
+      } else {
+        worstCasePrice = new BN(Math.floor(oracleNum * (1 - slippageBps / 10000)));
+        auctionStartPrice = oraclePriceBN;
+        auctionEndPrice = worstCasePrice;
+      }
+
+      console.log(`[drift] closing position: dir=${closeDir === PositionDirection.LONG ? 'LONG' : 'SHORT'}, size=${pos.baseAssetAmount.abs().toString()}, oracle=${oracleNum}, worstCase=${worstCasePrice.toString()}`);
+
+      const txSig = await this.driftClient.placeAndTakePerpOrder(
+        {
+          marketIndex,
+          direction: closeDir,
+          baseAssetAmount: pos.baseAssetAmount.abs(),
+          orderType: OrderType.MARKET,
+          reduceOnly: true,
+          price: worstCasePrice,
+          auctionDuration: 10,
+          auctionStartPrice,
+          auctionEndPrice,
+        },
+        makerInfo.length > 0 ? makerInfo : undefined,
+        undefined,
+        undefined,
+        100,
+      );
+
+      console.log('[drift] close position tx:', txSig);
+      this._refreshAllUserAccounts();
       return typeof txSig === 'string' ? txSig : String(txSig);
-    } catch (err) {
-      throw new Error(`Close position failed: ${err}`);
+    } catch (err: any) {
+      const msg = err?.message || err?.toString() || 'Unknown error';
+      const logs = err?.logs?.join?.('\n') || '';
+      if (logs) console.error('[drift] close position tx logs:\n', logs);
+      throw new Error(`Close position failed: ${msg}`);
     }
   }
 
