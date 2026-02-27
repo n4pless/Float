@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Layers, ClipboardList, Wallet, Clock, History, X, Wifi } from 'lucide-react';
-import { useDriftStore, selectRecentTrades } from '../stores/useDriftStore';
+import { Layers, ClipboardList, Wallet, Clock, History, X, Wifi, Bot } from 'lucide-react';
+import { useDriftStore, selectRecentTrades, selectBotPositions } from '../stores/useDriftStore';
 import DRIFT_CONFIG from '../config';
 
 interface Props {
@@ -11,12 +11,13 @@ interface Props {
   };
 }
 
-type Tab = 'positions' | 'orders' | 'balances' | 'orderHistory' | 'tradeHistory';
+type Tab = 'positions' | 'orders' | 'balances' | 'bots' | 'orderHistory' | 'tradeHistory';
 
 const TAB_ICONS: Record<Tab, any> = {
   positions: Layers,
   orders: ClipboardList,
   balances: Wallet,
+  bots: Bot,
   orderHistory: Clock,
   tradeHistory: History,
 };
@@ -34,6 +35,7 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
   const accountState = useDriftStore((s) => s.accountState);
   const oraclePrice = useDriftStore((s) => s.oraclePrice);
   const recentTrades = useDriftStore(selectRecentTrades);
+  const botPositions = useDriftStore(selectBotPositions);
 
   const handleClose = async (mi: number) => {
     try {
@@ -55,6 +57,7 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
     { key: 'positions', label: 'Positions', count: positions.length },
     { key: 'orders', label: 'Orders', count: openOrders.length },
     { key: 'balances', label: 'Balances' },
+    { key: 'bots', label: 'Bot Monitor', count: botPositions.filter(b => b.direction !== 'FLAT').length },
     { key: 'orderHistory', label: 'Order History' },
     { key: 'tradeHistory', label: 'Trade History', count: recentTrades.length },
   ];
@@ -259,6 +262,95 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
             </tbody>
           </table>
           </div>
+          )
+        ) : tab === 'bots' ? (
+          botPositions.length === 0 ? <Empty icon={Bot} text="No bot data — waiting for account sync" /> : (
+            <div className="overflow-x-auto">
+            <table className="w-full text-[11px] min-w-[640px]">
+              <thead>
+                <tr className="bg-drift-surface/30">
+                  {['Bot','Wallet','Side','Size (SOL)','Entry','Mark','P&L','Orders'].map(h => (
+                    <th key={h} className={`px-3 py-2 font-medium text-txt-3 ${
+                      h === 'Bot' || h === 'Wallet' || h === 'Side' ? 'text-left' : 'text-right'
+                    }`}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {botPositions.map((bot, i) => {
+                  const isLong = bot.direction === 'LONG';
+                  const isShort = bot.direction === 'SHORT';
+                  const isFlat = bot.direction === 'FLAT';
+                  const botColors: Record<string, string> = {
+                    Admin: 'from-yellow-500 to-orange-500',
+                    Filler: 'from-blue-500 to-cyan-500',
+                    Liquidator: 'from-red-500 to-pink-500',
+                    Maker: 'from-green-500 to-emerald-500',
+                  };
+                  return (
+                    <tr key={`${bot.walletAddress}-${bot.marketIndex}-${i}`} className="hover:bg-drift-surface/30 transition-colors border-b border-drift-border/50">
+                      <td className="px-3 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-5 h-5 rounded-md bg-gradient-to-br ${botColors[bot.botName] ?? 'from-gray-500 to-gray-600'} flex items-center justify-center`}>
+                            <span className="text-[8px] font-bold text-white">{bot.botName[0]}</span>
+                          </div>
+                          <span className="font-semibold text-txt-0">{bot.botName}</span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <a
+                          href={`https://solscan.io/account/${bot.walletAddress}?cluster=devnet`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[10px] text-accent hover:underline font-mono"
+                          title={bot.walletAddress}
+                        >
+                          {bot.walletAddress.slice(0, 4)}…{bot.walletAddress.slice(-4)}
+                        </a>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        {isFlat ? (
+                          <span className="px-2 py-1 rounded-md text-[10px] font-semibold bg-drift-surface text-txt-3">FLAT</span>
+                        ) : (
+                          <span className={`px-2 py-1 rounded-md text-[10px] font-semibold ${
+                            isLong ? 'bg-bull/10 text-bull' : 'bg-bear/10 text-bear'}`}>
+                            {bot.direction}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2.5 text-right tabular-nums text-txt-1 font-medium">
+                        {isFlat ? '—' : bot.baseAssetAmount.toFixed(4)}
+                      </td>
+                      <td className="px-3 py-2.5 text-right tabular-nums text-txt-1">
+                        {isFlat ? '—' : `$${bot.entryPrice.toFixed(2)}`}
+                      </td>
+                      <td className="px-3 py-2.5 text-right tabular-nums text-txt-1">
+                        ${bot.markPrice.toFixed(2)}
+                      </td>
+                      <td className="px-3 py-2.5 text-right tabular-nums">
+                        {isFlat ? (
+                          <span className="text-txt-3">—</span>
+                        ) : (
+                          <span className={`font-semibold ${bot.unrealizedPnl >= 0 ? 'text-bull' : 'text-bear'}`}>
+                            {bot.unrealizedPnl >= 0 ? '+' : ''}{bot.unrealizedPnl.toFixed(2)}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2.5 text-right">
+                        {bot.openOrders > 0 ? (
+                          <span className="px-2 py-1 rounded-md text-[10px] font-semibold bg-accent/10 text-accent">
+                            {bot.openOrders}
+                          </span>
+                        ) : (
+                          <span className="text-txt-3">0</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            </div>
           )
         ) : tab === 'tradeHistory' ? (
           recentTrades.length === 0 ? <Empty icon={History} text="No trade history" /> : (

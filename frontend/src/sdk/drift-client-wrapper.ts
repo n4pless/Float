@@ -100,6 +100,26 @@ export interface L2Orderbook {
   slot: number;
 }
 
+export interface BotPosition {
+  botName: string;
+  walletAddress: string;
+  marketIndex: number;
+  direction: 'LONG' | 'SHORT' | 'FLAT';
+  baseAssetAmount: number;
+  entryPrice: number;
+  markPrice: number;
+  unrealizedPnl: number;
+  openOrders: number;
+}
+
+/* Known bot wallet addresses */
+export const BOT_WALLETS: Record<string, string> = {
+  'DXosop8DZbV7VU6ZxQitnDs7GBR4D5Nktw2uqSduNd5G': 'Admin',
+  '66w2bgBMKTkqfU8AVCPbaY6f3b9SzD9JvHaZbUoFefhK': 'Filler',
+  'D9k5Mo7YLBoQi7prKyVrfc9xKFRmJYzh2vifnuzuYNGX': 'Liquidator',
+  '4uLthhrGZ8AcMt4By2doVhFLakDSMuBtUm6UwYWDAD3U': 'Maker',
+};
+
 export interface SpotBalance {
   marketIndex: number;
   symbol: string;
@@ -267,6 +287,12 @@ export class DriftTradingClient {
       }
 
       console.log(`[drift] loaded ${accounts.length} user account(s) from chain`);
+
+      // Update bot positions in store
+      try {
+        const botPositions = this.getBotPositions();
+        useDriftStore.getState().setBotPositions(botPositions);
+      } catch { /* ignore */ }
     } catch (err) {
       console.warn('[drift] fetchAllUserAccounts failed, retrying next cycle:', err);
     } finally {
@@ -307,6 +333,81 @@ export class DriftTradingClient {
    * Get the cached user accounts (refreshed every 8s).
    */
   getCachedUserAccounts() { return this._allUserAccounts; }
+
+  /**
+   * Get positions and order counts for all known bot wallets.
+   * Uses the cached user accounts — no extra RPC calls.
+   */
+  getBotPositions(): BotPosition[] {
+    const results: BotPosition[] = [];
+    const oraclePrice = useDriftStore.getState().oraclePrice;
+
+    for (const ua of this._allUserAccounts) {
+      const authority = (ua.account as any).authority?.toBase58?.() ?? '';
+      const botName = BOT_WALLETS[authority];
+      if (!botName) continue;
+
+      // Parse perp positions
+      const perpPositions = (ua.account as any).perpPositions ?? [];
+      let hasPosition = false;
+
+      for (const pos of perpPositions) {
+        const baseAmt = pos.baseAssetAmount;
+        if (!baseAmt || (typeof baseAmt.isZero === 'function' && baseAmt.isZero())) continue;
+
+        hasPosition = true;
+        const baseNum = (typeof baseAmt.toNumber === 'function' ? baseAmt.toNumber() : Number(baseAmt)) / BASE_PRECISION.toNumber();
+        const quoteNum = pos.quoteEntryAmount
+          ? (typeof pos.quoteEntryAmount.toNumber === 'function' ? pos.quoteEntryAmount.toNumber() : Number(pos.quoteEntryAmount)) / PRICE_PRECISION.toNumber()
+          : 0;
+        const entryPrice = baseNum !== 0 ? Math.abs(quoteNum / baseNum) : 0;
+        const markPrice = oraclePrice > 0 ? oraclePrice : 0;
+        const unrealizedPnl = baseNum * (markPrice - entryPrice);
+
+        // Count open orders for this user
+        const orders = (ua.account as any).orders ?? [];
+        const openOrders = orders.filter((o: any) => {
+          if (!o || !o.status) return false;
+          return typeof o.status === 'object' ? 'open' in o.status : false;
+        }).length;
+
+        results.push({
+          botName,
+          walletAddress: authority,
+          marketIndex: pos.marketIndex ?? 0,
+          direction: baseNum > 0 ? 'LONG' : baseNum < 0 ? 'SHORT' : 'FLAT',
+          baseAssetAmount: Math.abs(baseNum),
+          entryPrice,
+          markPrice,
+          unrealizedPnl,
+          openOrders,
+        });
+      }
+
+      // If bot has no positions, still show it with open orders count
+      if (!hasPosition) {
+        const orders = (ua.account as any).orders ?? [];
+        const openOrders = orders.filter((o: any) => {
+          if (!o || !o.status) return false;
+          return typeof o.status === 'object' ? 'open' in o.status : false;
+        }).length;
+
+        results.push({
+          botName,
+          walletAddress: authority,
+          marketIndex: 0,
+          direction: 'FLAT',
+          baseAssetAmount: 0,
+          entryPrice: 0,
+          markPrice: oraclePrice,
+          unrealizedPnl: 0,
+          openOrders,
+        });
+      }
+    }
+
+    return results;
+  }
 
   /* ── sub-account management ────────────────────── */
 

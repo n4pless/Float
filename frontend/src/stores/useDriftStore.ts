@@ -15,6 +15,7 @@ import type {
   AccountState,
   UserPosition,
   SpotBalance,
+  BotPosition,
 } from '../sdk/drift-client-wrapper';
 import type { Order } from '../sdk/drift-client-wrapper';
 
@@ -88,6 +89,7 @@ interface DriftStoreState {
   /* ── Live feed ── */
   recentTrades: RecentTrade[];
   priceHistory: PriceSnapshot[];
+  botPositions: BotPosition[];
 
   /* ── Actions ── */
   setClient: (c: DriftTradingClient | null) => void;
@@ -113,6 +115,7 @@ interface DriftStoreState {
 
   addRecentTrade: (t: RecentTrade) => void;
   addPriceSnapshot: (s: PriceSnapshot) => void;
+  setBotPositions: (b: BotPosition[]) => void;
 
   /* ── Computed reset ── */
   reset: () => void;
@@ -141,6 +144,7 @@ const initialState = {
 
   recentTrades: [],
   priceHistory: [],
+  botPositions: [],
   subAccounts: [],
   activeSubAccountId: 0,
 };
@@ -187,6 +191,7 @@ export const useDriftStore = create<DriftStoreState>((set, get) => ({
     set((state) => ({
       priceHistory: [...state.priceHistory, s].slice(-500),
     })),
+  setBotPositions: (b) => set({ botPositions: b }),
 
   /* ── User management ── */
   setSubAccounts: (accounts) => set({ subAccounts: accounts }),
@@ -215,3 +220,4 @@ export const selectPriceHistory = (s: DriftStoreState) => s.priceHistory;
 export const selectSelectedMarket = (s: DriftStoreState) => s.selectedMarket;
 export const selectSubAccounts = (s: DriftStoreState) => s.subAccounts;
 export const selectActiveSubAccountId = (s: DriftStoreState) => s.activeSubAccountId;
+export const selectBotPositions = (s: DriftStoreState) => s.botPositions;
