@@ -99,6 +99,15 @@ export interface L2Orderbook {
   slot: number;
 }
 
+export interface SpotBalance {
+  marketIndex: number;
+  symbol: string;
+  deposits: number;
+  borrows: number;
+  netBalance: number;
+  valueUsd: number;
+}
+
 /* ─── Client ────────────────────────────────────────── */
 
 export class DriftTradingClient {
@@ -225,6 +234,11 @@ export class DriftTradingClient {
    * Get the underlying DriftClient for advanced operations.
    */
   getDriftClient(): DriftClient { return this.driftClient; }
+
+  /**
+   * Get the Connection instance for event subscriptions.
+   */
+  getConnection() { return this.connection; }
 
   /* ── sub-account management ────────────────────── */
 
@@ -412,6 +426,69 @@ export class DriftTradingClient {
 
     // Step 2: Deposit
     return this.depositCollateral(usdcAmount);
+  }
+
+  /* ── account spot balances (deposits/borrows inside Drift) ── */
+
+  /**
+   * Get the user's spot balances from their Drift account.
+   * Returns deposits, borrows, and net balance for each active spot market.
+   */
+  async getSpotBalances(): Promise<SpotBalance[]> {
+    if (!this._userInitialized) return [];
+
+    try {
+      const user = this.driftClient.getUser();
+      const userAccount = user.getUserAccount();
+      const balances: SpotBalance[] = [];
+
+      for (const spotPos of userAccount.spotPositions) {
+        if (spotPos.scaledBalance.isZero()) continue;
+
+        const marketIndex = spotPos.marketIndex;
+        const spotMarket = this.driftClient.getSpotMarketAccount(marketIndex);
+        if (!spotMarket) continue;
+
+        const decimals = spotMarket.decimals;
+        const precision = Math.pow(10, decimals);
+
+        // getTokenAmount returns signed BN: positive = deposit, negative = borrow
+        const tokenAmountBN = user.getTokenAmount(marketIndex);
+        const tokenAmount = tokenAmountBN.toNumber() / precision;
+
+        const deposits = tokenAmount > 0 ? tokenAmount : 0;
+        const borrows = tokenAmount < 0 ? Math.abs(tokenAmount) : 0;
+        const netBalance = tokenAmount;
+
+        // Map market index to symbol
+        let symbol = 'UNKNOWN';
+        let priceUsd = 0;
+        if (marketIndex === 0) {
+          symbol = 'USDC';
+          priceUsd = 1;
+        } else if (marketIndex === 1) {
+          symbol = 'SOL';
+          try {
+            const oracle = this.driftClient.getOracleDataForSpotMarket(marketIndex);
+            priceUsd = oracle ? oracle.price.toNumber() / PRICE_PRECISION.toNumber() : 0;
+          } catch { priceUsd = 0; }
+        }
+
+        balances.push({
+          marketIndex,
+          symbol,
+          deposits,
+          borrows,
+          netBalance,
+          valueUsd: Math.abs(netBalance) * priceUsd,
+        });
+      }
+
+      return balances;
+    } catch (err) {
+      console.warn('[drift] getSpotBalances failed:', err);
+      return [];
+    }
   }
 
   /* ── collateral / deposits ─────────────────────── */

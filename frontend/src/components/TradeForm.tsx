@@ -140,7 +140,7 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
         </p>
         {onSwitchToAccount && (
           <button onClick={onSwitchToAccount}
-            className="px-5 py-2.5 rounded-lg text-xs font-bold bg-gradient-to-r from-bull to-emerald-500 text-white transition-all hover:opacity-90 shadow-lg shadow-bull/20">
+            className="px-5 py-2.5 rounded-lg text-xs font-bold bg-bull text-white transition-all hover:opacity-90 shadow-lg shadow-bull/20">
             Deposit USDC
           </button>
         )}
@@ -302,8 +302,8 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
           <button onClick={handleSubmit} disabled={loading || !sizeNum}
             className={`w-full py-3 rounded-lg text-xs font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed text-white shadow-lg ${
               side === 'long'
-                ? 'bg-gradient-to-r from-bull to-emerald-500 hover:opacity-90 shadow-bull/20'
-                : 'bg-gradient-to-r from-bear to-rose-500 hover:opacity-90 shadow-bear/20'
+                ? 'bg-bull hover:brightness-110 shadow-bull/20'
+                : 'bg-bear hover:brightness-110 shadow-bear/20'
             }`}>
             {loading ? 'Submitting…' : `${side === 'long' ? 'Long' : 'Short'} ${market.symbol}`}
           </button>

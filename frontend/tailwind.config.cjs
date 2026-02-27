@@ -7,30 +7,31 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Geist', 'system-ui', '-apple-system', 'sans-serif'],
-        mono: ['Geist Mono', 'ui-monospace', 'monospace'],
+        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
       },
       colors: {
         drift: {
-          bg:      '#08080a',   // --bg-base
-          panel:   '#111114',   // --bg-surface
-          surface: '#19191d',   // --bg-elevated
-          input:   '#222226',   // --bg-hover
-          active:  '#2a2a2f',   // --bg-active
-          border:  'rgba(255,255,255,0.08)',   // --border-default
-          'border-lt': 'rgba(255,255,255,0.14)', // --border-strong
-          'border-sub': 'rgba(255,255,255,0.05)', // --border-subtle
+          bg:      '#0e0f14',   // --bg-base (Backpack L0)
+          panel:   '#14151b',   // --bg-surface (Backpack L2)
+          surface: '#202127',   // --bg-elevated (Backpack L1)
+          input:   '#202127',   // --bg-hover
+          active:  '#2a2b33',   // --bg-active
+          border:  'rgba(255,255,255,0.10)',   // --border-default
+          'border-lt': 'rgba(255,255,255,0.15)', // --border-strong
+          'border-sub': 'rgba(255,255,255,0.06)', // --border-subtle
         },
         txt: {
-          0: '#fafafa',   // --text-primary
-          1: '#a1a1aa',   // --text-secondary (zinc-400)
-          2: '#71717a',   // --text-tertiary (zinc-500)
-          3: '#3f3f46',   // --text-muted (zinc-700)
+          0: '#f4f4f6',   // --text-primary
+          1: '#969faf',   // --text-secondary
+          2: '#75798a',   // --text-tertiary
+          3: '#5d606f',   // --text-muted
         },
-        bull:   '#34d399',  // --success (emerald-400)
-        bear:   '#f87171',  // --danger (red-400)
-        accent: '#e4e4e7',  // --accent (zinc-200, neutral)
-        purple: '#d4d4d8',  // --accent-hover (zinc-300)
+        bull:   '#00c278',  // --success (Backpack green)
+        bear:   '#ff575a',  // --danger (Backpack red)
+        accent: '#4c94ff',  // --accent (Backpack blue)
+        purple: '#9b7dff',  // --accent-alt (purple)
+        yellow: '#efa411',  // --warning (Backpack yellow)
       },
       fontSize: {
         '2xs': ['10px', '14px'],

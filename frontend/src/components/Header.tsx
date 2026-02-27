@@ -1,18 +1,21 @@
 import React, { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { TrendingUp, BarChart3, Wallet, Settings, ChevronDown, ExternalLink, User } from 'lucide-react';
+import { TrendingUp, Settings, ExternalLink, User, FileText } from 'lucide-react';
 import { UserAccountSelector } from './UserAccountSelector';
 
+export type Page = 'trade' | 'user' | 'docs';
+
 interface HeaderProps {
-  currentPage?: 'trade' | 'user';
-  onNavigate?: (page: 'trade' | 'user') => void;
+  currentPage?: Page;
+  onNavigate?: (page: Page) => void;
   onSwitchAccount?: (subAccountId: number) => void;
 }
 
 const NAV = [
   { id: 'trade' as const, label: 'Trade', icon: TrendingUp },
   { id: 'user' as const, label: 'User', icon: User },
+  { id: 'docs' as const, label: 'Docs', icon: FileText },
 ];
 
 export const Header: React.FC<HeaderProps> = ({
@@ -24,19 +27,19 @@ export const Header: React.FC<HeaderProps> = ({
   const [showSettings, setShowSettings] = useState(false);
 
   return (
-    <header className="h-14 flex items-center justify-between px-3 sm:px-6 shrink-0 glass border-b border-drift-border">
+    <header className="h-12 sm:h-14 flex items-center justify-between px-2 sm:px-6 shrink-0 glass border-b border-drift-border">
       {/* Left: Logo + Nav */}
       <div className="flex items-center gap-2 sm:gap-8 min-w-0">
-        <div className="flex items-center gap-2.5 shrink-0">
-          <svg className="w-7 h-7" viewBox="12 6 42 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+          <svg className="w-6 h-6 sm:w-7 sm:h-7" viewBox="12 6 42 46" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M25 25 L52 10 L52 18 L25 33Z" stroke="currentColor" strokeWidth="0.7" strokeLinejoin="round" fill="currentColor" fillOpacity="0.06"/>
             <path d="M25 25 L16 20 L16 44 L25 49Z" stroke="currentColor" strokeWidth="0.7" strokeLinejoin="round" fill="currentColor" fillOpacity="0.06"/>
             <path d="M25 37 L43 27 L43 35 L25 45Z" stroke="currentColor" strokeWidth="0.7" strokeLinejoin="round" fill="currentColor" fillOpacity="0.06"/>
           </svg>
-          <span className="font-semibold text-[15px] text-txt-0 tracking-tight">Float</span>
+          <span className="font-semibold text-[14px] sm:text-[15px] text-txt-0 tracking-tight">Float</span>
         </div>
 
-        <nav className="flex items-center gap-0.5">
+        <nav className="hidden sm:flex items-center gap-0.5">
           {NAV.map(n => (
             <button key={n.id}
               onClick={() => onNavigate?.(n.id)}
@@ -52,15 +55,15 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Right: Network + Settings + Wallet */}
-      <div className="flex items-center gap-2 shrink-0">
-        {/* Network badge */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-drift-surface border border-drift-border">
+      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        {/* Network badge — hidden on tiny screens */}
+        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-drift-surface border border-drift-border">
           <div className="w-1.5 h-1.5 rounded-full bg-bull animate-pulse" />
           <span className="text-[11px] text-txt-1 font-medium">Devnet</span>
         </div>
 
-        {/* Settings */}
-        <div className="relative">
+        {/* Settings — hidden on mobile */}
+        <div className="relative hidden sm:block">
           <button onClick={() => setShowSettings(!showSettings)}
             onBlur={() => setTimeout(() => setShowSettings(false), 150)}
             className="p-2 rounded-lg hover:bg-drift-surface transition-all duration-150 text-txt-2 hover:text-txt-0">
@@ -81,21 +84,14 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
 
-        {/* User Account Selector */}
+        {/* User Account Selector — hidden on mobile */}
         {onSwitchAccount && (
-          <UserAccountSelector onSwitchAccount={onSwitchAccount} />
-        )}
-
-        {/* Connected address */}
-        {connected && publicKey && (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-drift-surface border border-drift-border">
-            <Wallet className="w-3.5 h-3.5 text-txt-2" />
-            <span className="text-[11px] font-mono text-txt-1">
-              {publicKey.toString().slice(0, 4)}…{publicKey.toString().slice(-4)}
-            </span>
+          <div className="hidden sm:block">
+            <UserAccountSelector onSwitchAccount={onSwitchAccount} />
           </div>
         )}
 
+        {/* Wallet connect / address button */}
         <WalletMultiButton />
       </div>
     </header>

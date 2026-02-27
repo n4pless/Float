@@ -105,13 +105,34 @@ export const AccountPanel: React.FC<Props> = ({ trading }) => {
   const handleWithdraw = async () => {
     const amt = parseFloat(amount) || 0;
     if (amt <= 0) return;
+
+    // Pre-check: warn if open positions may block withdrawal
+    const positions = useDriftStore.getState().positions;
+    const freeCollateral = accountState?.freeCollateral ?? 0;
+    if (positions.length > 0 && amt > freeCollateral) {
+      setMsg({
+        type: 'err',
+        text: `Can only withdraw up to $${freeCollateral.toFixed(2)} (free collateral). Close positions to free more.`,
+      });
+      return;
+    }
+
     setLoading('withdraw');
     setMsg(null);
     try {
       await trading.withdraw(amt);
       setMsg({ type: 'ok', text: `${amt} USDC withdrawn!` });
     } catch (e: any) {
-      setMsg({ type: 'err', text: e.message || 'Withdraw failed' });
+      const errMsg = e?.message || String(e);
+      if (errMsg.includes('InsufficientCollateral') || errMsg.includes('0x1773')) {
+        const free = accountState?.freeCollateral ?? 0;
+        setMsg({
+          type: 'err',
+          text: `Insufficient collateral — you have open positions. Free collateral: $${free.toFixed(2)}. Close positions first or withdraw less.`,
+        });
+      } else {
+        setMsg({ type: 'err', text: errMsg || 'Withdraw failed' });
+      }
     } finally {
       setLoading(null);
     }
@@ -142,11 +163,8 @@ export const AccountPanel: React.FC<Props> = ({ trading }) => {
           </div>
           <div>
             <h3 className="text-[13px] font-bold text-txt-0">Account</h3>
-            <p className="text-[10px] text-txt-3 font-mono">
-              {pubkeyStr
-                ? `${pubkeyStr.slice(0, 4)}…${pubkeyStr.slice(-4)}`
-                : '—'}{' '}
-              · Devnet
+            <p className="text-[10px] text-txt-3 font-medium">
+              Connected · Devnet
             </p>
           </div>
         </div>

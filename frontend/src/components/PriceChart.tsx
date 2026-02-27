@@ -123,8 +123,8 @@ export const PriceChart: React.FC = () => {
     const chart = createChart(chartContainerRef.current, {
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: '#71717a',
-        fontFamily: "'Geist', system-ui, sans-serif",
+        textColor: '#75798a',
+        fontFamily: "'Inter', system-ui, sans-serif",
         fontSize: 11,
       },
       grid: {
@@ -133,15 +133,15 @@ export const PriceChart: React.FC = () => {
       },
       crosshair: {
         mode: CrosshairMode.Normal,
-        vertLine: { color: 'rgba(161,161,170,0.2)', width: 1, style: 3, labelBackgroundColor: '#19191d' },
-        horzLine: { color: 'rgba(161,161,170,0.2)', width: 1, style: 3, labelBackgroundColor: '#19191d' },
+        vertLine: { color: 'rgba(150,159,175,0.2)', width: 1, style: 3, labelBackgroundColor: '#202127' },
+        horzLine: { color: 'rgba(150,159,175,0.2)', width: 1, style: 3, labelBackgroundColor: '#202127' },
       },
       rightPriceScale: {
-        borderColor: 'rgba(255,255,255,0.08)',
+        borderColor: 'rgba(255,255,255,0.10)',
         scaleMargins: { top: 0.1, bottom: 0.15 },
       },
       timeScale: {
-        borderColor: 'rgba(255,255,255,0.08)',
+        borderColor: 'rgba(255,255,255,0.10)',
         timeVisible: true,
         secondsVisible: tf === '1m',
         rightOffset: 5,
@@ -185,12 +185,12 @@ export const PriceChart: React.FC = () => {
 
     if (chartMode === 'candle') {
       const candleSeries = chart.addSeries(CandlestickSeries, {
-        upColor: '#34d399',
-        downColor: '#f87171',
-        borderUpColor: '#34d399',
-        borderDownColor: '#f87171',
-        wickUpColor: '#34d399',
-        wickDownColor: '#f87171',
+        upColor: '#00c278',
+        downColor: '#ff575a',
+        borderUpColor: '#00c278',
+        borderDownColor: '#ff575a',
+        wickUpColor: '#00c278',
+        wickDownColor: '#ff575a',
       });
 
       const candleData: CandlestickData[] = candles.map(c => ({
@@ -214,19 +214,19 @@ export const PriceChart: React.FC = () => {
       const volData = candles.map(c => ({
         time: c.time as Time,
         value: c.volume,
-        color: c.close >= c.open ? 'rgba(52,211,153,0.15)' : 'rgba(248,113,113,0.15)',
+        color: c.close >= c.open ? 'rgba(0,194,120,0.15)' : 'rgba(255,87,90,0.15)',
       }));
       volumeSeries.setData(volData);
       volumeSeriesRef.current = volumeSeries;
     } else {
       // Line mode
       const lineSeries = chart.addSeries(LineSeries, {
-        color: '#a1a1aa',
+        color: '#969faf',
         lineWidth: 2,
         crosshairMarkerVisible: true,
         crosshairMarkerRadius: 4,
-        crosshairMarkerBackgroundColor: '#e4e4e7',
-        priceLineColor: '#a1a1aa',
+        crosshairMarkerBackgroundColor: '#f4f4f6',
+        priceLineColor: '#969faf',
       });
       const lineData: LineData[] = candles.map(c => ({
         time: c.time as Time,

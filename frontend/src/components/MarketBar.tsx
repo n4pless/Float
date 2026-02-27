@@ -20,7 +20,7 @@ export const MarketBar: React.FC = () => {
   const fundingPct = fundingRate * 100;
 
   return (
-    <div className="h-14 flex items-center gap-5 px-4 shrink-0 bg-drift-panel/50 border-b border-drift-border select-none">
+    <div className="h-12 sm:h-14 flex items-center gap-3 sm:gap-5 px-2 sm:px-4 shrink-0 bg-drift-panel/50 border-b border-drift-border select-none overflow-x-auto">
       {/* Market picker */}
       <div className="relative">
         <button
@@ -62,16 +62,16 @@ export const MarketBar: React.FC = () => {
         )}
       </div>
 
-      <div className="w-px h-8 bg-drift-border-lt" />
+      <div className="w-px h-8 bg-drift-border-lt hidden sm:block" />
 
       {/* Price */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 shrink-0">
         {up ? (
           <TrendingUp className="w-4 h-4 text-bull" />
         ) : (
           <TrendingDown className="w-4 h-4 text-bear" />
         )}
-        <span className={`text-xl font-bold tabular-nums tracking-tight ${displayPrice > 0 ? (up ? 'text-bull' : 'text-bear') : 'text-txt-2'}`}>
+        <span className={`text-lg sm:text-xl font-bold tabular-nums tracking-tight ${displayPrice > 0 ? (up ? 'text-bull' : 'text-bear') : 'text-txt-2'}`}>
           {displayPrice > 0
             ? `$${displayPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
             : '—'}
@@ -81,8 +81,8 @@ export const MarketBar: React.FC = () => {
         )}
       </div>
 
-      {/* Stats */}
-      <div className="flex items-center gap-6 ml-3">
+      {/* Stats — hidden on mobile, shown md+ */}
+      <div className="hidden md:flex items-center gap-6 ml-3">
         <Stat icon={DollarSign} label="Oracle" value={displayPrice > 0 ? `$${displayPrice.toFixed(2)}` : '—'} />
         <Stat
           icon={Activity}

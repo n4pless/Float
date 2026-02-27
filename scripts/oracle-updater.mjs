@@ -30,7 +30,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 
 // ─── Configuration ──────────────────────────────────────────────────────────────
-const RPC_URL = process.env.RPC_URL || 'http://127.0.0.1:8899';
+const RPC_URL = process.env.RPC_URL || 'https://api.devnet.solana.com';
 const PROGRAM_ID = new PublicKey(
   process.env.DRIFT_PROGRAM_ID || 'EvKyHhYjCgpu335GdKZtfRsfu4VoUyjHn3kF3wgA5eXE'
 );
@@ -101,19 +101,31 @@ async function updateOracleAndAmm(adminClient, sdk, price) {
   const priceBN = new BN(Math.round(price * 1e6));
   const maxPriceBN = PRICE_PRECISION.mul(new BN(100000)); // $100k max
 
-  // 1. Update the Prelaunch Oracle price
+  // 1. Crank the prelaunch oracle keeper instruction to update lastUpdateSlot.
+  //    Without this, the oracle appears infinitely stale (lastUpdateSlot=0) and
+  //    the Drift program refuses AMM fills in placeAndTakePerpOrder.
+  //    This also sets price from AMM TWAP, which we overwrite in step 2.
+  let slotTx;
+  try {
+    slotTx = await adminClient.updatePrelaunchOracle(PERP_MARKET_INDEX);
+  } catch (err) {
+    slotTx = 'slot-err-' + (err.message?.slice(0, 20) || 'unknown');
+  }
+
+  // 2. Update the Prelaunch Oracle price with the real Binance price
+  //    (overwrites the AMM TWAP price set in step 1, keeps lastUpdateSlot)
   const oracleTx = await adminClient.updatePrelaunchOracleParams(
     PERP_MARKET_INDEX,
     priceBN,
     maxPriceBN,
   );
 
-  // 2. Wait for the polling subscriber to pick up the new oracle price
+  // 3. Wait for the polling subscriber to pick up the new oracle price
   //    (repegAmmCurve requires the on-chain oracle to already reflect the new price)
   await sleep(2000);
   try { await adminClient.accountSubscriber.fetch(); } catch {}
 
-  // 3. Re-peg the AMM so mark price matches oracle
+  // 4. Re-peg the AMM so mark price matches oracle
   //    PEG_PRECISION = 1e6, so pegMultiplier = price * 1e6
   const pegMultiplier = new BN(Math.round(price * 1e6));
   let pegTx;
@@ -124,7 +136,7 @@ async function updateOracleAndAmm(adminClient, sdk, price) {
     pegTx = 'skip-' + (err.message?.slice(0, 30) || 'unknown');
   }
 
-  return { oracleTx, pegTx };
+  return { oracleTx, pegTx, slotTx };
 }
 
 // ─── Main ───────────────────────────────────────────────────────────────────────
@@ -198,20 +210,40 @@ async function main() {
     try {
       const { price, source } = await fetchSolPrice();
 
-      // Check if price changed enough
-      if (lastLoggedPrice > 0) {
-        const pctChange = Math.abs((price - lastLoggedPrice) / lastLoggedPrice) * 100;
-        if (pctChange < PRICE_THRESHOLD) {
-          // Price barely moved — skip the on-chain update to save compute
-          return;
+      // Always crank the prelaunch oracle to keep lastUpdateSlot fresh.
+      // Without this, the oracle appears stale and AMM fills are rejected.
+      let slotTx;
+      try {
+        slotTx = await adminClient.updatePrelaunchOracle(PERP_MARKET_INDEX);
+      } catch (err) {
+        slotTx = 'slot-err-' + (err.message?.slice(0, 20) || 'unknown');
+      }
+
+      // Always set the real price (updatePrelaunchOracle overwrites price with AMM TWAP)
+      const priceBN = new BN(Math.round(price * 1e6));
+      const maxPriceBN = sdk.PRICE_PRECISION.mul(new BN(100000));
+      const oracleTx = await adminClient.updatePrelaunchOracleParams(
+        PERP_MARKET_INDEX, priceBN, maxPriceBN,
+      );
+
+      // Only repeg AMM if price changed enough (saves compute)
+      let pegTx = 'skip-threshold';
+      if (lastLoggedPrice === 0 || Math.abs((price - lastLoggedPrice) / lastLoggedPrice) * 100 >= PRICE_THRESHOLD) {
+        await sleep(2000);
+        try { await adminClient.accountSubscriber.fetch(); } catch {}
+        const pegMultiplier = new BN(Math.round(price * 1e6));
+        try {
+          pegTx = await adminClient.repegAmmCurve(pegMultiplier, PERP_MARKET_INDEX);
+        } catch (err) {
+          pegTx = 'skip-' + (err.message?.slice(0, 30) || 'unknown');
         }
       }
 
-      const { oracleTx, pegTx } = await updateOracleAndAmm(adminClient, sdk, price);
       updateCount++;
       lastLoggedPrice = price;
       const ts = new Date().toISOString().slice(11, 19);
-      console.log(`[${ts}] $${price.toFixed(2)} (${source}) | oracle=${oracleTx.slice(0, 8)}.. peg=${pegTx.slice(0, 8)}.. | #${updateCount}`);
+      const slotStr = typeof slotTx === 'string' ? slotTx.slice(0, 8) : 'ok';
+      console.log(`[${ts}] $${price.toFixed(2)} (${source}) | slot=${slotStr}.. oracle=${oracleTx.slice(0, 8)}.. peg=${pegTx.slice(0, 8)}.. | #${updateCount}`);
     } catch (err) {
       errorCount++;
       const ts = new Date().toISOString().slice(11, 19);

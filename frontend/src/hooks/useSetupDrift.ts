@@ -42,6 +42,7 @@ export function useSetupDrift(
     setOpenOrders,
     setSolBalance,
     setUsdcBalance,
+    setAccountSpotBalances,
     reset,
     selectedMarket,
   } = useDriftStore.getState();
@@ -85,6 +86,10 @@ export function useSetupDrift(
       // Open orders
       const orders = client.getOpenOrders();
       setOpenOrders(orders);
+
+      // Spot balances (deposits/borrows inside Drift account)
+      const spotBalances = await client.getSpotBalances();
+      setAccountSpotBalances(spotBalances);
     } catch (err) {
       // Silently ignore sync errors — stale data is better than no data
       console.debug('[sync] user data error:', (err as Error).message);

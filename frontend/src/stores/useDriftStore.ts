@@ -14,6 +14,7 @@ import type {
   DriftTradingClient,
   AccountState,
   UserPosition,
+  SpotBalance,
 } from '../sdk/drift-client-wrapper';
 import type { Order } from '../sdk/drift-client-wrapper';
 
@@ -24,6 +25,13 @@ export interface RecentTrade {
   size: number;
   side: 'buy' | 'sell';
   ts: number;              // unix ms
+  txSig?: string;          // transaction signature
+  taker?: string;          // taker pubkey
+  maker?: string;          // maker pubkey
+  takerFee?: number;       // in USD
+  makerFee?: number;       // in USD
+  fillId?: string;         // unique fill record ID
+  marketIndex?: number;    // market index
 }
 
 /* ─── Price snapshot (for chart) ───────────────── */
@@ -75,6 +83,7 @@ interface DriftStoreState {
   openOrders: Order[];
   solBalance: number | null;
   usdcBalance: number | null;
+  accountSpotBalances: SpotBalance[];
 
   /* ── Live feed ── */
   recentTrades: RecentTrade[];
@@ -100,6 +109,7 @@ interface DriftStoreState {
   setOpenOrders: (o: Order[]) => void;
   setSolBalance: (b: number | null) => void;
   setUsdcBalance: (b: number | null) => void;
+  setAccountSpotBalances: (b: SpotBalance[]) => void;
 
   addRecentTrade: (t: RecentTrade) => void;
   addPriceSnapshot: (s: PriceSnapshot) => void;
@@ -127,6 +137,7 @@ const initialState = {
   openOrders: [],
   solBalance: null,
   usdcBalance: null,
+  accountSpotBalances: [],
 
   recentTrades: [],
   priceHistory: [],
@@ -165,6 +176,7 @@ export const useDriftStore = create<DriftStoreState>((set, get) => ({
   setOpenOrders: (o) => set({ openOrders: o }),
   setSolBalance: (b) => set({ solBalance: b }),
   setUsdcBalance: (b) => set({ usdcBalance: b }),
+  setAccountSpotBalances: (b) => set({ accountSpotBalances: b }),
 
   /* ── Live feed ── */
   addRecentTrade: (t) =>
@@ -197,6 +209,7 @@ export const selectPositions = (s: DriftStoreState) => s.positions;
 export const selectOpenOrders = (s: DriftStoreState) => s.openOrders;
 export const selectSolBalance = (s: DriftStoreState) => s.solBalance;
 export const selectUsdcBalance = (s: DriftStoreState) => s.usdcBalance;
+export const selectAccountSpotBalances = (s: DriftStoreState) => s.accountSpotBalances;
 export const selectRecentTrades = (s: DriftStoreState) => s.recentTrades;
 export const selectPriceHistory = (s: DriftStoreState) => s.priceHistory;
 export const selectSelectedMarket = (s: DriftStoreState) => s.selectedMarket;

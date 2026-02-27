@@ -1,28 +1,6 @@
 module.exports = {
   apps: [
-    {
-      name: 'float-validator',
-      script: '/home/gorcore/.local/share/solana/install/active_release/bin/solana-test-validator',
-      args: [
-        '--ledger', '/home/gorcore/validator-ledger',
-        '--bpf-program', 'EvKyHhYjCgpu335GdKZtfRsfu4VoUyjHn3kF3wgA5eXE',
-          '/home/gorcore/Drift-Clone/protocol-v2/target/deploy/drift.so',
-        '--account', 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-          '/home/gorcore/Drift-Clone/protocol-v2/deps/configs/usdc.json',
-        '--account', '3rdJbqfnagQ4yx9HXJViD4zc4xpiSqmFsKpPuSCQVyQL',
-          '/home/gorcore/Drift-Clone/protocol-v2/deps/configs/pyth_lazer_storage.json',
-        '--bind-address', '0.0.0.0',
-        '--rpc-port', '8899',
-        '--quiet',
-      ].join(' '),
-      interpreter: 'none',
-      autorestart: true,
-      max_restarts: 10,
-      restart_delay: 5000,
-      env: {
-        PATH: '/home/gorcore/.local/share/solana/install/active_release/bin:/home/gorcore/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
-      },
-    },
+    // float-validator removed — now using Solana devnet directly
     {
       name: 'float-frontend',
       script: 'npx',
@@ -45,8 +23,8 @@ module.exports = {
       max_restarts: 10,
       restart_delay: 3000,
       env: {
-        ENDPOINT: 'http://127.0.0.1:8899',
-        WS_ENDPOINT: 'ws://127.0.0.1:8900',
+        ENDPOINT: 'https://api.devnet.solana.com',
+        WS_ENDPOINT: 'wss://api.devnet.solana.com',
         ENV: 'devnet',
         DRIFT_PROGRAM_ID: 'EvKyHhYjCgpu335GdKZtfRsfu4VoUyjHn3kF3wgA5eXE',
         PORT: '6969',

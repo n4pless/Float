@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Layers, ClipboardList, Wallet, Clock, History, X, Wifi } from 'lucide-react';
-import { useDriftStore } from '../stores/useDriftStore';
+import { useDriftStore, selectRecentTrades } from '../stores/useDriftStore';
 import DRIFT_CONFIG from '../config';
 
 interface Props {
@@ -30,9 +30,10 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
   // Store subscriptions
   const positions = useDriftStore((s) => s.positions);
   const openOrders = useDriftStore((s) => s.openOrders);
-  const solBalance = useDriftStore((s) => s.solBalance);
-  const usdcBalance = useDriftStore((s) => s.usdcBalance);
+  const accountSpotBalances = useDriftStore((s) => s.accountSpotBalances);
+  const accountState = useDriftStore((s) => s.accountState);
   const oraclePrice = useDriftStore((s) => s.oraclePrice);
+  const recentTrades = useDriftStore(selectRecentTrades);
 
   const handleClose = async (mi: number) => {
     try {
@@ -55,21 +56,22 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
     { key: 'orders', label: 'Orders', count: openOrders.length },
     { key: 'balances', label: 'Balances' },
     { key: 'orderHistory', label: 'Order History' },
-    { key: 'tradeHistory', label: 'Trade History' },
+    { key: 'tradeHistory', label: 'Trade History', count: recentTrades.length },
   ];
 
   return (
     <div className="flex flex-col h-full">
       {/* Tabs */}
-      <div className="flex items-center shrink-0 px-2 border-b border-drift-border">
+      <div className="flex items-center shrink-0 px-1 sm:px-2 border-b border-drift-border overflow-x-auto">
         {tabs.map(t => {
           const Icon = TAB_ICONS[t.key];
           return (
             <button key={t.key} onClick={() => setTab(t.key)}
-              className={`flex items-center gap-1.5 px-3 py-2.5 text-[11px] font-medium relative transition-all ${
+              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2.5 text-[10px] sm:text-[11px] font-medium relative transition-all whitespace-nowrap ${
                 tab === t.key ? 'text-txt-0' : 'text-txt-3 hover:text-txt-2'}`}>
-              <Icon className="w-3.5 h-3.5" />
-              {t.label}
+              <Icon className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">{t.label}</span>
+              <span className="sm:hidden">{t.label.replace('Trade History','Trades').replace('Order History','History')}</span>
               {(t.count ?? 0) > 0 && (
                 <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-semibold ${
                   tab === t.key ? 'bg-accent/15 text-accent' : 'bg-drift-surface text-txt-2'}`}>
@@ -88,7 +90,8 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
           <Empty icon={Wallet} text="Connect wallet to start trading" />
         ) : tab === 'positions' ? (
           positions.length === 0 ? <Empty icon={Layers} text="No open positions" /> : (
-            <table className="w-full text-[11px]">
+            <div className="overflow-x-auto">
+            <table className="w-full text-[11px] min-w-[640px]">
               <thead>
                 <tr className="bg-drift-surface/30">
                   {['Market','Side','Size','Entry Price','Mark Price','P&L','Liq. Price',''].map(h => (
@@ -140,10 +143,12 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
                 })}
               </tbody>
             </table>
+            </div>
           )
         ) : tab === 'orders' ? (
           openOrders.length === 0 ? <Empty icon={ClipboardList} text="No open orders" /> : (
-            <table className="w-full text-[11px]">
+            <div className="overflow-x-auto">
+            <table className="w-full text-[11px] min-w-[560px]">
               <thead>
                 <tr className="bg-drift-surface/30">
                   {['Market','Side','Type','Size','Price','Filled',''].map(h => (
@@ -193,9 +198,12 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
                 })}
               </tbody>
             </table>
+            </div>
           )
         ) : tab === 'balances' ? (
-          <table className="w-full text-[11px]">
+          accountSpotBalances.length === 0 ? <Empty icon={Wallet} text="No account balances — deposit to see balances" /> : (
+          <div className="overflow-x-auto">
+          <table className="w-full text-[11px] min-w-[400px]">
             <thead>
               <tr className="bg-drift-surface/30">
                 {['Asset','Deposits','Borrows','Net Balance','Value (USD)'].map(h => (
@@ -204,15 +212,122 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
               </tr>
             </thead>
             <tbody>
-              <BalanceRow sym="SOL" color="#9945FF" bal={solBalance ?? 0} price={oraclePrice > 0 ? oraclePrice : 0} />
-              <BalanceRow sym="USDC" color="#2775CA" bal={usdcBalance ?? 0} price={1} icon="$" />
+              {accountSpotBalances.map((sb) => (
+                <AccountBalanceRow
+                  key={sb.marketIndex}
+                  sym={sb.symbol}
+                  color={sb.symbol === 'USDC' ? '#2775CA' : sb.symbol === 'SOL' ? '#9945FF' : '#888'}
+                  deposits={sb.deposits}
+                  borrows={sb.borrows}
+                  netBalance={sb.netBalance}
+                  valueUsd={sb.valueUsd}
+                  icon={sb.symbol === 'USDC' ? '$' : undefined}
+                />
+              ))}
+              {/* Unrealized PnL row */}
+              {positions.length > 0 && (
+                <tr className="hover:bg-drift-surface/30 transition-colors border-b border-drift-border/50">
+                  <td className="px-3 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-md flex items-center justify-center text-[9px] text-white font-bold bg-yellow/40">⚡</div>
+                      <span className="font-semibold text-txt-1">Unrealized PnL</span>
+                    </div>
+                  </td>
+                  <td className="px-3 py-2.5 text-right tabular-nums text-txt-3" colSpan={3}>
+                    <span className="text-[10px] text-txt-3">{positions.length} open position{positions.length > 1 ? 's' : ''}</span>
+                  </td>
+                  <td className={`px-3 py-2.5 text-right tabular-nums font-medium ${
+                    (accountState?.unrealizedPnl ?? 0) >= 0 ? 'text-bull' : 'text-bear'
+                  }`}>
+                    {(accountState?.unrealizedPnl ?? 0) >= 0 ? '+' : ''}
+                    ${(accountState?.unrealizedPnl ?? 0).toFixed(2)}
+                  </td>
+                </tr>
+              )}
+              {/* Total Equity summary row */}
+              <tr className="bg-drift-surface/20">
+                <td className="px-3 py-2.5">
+                  <span className="font-bold text-txt-0 text-[11.5px]">Total Equity</span>
+                </td>
+                <td colSpan={3} className="px-3 py-2.5 text-right">
+                  <span className="text-[10px] text-txt-3">Free: ${(accountState?.freeCollateral ?? 0).toFixed(2)}</span>
+                </td>
+                <td className="px-3 py-2.5 text-right tabular-nums font-bold text-txt-0 text-[11.5px]">
+                  ${(accountState?.totalCollateral ?? 0).toFixed(2)}
+                </td>
+              </tr>
             </tbody>
           </table>
+          </div>
+          )
+        ) : tab === 'tradeHistory' ? (
+          recentTrades.length === 0 ? <Empty icon={History} text="No trade history" /> : (
+            <div className="overflow-x-auto">
+            <table className="w-full text-[11px] min-w-[560px]">
+              <thead>
+                <tr className="bg-drift-surface/30">
+                  {['Time','Market','Side','Price','Size (USD)','Fee','Tx'].map(h => (
+                    <th key={h} className={`px-3 py-2 font-medium text-txt-3 ${h === 'Time' || h === 'Market' || h === 'Side' || h === 'Tx' ? 'text-left' : 'text-right'}`}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {recentTrades.map((t, i) => {
+                  const time = new Date(t.ts).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                  const date = new Date(t.ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                  const m = t.marketIndex != null ? DRIFT_CONFIG.markets[t.marketIndex as keyof typeof DRIFT_CONFIG.markets] : null;
+                  const isBuy = t.side === 'buy';
+                  const fee = (t.takerFee ?? 0) + (t.makerFee ?? 0);
+                  return (
+                    <tr key={`${t.fillId ?? ''}-${t.ts}-${i}`} className="hover:bg-drift-surface/30 transition-colors border-b border-drift-border/50">
+                      <td className="px-3 py-2.5 text-txt-2">
+                        <div className="flex flex-col">
+                          <span className="tabular-nums">{time}</span>
+                          <span className="text-[9px] text-txt-3">{date}</span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <span className="font-semibold text-txt-0">{m?.symbol ?? 'SOL-PERP'}</span>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <span className={`px-2 py-1 rounded-md text-[10px] font-semibold ${
+                          isBuy ? 'bg-bull/10 text-bull' : 'bg-bear/10 text-bear'}`}>
+                          {isBuy ? 'BUY' : 'SELL'}
+                        </span>
+                      </td>
+                      <td className={`px-3 py-2.5 text-right tabular-nums font-medium ${isBuy ? 'text-bull' : 'text-bear'}`}>
+                        ${t.price.toFixed(2)}
+                      </td>
+                      <td className="px-3 py-2.5 text-right tabular-nums text-txt-1 font-medium">
+                        ${t.size.toFixed(2)}
+                      </td>
+                      <td className="px-3 py-2.5 text-right tabular-nums text-txt-3">
+                        {fee > 0 ? `$${fee.toFixed(4)}` : '—'}
+                      </td>
+                      <td className="px-3 py-2.5">
+                        {t.txSig ? (
+                          <a
+                            href={`https://solscan.io/tx/${t.txSig}?cluster=devnet`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[10px] text-accent hover:underline font-mono truncate max-w-[80px] inline-block"
+                            title={t.txSig}
+                          >
+                            {t.txSig.slice(0, 8)}…
+                          </a>
+                        ) : (
+                          <span className="text-txt-3">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            </div>
+          )
         ) : (
-          <Empty icon={tab === 'orderHistory' ? Clock : History} text={
-            tab === 'orderHistory' ? 'No order history' :
-            'No trade history'
-          } />
+          <Empty icon={Clock} text="No order history" />
         )}
       </div>
 
@@ -240,7 +355,10 @@ const Empty: React.FC<{ icon: any; text: string }> = ({ icon: Icon, text }) => (
   </div>
 );
 
-const BalanceRow: React.FC<{ sym: string; color: string; bal: number; price: number; icon?: string }> = ({ sym, color, bal, price, icon }) => (
+const AccountBalanceRow: React.FC<{
+  sym: string; color: string; deposits: number; borrows: number;
+  netBalance: number; valueUsd: number; icon?: string;
+}> = ({ sym, color, deposits, borrows, netBalance, valueUsd, icon }) => (
   <tr className="hover:bg-drift-surface/30 transition-colors border-b border-drift-border/50">
     <td className="px-3 py-2.5">
       <div className="flex items-center gap-2">
@@ -250,9 +368,11 @@ const BalanceRow: React.FC<{ sym: string; color: string; bal: number; price: num
         <span className="font-semibold text-txt-0">{sym}</span>
       </div>
     </td>
-    <td className="px-3 py-2.5 text-right tabular-nums text-txt-1 font-medium">{bal.toFixed(4)}</td>
-    <td className="px-3 py-2.5 text-right tabular-nums text-txt-2">0.0000</td>
-    <td className="px-3 py-2.5 text-right tabular-nums text-txt-1 font-medium">{bal.toFixed(4)}</td>
-    <td className="px-3 py-2.5 text-right tabular-nums text-txt-1 font-medium">${(bal * price).toFixed(2)}</td>
+    <td className="px-3 py-2.5 text-right tabular-nums text-bull font-medium">{deposits > 0 ? deposits.toFixed(4) : '—'}</td>
+    <td className="px-3 py-2.5 text-right tabular-nums text-bear">{borrows > 0 ? borrows.toFixed(4) : '—'}</td>
+    <td className={`px-3 py-2.5 text-right tabular-nums font-medium ${netBalance >= 0 ? 'text-txt-1' : 'text-bear'}`}>
+      {netBalance.toFixed(4)}
+    </td>
+    <td className="px-3 py-2.5 text-right tabular-nums text-txt-1 font-medium">${valueUsd.toFixed(2)}</td>
   </tr>
 );
