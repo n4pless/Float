@@ -123,6 +123,8 @@ export class DriftTradingClient {
 
   // Cross-user orderbook: cache of ALL user accounts on the protocol
   private _allUserAccounts: CachedUserAccount[] = [];
+  // Position snapshots for fill detection (pubkey → baseAssetAmount as string)
+  private _prevPositions: Map<string, string> = new Map();
   private _allUserAccountsRefreshTimer: ReturnType<typeof setInterval> | null = null;
   private _allUserAccountsLoading = false;
 
@@ -202,6 +204,7 @@ export class DriftTradingClient {
   /**
    * Fetch ALL Drift user accounts on this program.
    * This gives us every user's orders for the cross-user orderbook.
+   * Also detects position changes to emit fill events.
    */
   private async _refreshAllUserAccounts(): Promise<void> {
     if (this._allUserAccountsLoading) return;
@@ -209,6 +212,60 @@ export class DriftTradingClient {
     try {
       const accounts = await this.driftClient.fetchAllUserAccounts(true);
       this._allUserAccounts = accounts as unknown as CachedUserAccount[];
+
+      // ── Fill detection via position-change tracking ──
+      // Each refresh, compare perp position sizes to detect fills.
+      // This costs ZERO extra RPC calls — we already have the data.
+      const oraclePrice = useDriftStore.getState().oraclePrice;
+      if (oraclePrice > 0) {
+        for (const ua of this._allUserAccounts) {
+          const key = ua.publicKey.toBase58();
+          const perp = (ua.account as any).perpPositions?.[0];
+          if (!perp) continue;
+
+          const curBase = perp.baseAssetAmount?.toString() ?? '0';
+          const prevBase = this._prevPositions.get(key);
+
+          if (prevBase !== undefined && prevBase !== curBase) {
+            // Position changed → a fill happened
+            try {
+              const prevNum = Number(prevBase);
+              const curNum = Number(curBase);
+              const delta = curNum - prevNum;
+              if (delta === 0) continue;
+
+              const basePrecision = BASE_PRECISION.toNumber();
+              const absDeltaBase = Math.abs(delta) / basePrecision;
+              const sizeUsd = absDeltaBase * oraclePrice;
+
+              if (sizeUsd >= 0.01) {
+                const side: 'buy' | 'sell' = delta > 0 ? 'buy' : 'sell';
+                // Deduplicate: don't emit if the store already has a very recent trade
+                // with the same price and size (from direct capture)
+                const recent = useDriftStore.getState().recentTrades;
+                const isDuplicate = recent.length > 0 && recent.some(t =>
+                  Math.abs(t.ts - Date.now()) < 15_000 &&
+                  t.side === side &&
+                  Math.abs(t.size - sizeUsd) < sizeUsd * 0.1
+                );
+                if (!isDuplicate) {
+                  useDriftStore.getState().addRecentTrade({
+                    price: oraclePrice,
+                    size: sizeUsd,
+                    side,
+                    ts: Date.now(),
+                    taker: key,
+                    marketIndex: 0,
+                  });
+                  console.log(`[drift] detected fill via position change: ${side} $${sizeUsd.toFixed(2)} by ${key.slice(0,8)}...`);
+                }
+              }
+            } catch { /* ignore parse errors */ }
+          }
+          this._prevPositions.set(key, curBase);
+        }
+      }
+
       console.log(`[drift] loaded ${accounts.length} user account(s) from chain`);
     } catch (err) {
       console.warn('[drift] fetchAllUserAccounts failed, retrying next cycle:', err);
@@ -240,6 +297,16 @@ export class DriftTradingClient {
    * Get the Connection instance for event subscriptions.
    */
   getConnection() { return this.connection; }
+
+  /**
+   * Get the programId for this Drift deployment.
+   */
+  getProgramId() { return this.programId; }
+
+  /**
+   * Get the cached user accounts (refreshed every 8s).
+   */
+  getCachedUserAccounts() { return this._allUserAccounts; }
 
   /* ── sub-account management ────────────────────── */
 
