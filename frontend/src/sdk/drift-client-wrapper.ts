@@ -35,6 +35,7 @@ import {
 } from '@drift-labs/sdk';
 import type { Order, L2Level, UserAccount, MakerInfo } from '@drift-labs/sdk';
 export type { Order } from '@drift-labs/sdk';
+import { useDriftStore } from '../stores/useDriftStore';
 
 type CachedUserAccount = { publicKey: PublicKey; account: UserAccount };
 
@@ -949,6 +950,37 @@ export class DriftTradingClient {
   /* ── trading ───────────────────────────────────── */
 
   /**
+   * Emit a trade directly to the Zustand store so the Recent Trades panel
+   * updates instantly after a placeAndTakePerpOrder (no polling delay).
+   */
+  private _emitRecentTrade(
+    marketIndex: number,
+    direction: 'long' | 'short' | 'buy' | 'sell',
+    sizeBase: number,
+    oraclePriceRaw: number,
+    txSig: string,
+  ) {
+    try {
+      const price = oraclePriceRaw / PRICE_PRECISION.toNumber();
+      const sizeUsd = sizeBase * price;
+      const side: 'buy' | 'sell' =
+        direction === 'long' || direction === 'buy' ? 'buy' : 'sell';
+
+      useDriftStore.getState().addRecentTrade({
+        price,
+        size: sizeUsd,
+        side,
+        ts: Date.now(),
+        txSig,
+        marketIndex,
+      });
+      console.log(`[drift] emitted recent trade: ${side} ${sizeBase.toFixed(4)} @ $${price.toFixed(2)}`);
+    } catch (err) {
+      console.debug('[drift] _emitRecentTrade error:', err);
+    }
+  }
+
+  /**
    * Get the current oracle price for a perp market (as raw BN).
    */
   private _getOraclePriceBN(marketIndex: number): BN {
@@ -1019,9 +1051,11 @@ export class DriftTradingClient {
             undefined,  // successCondition
             100,        // auctionDurationPercentage
           );
-          console.log('[drift] limit order filled via placeAndTake:', txSig);
+          const txSigStr = typeof txSig === 'string' ? txSig : String(txSig);
+          console.log('[drift] limit order filled via placeAndTake:', txSigStr);
+          this._emitRecentTrade(marketIndex, direction, sizeBase, limitPrice! * PRICE_PRECISION.toNumber(), txSigStr);
           this._refreshAllUserAccounts();
-          return typeof txSig === 'string' ? txSig : String(txSig);
+          return txSigStr;
         } catch (err: any) {
           console.warn('[drift] placeAndTake for limit failed, falling back to placePerpOrder:', err?.message);
           // Fall through to just place the order as a resting limit
@@ -1094,10 +1128,13 @@ export class DriftTradingClient {
         undefined,  // successCondition
         100,        // auctionDurationPercentage — fill at auction end price immediately
       );
-      console.log('[drift] market order tx:', txSig, makerInfo.length > 0 ? `(matched ${makerInfo.length} maker(s))` : '(AMM only)');
+      const txSigStr = typeof txSig === 'string' ? txSig : String(txSig);
+      console.log('[drift] market order tx:', txSigStr, makerInfo.length > 0 ? `(matched ${makerInfo.length} maker(s))` : '(AMM only)');
+      // Emit direct trade capture so Recent Trades updates instantly
+      this._emitRecentTrade(marketIndex, direction, sizeBase, oracleNum, txSigStr);
       // Force-refresh so filled orders disappear from orderbook
       this._refreshAllUserAccounts();
-      return typeof txSig === 'string' ? txSig : String(txSig);
+      return txSigStr;
     } catch (err: any) {
       console.error('[drift] placeAndTakePerpOrder failed:', err);
       // Re-throw with a clearer message
@@ -1173,9 +1210,14 @@ export class DriftTradingClient {
         100,
       );
 
-      console.log('[drift] close position tx:', txSig);
+      const txSigStr = typeof txSig === 'string' ? txSig : String(txSig);
+      console.log('[drift] close position tx:', txSigStr);
+      // Direct trade capture for close
+      const closeSide = pos.baseAssetAmount.gt(new BN(0)) ? 'sell' : 'buy';
+      const closeSizeBase = pos.baseAssetAmount.abs().toNumber() / BASE_PRECISION.toNumber();
+      this._emitRecentTrade(marketIndex, closeSide, closeSizeBase, oracleNum, txSigStr);
       this._refreshAllUserAccounts();
-      return typeof txSig === 'string' ? txSig : String(txSig);
+      return txSigStr;
     } catch (err: any) {
       const msg = err?.message || err?.toString() || 'Unknown error';
       const logs = err?.logs?.join?.('\n') || '';

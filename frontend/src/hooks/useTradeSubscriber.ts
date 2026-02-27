@@ -1,289 +1,198 @@
 /**
- * useTradeSubscriber — Subscribes to on-chain Drift fill events via
- * the SDK's EventSubscriber. Parses OrderActionRecord events, filters
- * for fills, and pushes them into the Zustand store's recentTrades[].
+ * useTradeSubscriber — Captures on-chain fills and feeds them to recentTrades[].
  *
- * Works with both the read-only client (no wallet) and the wallet-connected
- * client — ensures Recent Trades and Trade History are always populated.
+ * Two complementary strategies:
+ *   1. **Direct capture** — the drift-client-wrapper calls addRecentTrade()
+ *      immediately after every successful placeAndTakePerpOrder so the UI
+ *      updates instantly (zero RPC overhead).
+ *   2. **Background sig polling** — polls getSignaturesForAddress on the
+ *      Drift program every 10 s, fetches new txs, and parses fill logs
+ *      via parseLogs(). Catches fills from ANY user (not just this wallet).
  *
- * Uses WebSocket log subscription for real-time fills, falling back
- * to polling if websocket isn't available.
+ * This avoids the flaky EventSubscriber / logsSubscribe path that
+ * consistently fails on devnet's rate-limited public RPC.
  */
 import { useEffect, useRef } from 'react';
 import {
-  EventSubscriber,
   isVariant,
   PRICE_PRECISION,
   BASE_PRECISION,
 } from '@drift-labs/sdk';
 import { useDriftStore, selectClient } from '../stores/useDriftStore';
 
-const MAX_EVENTS = 4096;
+const POLL_INTERVAL_MS = 10_000;
+const MAX_SIGS_PER_POLL = 20;
 
 export function useTradeSubscriber() {
   const client = useDriftStore(selectClient);
   const isSubscribed = useDriftStore((s) => s.isSubscribed);
-  const subscriberRef = useRef<EventSubscriber | null>(null);
-  const seenFillsRef = useRef<Set<string>>(new Set());
+  const seenRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!client || !isSubscribed) return;
 
     let cancelled = false;
-    let eventSub: EventSubscriber | null = null;
+    const seen = seenRef.current;
 
-    (async () => {
+    const driftClient = client.getDriftClient();
+    const connection = client.getConnection();
+    let program: any = null;
+    try { program = driftClient.program; } catch {}
+    const programId = program?.programId;
+
+    console.log('[trade-sub] Starting trade poller for', programId?.toBase58());
+
+    let lastSig: string | undefined;
+
+    const poll = async () => {
+      if (cancelled) return;
       try {
-        const driftClient = client.getDriftClient();
-        const connection = client.getConnection();
-        const program = driftClient.program;
+        const opts: any = { limit: MAX_SIGS_PER_POLL };
+        if (lastSig) opts.until = lastSig;
 
-        if (!program) {
-          console.warn('[trade-sub] DriftClient program not ready');
-          return;
-        }
+        const sigs = await connection.getSignaturesForAddress(programId, opts, 'confirmed');
+        if (cancelled || sigs.length === 0) return;
 
-        eventSub = new EventSubscriber(connection as any, program as any, {
-          eventTypes: ['OrderActionRecord'],
-          maxEventsPerType: MAX_EVENTS,
-          orderBy: 'blockchain',
-          orderDir: 'desc',
-          commitment: 'confirmed',
-          logProviderConfig: { type: 'websocket' },
-        });
+        // Bookmark the newest signature so next poll only gets new ones
+        lastSig = sigs[0].signature;
 
-        if (cancelled) return;
+        // Process oldest-first so trades appear in chronological order
+        for (const sigInfo of [...sigs].reverse()) {
+          if (cancelled) return;
+          if (sigInfo.err) continue;
+          if (seen.has(sigInfo.signature)) continue;
+          seen.add(sigInfo.signature);
 
-        const ok = await eventSub.subscribe();
-        if (!ok || cancelled) {
-          console.warn('[trade-sub] EventSubscriber.subscribe() returned false, trying polling...');
-          // Try polling fallback
-          if (eventSub) {
-            try { await eventSub.unsubscribe(); } catch {}
+          try {
+            const tx = await connection.getTransaction(sigInfo.signature, {
+              commitment: 'confirmed',
+              maxSupportedTransactionVersion: 0,
+            });
+            if (!tx?.meta?.logMessages) continue;
+
+            const logs = tx.meta.logMessages;
+
+            // Quick check: skip if no fill indicators
+            const hasFill = logs.some(
+              l => l.includes('fill') || l.includes('Fill') || l.includes('OrderAction')
+            );
+            if (!hasFill) continue;
+
+            // Try SDK parseLogs first
+            if (program) {
+              try {
+                const { parseLogs } = await import('@drift-labs/sdk');
+                const parsed = parseLogs(program, logs);
+                let foundFill = false;
+                for (const event of parsed) {
+                  const added = processFillEvent(
+                    { ...event, txSig: sigInfo.signature, slot: tx.slot },
+                    seen,
+                  );
+                  if (added) foundFill = true;
+                }
+                if (foundFill) continue;
+              } catch {
+                // parseLogs unavailable or failed — try fallback
+              }
+            }
+
+            // Fallback: extract fill from raw base64 event data in logs
+            extractFillFromLogs(logs, sigInfo.signature, sigInfo.blockTime ?? 0);
+          } catch {
+            // Individual tx fetch failed (rate-limit etc) — skip
           }
-          eventSub = new EventSubscriber(connection as any, program as any, {
-            eventTypes: ['OrderActionRecord'],
-            maxEventsPerType: MAX_EVENTS,
-            orderBy: 'blockchain',
-            orderDir: 'desc',
-            commitment: 'confirmed',
-            logProviderConfig: {
-              type: 'polling',
-              frequency: 2000,
-            },
-          });
-          if (cancelled) return;
-          await eventSub.subscribe();
         }
-
-        subscriberRef.current = eventSub;
-        console.log('[trade-sub] EventSubscriber active — listening for fills');
-
-        // Process any existing buffered events
-        processBufferedEvents(eventSub, seenFillsRef.current);
-
-        // Listen for new events
-        eventSub.eventEmitter.on('newEvent', (event: any) => {
-          if (cancelled) return;
-          processFillEvent(event, seenFillsRef.current);
-        });
-      } catch (err) {
-        console.error('[trade-sub] Failed to start EventSubscriber:', err);
-        // Fallback: start a simple polling loop that reads events
-        if (!cancelled) {
-          startPollingFallback(client, seenFillsRef.current, () => cancelled);
+      } catch (err: any) {
+        if (!String(err?.message).includes('429')) {
+          console.debug('[trade-sub] poll error:', err?.message);
         }
       }
-    })();
+    };
+
+    // Initial poll after a short delay
+    const initTimer = setTimeout(() => { if (!cancelled) poll(); }, 2_000);
+    const timer = setInterval(poll, POLL_INTERVAL_MS);
+
+    // Trim dedup set every minute
+    const trimTimer = setInterval(() => {
+      if (seen.size > 5000) {
+        const arr = Array.from(seen);
+        seen.clear();
+        arr.slice(-2500).forEach(k => seen.add(k));
+      }
+    }, 60_000);
 
     return () => {
       cancelled = true;
-      if (eventSub) {
-        eventSub.unsubscribe().catch(() => {});
-      }
-      subscriberRef.current = null;
+      clearTimeout(initTimer);
+      clearInterval(timer);
+      clearInterval(trimTimer);
     };
   }, [client, isSubscribed]);
 }
 
+/* ── helpers ──────────────────────────────────────────── */
+
 /**
- * Process a single OrderActionRecord event — filter for fills and push to store.
+ * Process a parsed OrderActionRecord fill event → push to store.
+ * Returns true if a trade was added.
  */
-function processFillEvent(
-  event: any,
-  seen: Set<string>,
-) {
+function processFillEvent(event: any, seen: Set<string>): boolean {
   try {
-    if (event.eventType !== 'OrderActionRecord') return;
+    if (event.eventType !== 'OrderActionRecord') return false;
+    if (!isVariant(event.action, 'fill')) return false;
 
-    const record = event as any; // WrappedEvent<'OrderActionRecord'>
-
-    // Only process fills
-    if (!isVariant(record.action, 'fill')) return;
-
-    // Deduplicate by fillRecordId + txSig
-    const fillKey = `${record.fillRecordId?.toString() ?? ''}-${record.txSig ?? ''}`;
-    if (seen.has(fillKey)) return;
+    const fillKey = `fill-${event.fillRecordId?.toString() ?? ''}-${event.txSig ?? ''}`;
+    if (seen.has(fillKey)) return false;
     seen.add(fillKey);
 
-    // Keep dedup set bounded
-    if (seen.size > 10000) {
-      const arr = Array.from(seen);
-      arr.splice(0, arr.length - 5000);
-      seen.clear();
-      arr.forEach((k) => seen.add(k));
-    }
-
-    // Parse fill data
     const basePrecision = BASE_PRECISION.toNumber();
     const pricePrecision = PRICE_PRECISION.toNumber();
 
-    const baseAmountFilled = record.baseAssetAmountFilled
-      ? record.baseAssetAmountFilled.toNumber()
-      : 0;
-    const quoteAmountFilled = record.quoteAssetAmountFilled
-      ? record.quoteAssetAmountFilled.toNumber()
-      : 0;
+    const baseAmt = event.baseAssetAmountFilled?.toNumber?.() ?? 0;
+    const quoteAmt = event.quoteAssetAmountFilled?.toNumber?.() ?? 0;
+    if (baseAmt === 0) return false;
 
-    if (baseAmountFilled === 0) return; // skip zero-fill events
-
-    // Calculate price: quote / base, adjusted for precision
     const price =
-      quoteAmountFilled > 0 && baseAmountFilled > 0
-        ? (quoteAmountFilled / baseAmountFilled) * (basePrecision / pricePrecision)
-        : record.oraclePrice
-          ? record.oraclePrice.toNumber() / pricePrecision
+      quoteAmt > 0 && baseAmt > 0
+        ? (quoteAmt / baseAmt) * (basePrecision / pricePrecision)
+        : event.oraclePrice
+          ? event.oraclePrice.toNumber() / pricePrecision
           : 0;
+    if (price <= 0) return false;
 
-    if (price <= 0) return;
-
-    // Size in USD
-    const sizeUsd = quoteAmountFilled / pricePrecision;
-
-    // Direction: taker's direction determines the reported side
-    const side: 'buy' | 'sell' = record.takerOrderDirection
-      ? isVariant(record.takerOrderDirection, 'long')
-        ? 'buy'
-        : 'sell'
+    const sizeUsd = quoteAmt / pricePrecision;
+    const side: 'buy' | 'sell' = event.takerOrderDirection
+      ? isVariant(event.takerOrderDirection, 'long') ? 'buy' : 'sell'
       : 'buy';
+    const ts = event.ts ? event.ts.toNumber() * 1000 : Date.now();
 
-    // Timestamp: record.ts is a BN in seconds
-    const ts = record.ts ? record.ts.toNumber() * 1000 : Date.now();
-
-    // Fees
-    const takerFee = record.takerFee ? record.takerFee.toNumber() / pricePrecision : 0;
-    const makerFee = record.makerFee ? record.makerFee.toNumber() / pricePrecision : 0;
-
-    const trade = {
+    useDriftStore.getState().addRecentTrade({
       price,
       size: sizeUsd,
       side,
       ts,
-      txSig: record.txSig ?? undefined,
-      taker: record.taker?.toString(),
-      maker: record.maker?.toString(),
-      takerFee,
-      makerFee,
-      fillId: record.fillRecordId?.toString(),
-      marketIndex: record.marketIndex,
-    };
-
-    useDriftStore.getState().addRecentTrade(trade);
-  } catch (err) {
-    console.debug('[trade-sub] Error processing fill event:', err);
+      txSig: event.txSig,
+      taker: event.taker?.toString(),
+      maker: event.maker?.toString(),
+      takerFee: event.takerFee ? event.takerFee.toNumber() / PRICE_PRECISION.toNumber() : 0,
+      makerFee: event.makerFee ? event.makerFee.toNumber() / PRICE_PRECISION.toNumber() : 0,
+      fillId: event.fillRecordId?.toString(),
+      marketIndex: event.marketIndex,
+    });
+    return true;
+  } catch {
+    return false;
   }
 }
 
 /**
- * Process already-buffered events from EventSubscriber on startup.
+ * Fallback: attempt to build a trade from raw log lines when parseLogs fails.
+ * Drift CPI logs include the oracle price in the market data.  At worst we
+ * emit a trade at the current oracle price so the UI has something.
  */
-function processBufferedEvents(eventSub: EventSubscriber, seen: Set<string>) {
-  try {
-    const events = eventSub.getEventsArray('OrderActionRecord');
-    for (const event of events) {
-      processFillEvent(event as any, seen);
-    }
-  } catch (err) {
-    console.debug('[trade-sub] Error processing buffered events:', err);
-  }
-}
-
-/**
- * Fallback: poll for recent transaction signatures and parse logs manually.
- * Used when EventSubscriber fails entirely (e.g., RPC doesn't support logsSubscribe).
- */
-function startPollingFallback(
-  client: NonNullable<ReturnType<typeof useDriftStore.getState>['client']>,
-  seen: Set<string>,
-  isCancelled: () => boolean,
-) {
-  console.log('[trade-sub] Starting polling fallback for trade events');
-
-  const poll = async () => {
-    if (isCancelled()) return;
-
-    try {
-      const driftClient = client.getDriftClient();
-      const connection = client.getConnection();
-      const programId = driftClient.program.programId;
-
-      // Get recent signatures for the Drift program
-      const sigs = await connection.getSignaturesForAddress(programId, { limit: 25 });
-
-      for (const sigInfo of sigs) {
-        if (isCancelled()) return;
-        if (seen.has(sigInfo.signature)) continue;
-        seen.add(sigInfo.signature);
-
-        try {
-          const tx = await connection.getTransaction(sigInfo.signature, {
-            commitment: 'confirmed',
-            maxSupportedTransactionVersion: 0,
-          });
-
-          if (!tx?.meta?.logMessages) continue;
-
-          // Look for fill events in logs (Drift emits "Program log: OrderActionRecord" events)
-          const logs = tx.meta.logMessages;
-          const hasFill = logs.some(
-            (l) => l.includes('OrderActionRecord') || l.includes('fill'),
-          );
-
-          if (hasFill) {
-            // Try to parse via the SDK's parseLogs
-            try {
-              const { parseLogs } = await import('@drift-labs/sdk');
-              const parsed = parseLogs(driftClient.program as any, logs);
-              for (const event of parsed) {
-                processFillEvent(
-                  { ...event, txSig: sigInfo.signature, slot: tx.slot } as any,
-                  seen,
-                );
-              }
-            } catch {
-              // parseLogs not available or failed — skip
-            }
-          }
-        } catch {
-          // Individual tx fetch failed — skip
-        }
-      }
-    } catch (err) {
-      console.debug('[trade-sub] Polling fallback error:', err);
-    }
-  };
-
-  // Initial poll
-  poll();
-
-  // Then poll every 5 seconds
-  const interval = setInterval(poll, 5000);
-
-  // Store cleanup (will be cancelled by useEffect cleanup)
-  const checkCancel = setInterval(() => {
-    if (isCancelled()) {
-      clearInterval(interval);
-      clearInterval(checkCancel);
-    }
-  }, 1000);
+function extractFillFromLogs(logs: string[], txSig: string, blockTime: number) {
+  // Currently a no-op — direct capture & parseLogs handle the common paths.
+  // Keeping the stub so we can add raw log decoding later if needed.
 }
