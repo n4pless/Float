@@ -815,16 +815,40 @@ export class DriftTradingClient {
         const entryPrice = baseNum !== 0 ? Math.abs(quoteNum / baseNum) : 0;
         const unrealizedPnl = baseNum * (markPrice - entryPrice);
 
+        // Liquidation price via the SDK's User.liquidationPrice() method
+        let liquidationPrice = 0;
+        try {
+          const liqPriceBN = user.liquidationPrice(pos.marketIndex);
+          if (liqPriceBN.gt(new BN(0))) {
+            liquidationPrice = liqPriceBN.toNumber() / PRICE_PRECISION.toNumber();
+          }
+        } catch (err) {
+          console.debug('[drift] liq price calc failed for market', pos.marketIndex, err);
+        }
+
+        // Per-position leverage via SDK
+        let leverage = 1;
+        try {
+          leverage = user.getLeverage(true, pos.marketIndex).toNumber() / 10000;
+          if (leverage <= 0) leverage = 1;
+        } catch {
+          // fallback: notional / collateral
+          const totalCollateral = user.getTotalCollateral().toNumber() / PRICE_PRECISION.toNumber();
+          if (totalCollateral > 0) {
+            leverage = Math.abs(baseNum * markPrice) / totalCollateral;
+          }
+        }
+
         positions.push({
           marketIndex: pos.marketIndex,
           baseAssetAmount: Math.abs(baseNum),
           quoteEntryAmount: Math.abs(quoteNum),
           direction: baseAmt.gt(new BN(0)) ? 'LONG' : 'SHORT',
-          leverage: 1,
+          leverage,
           entryPrice,
           markPrice,
           unrealizedPnl,
-          liquidationPrice: 0,
+          liquidationPrice,
           marginUsed: Math.abs(quoteNum),
         });
       }
