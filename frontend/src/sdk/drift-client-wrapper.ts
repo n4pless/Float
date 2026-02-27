@@ -763,8 +763,35 @@ export class DriftTradingClient {
       const pricePrecNum = PRICE_PRECISION.toNumber();
       const basePrecNum = BASE_PRECISION.toNumber();
 
+      // Get oracle price for resolving oracle-pegged orders
+      let oraclePriceNum = 0;
+      try {
+        oraclePriceNum = this._getOraclePriceBN(marketIndex).toNumber() / pricePrecNum;
+      } catch { /* ignore */ }
+
       const askMap = new Map<number, number>();
       const bidMap = new Map<number, number>();
+
+      /**
+       * Resolve the effective price of an order.
+       * Fixed-price orders use order.price directly.
+       * Oracle-pegged orders (oraclePriceOffset != 0, price == 0) compute
+       * effective price as oraclePrice + offset.
+       */
+      const resolvePrice = (order: any): number => {
+        const rawPrice = order.price.toNumber() / pricePrecNum;
+        if (rawPrice > 0) return rawPrice;
+        // Oracle-pegged order: price = oracle + offset
+        const offset = order.oraclePriceOffset
+          ? (typeof order.oraclePriceOffset === 'number'
+              ? order.oraclePriceOffset
+              : order.oraclePriceOffset.toNumber())
+          : 0;
+        if (offset !== 0 && oraclePriceNum > 0) {
+          return oraclePriceNum + offset / pricePrecNum;
+        }
+        return 0; // can't resolve
+      };
 
       // Iterate over ALL cached user accounts (not just the connected wallet)
       for (const { account: userAccount } of this._allUserAccounts) {
@@ -778,7 +805,7 @@ export class DriftTradingClient {
           // Only include limit orders (not market orders)
           if (!('limit' in (order.orderType as any))) continue;
 
-          const price = order.price.toNumber() / pricePrecNum;
+          const price = resolvePrice(order);
           const remaining = (order.baseAssetAmount.toNumber() - order.baseAssetAmountFilled.toNumber()) / basePrecNum;
           if (remaining <= 0 || price <= 0) continue;
 
@@ -795,7 +822,7 @@ export class DriftTradingClient {
             o => o.marketIndex === marketIndex && 'perp' in (o.marketType as any)
           );
           for (const o of myOrders) {
-            const price = o.price.toNumber() / pricePrecNum;
+            const price = resolvePrice(o);
             const remaining = (o.baseAssetAmount.toNumber() - o.baseAssetAmountFilled.toNumber()) / basePrecNum;
             if (remaining <= 0 || price <= 0) continue;
             const isLong = 'long' in (o.direction as any);
