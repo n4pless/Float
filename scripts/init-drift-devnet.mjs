@@ -24,7 +24,7 @@ const ROOT = path.resolve(__dirname, '..');
 const FRONTEND = path.resolve(ROOT, 'frontend');
 
 // ─── Devnet Constants ───────────────────────────────────────────────────────────
-const RPC_URL = 'https://api.devnet.solana.com';
+const RPC_URL = 'https://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966';
 const DRIFT_PROGRAM_ID = new PublicKey('EvKyHhYjCgpu335GdKZtfRsfu4VoUyjHn3kF3wgA5eXE');
 
 // Real Pyth devnet SOL/USD price feed

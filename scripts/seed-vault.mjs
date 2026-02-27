@@ -26,7 +26,7 @@ const ROOT = path.resolve(__dirname, '..');
 
 // Read config dynamically
 const _cfg = JSON.parse(fs.readFileSync(path.join(ROOT, 'drift-config.json'), 'utf-8'));
-const RPC_URL = _cfg.rpcUrl || 'https://api.devnet.solana.com';
+const RPC_URL = _cfg.rpcUrl || 'https://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966';
 const DRIFT_PROGRAM_ID = new PublicKey(_cfg.driftProgramId || 'GY689C42c4jyktzBXCeqDm1WFRRgNiXggJsAW9M2xC2L');
 
 function loadKeypair(fp) {

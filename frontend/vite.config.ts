@@ -36,7 +36,7 @@ function driftFaucetPlugin(): Plugin {
         try {
           if (req.url === '/api/airdrop-sol') {
             const { Connection, PublicKey, LAMPORTS_PER_SOL } = await import('@solana/web3.js');
-            const conn = new Connection('https://api.devnet.solana.com', 'confirmed');
+            const conn = new Connection('https://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966', 'confirmed');
             const pubkey = new PublicKey(data.publicKey);
             const amt = Math.min(data.amount || 2, 2); // devnet caps at 2 SOL
             const sig = await conn.requestAirdrop(pubkey, amt * LAMPORTS_PER_SOL);
@@ -49,7 +49,7 @@ function driftFaucetPlugin(): Plugin {
             const adminPath = resolve(__dirname, '../keys/admin-keypair.json');
             const adminRaw = JSON.parse(readFileSync(adminPath, 'utf-8'));
             const admin = Keypair.fromSecretKey(Uint8Array.from(adminRaw));
-            const conn = new Connection('https://api.devnet.solana.com', 'confirmed');
+            const conn = new Connection('https://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966', 'confirmed');
             // USDC mint — updated by init-drift-devnet.mjs
             const usdcMint = new PublicKey('4MEQENKXftyy3yaWKs7ip4ZWwfp79GV63y2teWoBnQRn');
             const recipient = new PublicKey(data.publicKey);

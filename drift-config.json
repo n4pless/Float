@@ -1,6 +1,6 @@
 {
   "network": "devnet",
-  "rpcUrl": "https://api.devnet.solana.com",
+  "rpcUrl": "https://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966",
   "driftProgramId": "EvKyHhYjCgpu335GdKZtfRsfu4VoUyjHn3kF3wgA5eXE",
   "adminPublicKey": "DXosop8DZbV7VU6ZxQitnDs7GBR4D5Nktw2uqSduNd5G",
   "usdcMint": "4MEQENKXftyy3yaWKs7ip4ZWwfp79GV63y2teWoBnQRn",

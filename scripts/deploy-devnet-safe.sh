@@ -8,7 +8,7 @@ export PATH="/root/.local/share/solana/install/active_release/bin:/root/.cargo/b
 ADMIN_KEY="/mnt/c/Users/wesle/Documents/GitHub/Drift-Clone/keys/admin-keypair.json"
 DRIFT_SO="/mnt/c/Users/wesle/Documents/GitHub/Drift-Clone/protocol-v2/target/deploy/drift.so"
 DRIFT_KP="/mnt/c/Users/wesle/Documents/GitHub/Drift-Clone/protocol-v2/target/deploy/drift-keypair.json"
-RPC="https://api.devnet.solana.com"
+RPC="https://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966"
 
 ADMIN_PUB=$(solana-keygen pubkey $ADMIN_KEY)
 PROGRAM_PUB=$(solana-keygen pubkey $DRIFT_KP)

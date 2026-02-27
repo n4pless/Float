@@ -21,7 +21,7 @@ const ROOT = path.resolve(__dirname, '..');
 
 // Read RPC from drift-config.json
 const driftConfig = JSON.parse(fs.readFileSync(path.join(ROOT, 'drift-config.json'), 'utf-8'));
-const RPC_URL = driftConfig.rpcUrl || 'https://api.devnet.solana.com';
+const RPC_URL = driftConfig.rpcUrl || 'https://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966';
 
 async function main() {
   const args = process.argv.slice(2);

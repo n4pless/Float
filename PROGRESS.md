@@ -25,7 +25,7 @@
 | Oracle Updater | `float-oracle` | ✅ Running | Pushes live Binance SOL price every ~10s (6,300+ updates). Occasional "already processed" tx errors (harmless — devnet dedup). `peg=skip-thr` means peg updates are throttled when price hasn't moved enough. |
 | Order Filler | `float-filler` | ✅ Running | Polling every 6s. 0 fillable orders (no trades placed yet). Healthy. |
 | Liquidator | `float-liquidator` | ⚠️ Running with errors | Checking 8 users every 5s, 0 liquidatable. **Error:** `Attempt to debit an account but found no record of a prior credit` — the liquidator's keeper wallet needs devnet SOL to pay rent for user account initialization. |
-| DLOB Server | `float-dlob` | ⚠️ Degraded | RPC connection timeouts to `api.devnet.solana.com:443`. Slot subscriber keeps dropping. Needs a dedicated RPC endpoint (Helius/Triton free tier). |
+| DLOB Server | `float-dlob` | ⚠️ Degraded | Switched to Helius devnet RPC (`devnet.helius-rpc.com`). Previously had timeouts to `api.devnet.solana.com:443`. Restart PM2 to pick up new endpoint. |
 | Frontend | `float-frontend` | ✅ Running | Vite dev server on port 5174 (`http://95.217.193.241:5174`). No errors. |
 | Redis | (system service) | ✅ Running | PONG confirmed. Used by DLOB server for order caching. |
 
@@ -67,7 +67,7 @@
 ### Priority 1 — Fix Current Issues
 
 - [ ] **Fund liquidator keeper wallet** — needs devnet SOL so it can initialize its user account and execute liquidations
-- [ ] **Fix DLOB RPC timeouts** — replace `api.devnet.solana.com` with a dedicated RPC (Helius, Triton, or QuickNode free tier) across all services
+- [x] **Fix DLOB RPC timeouts** — replaced `api.devnet.solana.com` with Helius devnet RPC across all services
 - [ ] **Oracle peg updates throttled** — the oracle pushes price but AMM peg isn't updating (either by design to save tx fees, or the peg-update threshold needs adjustment)
 
 ### Priority 2 — Additional Markets
@@ -89,7 +89,7 @@
 
 ### Priority 4 — Infrastructure Hardening
 
-- [ ] **Dedicated RPC** — Helius/Triton free-tier for reliable devnet access (fixes DLOB + reduces oracle errors)
+- [x] **Dedicated RPC** — Helius devnet RPC configured across all services (fixes DLOB + reduces oracle errors)
 - [ ] **Nginx reverse proxy** — front the Vite server + DLOB API behind nginx with proper headers
 - [ ] **PM2 ecosystem.config.js** — add filler + liquidator to ecosystem file (currently started separately)
 - [ ] **Monitoring/alerts** — PM2 metrics or simple uptime checks for the 5 services

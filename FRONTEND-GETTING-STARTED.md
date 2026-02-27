@@ -274,7 +274,7 @@ export const DRIFT_CONFIG = {
 **Devnet:**
 ```typescript
 const config = {
-  rpc: 'https://api.devnet.solana.com',
+  rpc: 'https://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966',
   driftProgram: '[DEVNET_PROGRAM_ID]', // Drift's devnet program
 };
 ```

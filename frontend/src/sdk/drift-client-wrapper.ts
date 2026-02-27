@@ -139,7 +139,6 @@ export class DriftTradingClient {
   private programId: PublicKey;
   private _subscribed = false;
   private _userInitialized = false;
-  private _bulkLoader: BulkAccountLoader | null = null;
 
   // Cross-user orderbook: cache of ALL user accounts on the protocol
   private _allUserAccounts: CachedUserAccount[] = [];
@@ -162,13 +161,7 @@ export class DriftTradingClient {
       // (we override to our custom devnet program via the programID config below)
       sdkInitialize({ env: 'devnet' });
 
-      // Use polling subscription for reliable updates
-      this._bulkLoader = new BulkAccountLoader(
-        this.connection as any,
-        'confirmed',
-        1000  // poll every 1s
-      );
-
+      // Use websocket subscription (Helius free tier blocks batch RPC requests)
       this.driftClient = new DriftClient({
         connection: this.connection as any,
         wallet: this.wallet as any,
@@ -183,8 +176,7 @@ export class DriftTradingClient {
           },
         ],
         accountSubscription: {
-          type: 'polling',
-          accountLoader: this._bulkLoader,
+          type: 'websocket',
         },
         txVersion: 'legacy',        // Legacy txns for broad wallet compat
         activeSubAccountId: 0,
@@ -215,9 +207,6 @@ export class DriftTradingClient {
     if (this._subscribed) {
       try { await this.driftClient.unsubscribe(); } catch { /* ignore */ }
       this._subscribed = false;
-    }
-    if (this._bulkLoader) {
-      try { (this._bulkLoader as any).stopPolling?.(); } catch { /* ignore */ }
     }
   }
 

@@ -59,7 +59,7 @@ if (( $(echo "$BALANCE" | awk '{print ($1 >= 2)}') )); then
     echo "✅ Sufficient balance for deployment!"
 else
     echo "⚠️  You may need more SOL. If airdrops fail, try:"
-    echo "   - Using devnet: solana config set --url https://api.devnet.solana.com"
+    echo "   - Using devnet: solana config set --url https://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966"
     echo "   - Faucet: https://faucet.solana.com"
 fi
 

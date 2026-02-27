@@ -23,8 +23,8 @@ module.exports = {
       max_restarts: 10,
       restart_delay: 3000,
       env: {
-        ENDPOINT: 'https://api.devnet.solana.com',
-        WS_ENDPOINT: 'wss://api.devnet.solana.com',
+        ENDPOINT: 'https://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966',
+        WS_ENDPOINT: 'wss://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966',
         ENV: 'devnet',
         DRIFT_PROGRAM_ID: 'EvKyHhYjCgpu335GdKZtfRsfu4VoUyjHn3kF3wgA5eXE',
         PORT: '6969',
@@ -85,6 +85,7 @@ module.exports = {
       restart_delay: 5000,
       env: {
         KEEPER_PRIVATE_KEY: '/home/gorcore/Drift-Clone/keys/maker-keypair.json',
+        HEALTH_CHECK_PORT: '8892',
         DRIFT_PROGRAM_ID: 'EvKyHhYjCgpu335GdKZtfRsfu4VoUyjHn3kF3wgA5eXE',
       },
     },

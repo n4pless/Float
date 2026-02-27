@@ -30,7 +30,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 
 // ─── Configuration ──────────────────────────────────────────────────────────────
-const RPC_URL = process.env.RPC_URL || 'https://api.devnet.solana.com';
+const RPC_URL = process.env.RPC_URL || 'https://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966';
 const PROGRAM_ID = new PublicKey(
   process.env.DRIFT_PROGRAM_ID || 'EvKyHhYjCgpu335GdKZtfRsfu4VoUyjHn3kF3wgA5eXE'
 );
@@ -171,13 +171,12 @@ async function main() {
   // SDK setup
   const sdk = await import('@drift-labs/sdk');
   const {
-    AdminClient, BulkAccountLoader, OracleSource,
+    AdminClient, OracleSource,
     initialize: sdkInit, PRICE_PRECISION, getPrelaunchOraclePublicKey,
   } = sdk;
 
   sdkInit({ env: 'devnet' });
 
-  const bulkLoader = new BulkAccountLoader(connection, 'confirmed', 5000);
   const prelaunchOracle = getPrelaunchOraclePublicKey(PROGRAM_ID, PERP_MARKET_INDEX);
   console.log(`[ok] Oracle PDA: ${prelaunchOracle.toString()}`);
 
@@ -186,7 +185,7 @@ async function main() {
     wallet,
     programID: PROGRAM_ID,
     env: 'devnet',
-    accountSubscription: { type: 'polling', accountLoader: bulkLoader },
+    accountSubscription: { type: 'websocket' },
     perpMarketIndexes: [0],
     spotMarketIndexes: [0],
     oracleInfos: [{ publicKey: prelaunchOracle, source: OracleSource.Prelaunch }],
@@ -210,8 +209,15 @@ async function main() {
     try {
       const { price, source } = await fetchSolPrice();
 
-      // Always crank the prelaunch oracle to keep lastUpdateSlot fresh.
-      // Without this, the oracle appears stale and AMM fills are rejected.
+      // 1. Set the real price first (also resets bid/ask TWAPs with our program fix)
+      const priceBN = new BN(Math.round(price * 1e6));
+      const maxPriceBN = sdk.PRICE_PRECISION.mul(new BN(100000));
+      const oracleTx = await adminClient.updatePrelaunchOracleParams(
+        PERP_MARKET_INDEX, priceBN, maxPriceBN,
+      );
+
+      // 2. Crank the prelaunch oracle to refresh lastUpdateSlot and recalculate confidence
+      //    Done AFTER setting price so confidence uses the freshly-reset bid/ask TWAPs
       let slotTx;
       try {
         slotTx = await adminClient.updatePrelaunchOracle(PERP_MARKET_INDEX);
@@ -219,16 +225,25 @@ async function main() {
         slotTx = 'slot-err-' + (err.message?.slice(0, 20) || 'unknown');
       }
 
-      // Always set the real price (updatePrelaunchOracle overwrites price with AMM TWAP)
-      const priceBN = new BN(Math.round(price * 1e6));
-      const maxPriceBN = sdk.PRICE_PRECISION.mul(new BN(100000));
-      const oracleTx = await adminClient.updatePrelaunchOracleParams(
-        PERP_MARKET_INDEX, priceBN, maxPriceBN,
-      );
+      // 3. Re-set price after crank (crank overwrites price with AMM TWAP)
+      try {
+        await adminClient.updatePrelaunchOracleParams(
+          PERP_MARKET_INDEX, priceBN, maxPriceBN,
+        );
+      } catch {}
 
-      // Only repeg AMM if price changed enough (saves compute)
-      let pegTx = 'skip-threshold';
-      if (lastLoggedPrice === 0 || Math.abs((price - lastLoggedPrice) / lastLoggedPrice) * 100 >= PRICE_THRESHOLD) {
+      // 4. Reset oracle TWAP to keep it aligned with mark TWAP
+      let resetTx = 'skip';
+      try {
+        resetTx = await adminClient.resetPerpMarketAmmOracleTwap(PERP_MARKET_INDEX);
+        resetTx = typeof resetTx === 'string' ? resetTx.slice(0, 8) : 'ok';
+      } catch (err) {
+        resetTx = 'skip-' + (err.message?.slice(0, 20) || 'unknown');
+      }
+
+      // 5. ALWAYS repeg AMM to adjust peg multiplier toward oracle price
+      let pegTx = 'skip';
+      {
         await sleep(2000);
         try { await adminClient.accountSubscriber.fetch(); } catch {}
         const pegMultiplier = new BN(Math.round(price * 1e6));
@@ -239,11 +254,42 @@ async function main() {
         }
       }
 
+      // 6. Call updateAMMs to trigger _update_amm → update_oracle_price_twap
+      //    This is the ONLY code path that decays lastOracleConfPct and updates spreads.
+      //    repegAmmCurve does NOT call _update_amm.
+      //    IMPORTANT: Prelaunch oracle must be passed as WRITABLE because its update()
+      //    method mutates the oracle account during price reads.
+      let ammTx = 'skip';
+      try {
+        const { Transaction: Tx, ComputeBudgetProgram: CBP } = await import('@solana/web3.js');
+        const perpMarket = adminClient.getPerpMarketAccount(PERP_MARKET_INDEX);
+        const statePublicKey = await adminClient.getStatePublicKey();
+        const ammIx = await adminClient.program.instruction.updateAmms([PERP_MARKET_INDEX], {
+          accounts: { state: statePublicKey, authority: adminClient.wallet.publicKey },
+          remainingAccounts: [
+            { pubkey: perpMarket.amm.oracle, isWritable: true, isSigner: false },
+            { pubkey: perpMarket.pubkey, isWritable: true, isSigner: false },
+          ],
+        });
+        const cuIx = CBP.setComputeUnitLimit({ units: 400000 });
+        const tx = new Tx().add(cuIx).add(ammIx);
+        tx.feePayer = adminClient.wallet.publicKey;
+        const bh = await connection.getLatestBlockhash();
+        tx.recentBlockhash = bh.blockhash;
+        const adminKp = loadKeypair(ADMIN_KEYPAIR_PATH);
+        tx.sign(adminKp);
+        const sig = await connection.sendRawTransaction(tx.serialize());
+        await connection.confirmTransaction(sig, 'confirmed');
+        ammTx = typeof sig === 'string' ? sig.slice(0, 8) : 'ok';
+      } catch (err) {
+        ammTx = 'skip-' + (err.message?.slice(0, 20) || 'unknown');
+      }
+
       updateCount++;
       lastLoggedPrice = price;
       const ts = new Date().toISOString().slice(11, 19);
       const slotStr = typeof slotTx === 'string' ? slotTx.slice(0, 8) : 'ok';
-      console.log(`[${ts}] $${price.toFixed(2)} (${source}) | slot=${slotStr}.. oracle=${oracleTx.slice(0, 8)}.. peg=${pegTx.slice(0, 8)}.. | #${updateCount}`);
+      console.log(`[${ts}] $${price.toFixed(2)} (${source}) | oracle=${oracleTx.slice(0, 8)}.. slot=${slotStr}.. reset=${resetTx}.. peg=${pegTx.slice(0, 8)}.. amm=${ammTx}.. | #${updateCount}`);
     } catch (err) {
       errorCount++;
       const ts = new Date().toISOString().slice(11, 19);
@@ -264,7 +310,6 @@ async function main() {
       console.log('\n[..] Shutting down...');
       clearInterval(interval);
       try { await adminClient.unsubscribe(); } catch {}
-      bulkLoader.stopPolling?.();
       console.log(`[ok] Finished. ${updateCount} updates, ${errorCount} errors.`);
       process.exit(0);
     };
@@ -272,7 +317,6 @@ async function main() {
     process.on('SIGTERM', shutdown);
   } else {
     await adminClient.unsubscribe();
-    bulkLoader.stopPolling?.();
     console.log('[ok] Done (one-shot mode).');
     process.exit(0);
   }
