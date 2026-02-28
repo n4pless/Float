@@ -32,6 +32,7 @@ import {
   getVammL2Generator,
   createL2Levels,
   getUserStatsAccountPublicKey,
+  getUserAccountPublicKeySync,
 } from '@drift-labs/sdk';
 import type { Order, L2Level, UserAccount, MakerInfo } from '@drift-labs/sdk';
 export type { Order } from '@drift-labs/sdk';
@@ -219,8 +220,38 @@ export class DriftTradingClient {
     if (this._allUserAccountsLoading) return;
     this._allUserAccountsLoading = true;
     try {
-      const accounts = await this.driftClient.fetchAllUserAccounts(true);
-      this._allUserAccounts = accounts as unknown as CachedUserAccount[];
+      let accounts: CachedUserAccount[];
+      try {
+        accounts = (await this.driftClient.fetchAllUserAccounts(true)) as unknown as CachedUserAccount[];
+      } catch (gpaErr) {
+        console.warn('[drift] getProgramAccounts failed, using direct account fetch fallback:', gpaErr);
+        accounts = [];
+      }
+
+      // Fallback: if gPA returned nothing (rate-limited, CORS, etc.),
+      // directly fetch known bot accounts by PDA so maker matching still works.
+      if (accounts.length === 0) {
+        console.log('[drift] gPA returned 0 accounts — fetching known bots individually');
+        const knownAuthorities = Object.keys(BOT_WALLETS).map(k => new PublicKey(k));
+        // Also include ourself
+        knownAuthorities.push(this.wallet.publicKey);
+        const fetched: CachedUserAccount[] = [];
+        for (const auth of knownAuthorities) {
+          try {
+            const userPDA = getUserAccountPublicKeySync(this.programId, auth, 0);
+            const userAcct = await (this.driftClient as any).program.account.user.fetch(userPDA);
+            if (userAcct) {
+              fetched.push({ publicKey: userPDA, account: userAcct as UserAccount });
+            }
+          } catch { /* account doesn't exist or fetch failed */ }
+        }
+        if (fetched.length > 0) {
+          console.log(`[drift] fallback fetched ${fetched.length} account(s)`);
+          accounts = fetched;
+        }
+      }
+
+      this._allUserAccounts = accounts;
 
       // ── Fill detection via position-change tracking ──
       // Each refresh, compare perp position sizes to detect fills.
@@ -1050,6 +1081,8 @@ export class DriftTradingClient {
       const isLong = 'long' in (takerDirection as any);
       const myKey = this.wallet.publicKey.toString();
       const makersMap = new Map<string, MakerInfo>();
+
+      console.log(`[drift] _getMakerInfoForOrder: scanning ${this._allUserAccounts.length} cached accounts, myKey=${myKey.slice(0,8)}..., looking for ${isLong ? 'SHORT' : 'LONG'} makers`);
 
       for (const { publicKey, account: userAccount } of this._allUserAccounts) {
         if (makersMap.size >= 5) break; // tx size limit
