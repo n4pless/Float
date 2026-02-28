@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronDown, TrendingUp, TrendingDown, Activity, DollarSign, BarChart3 } from 'lucide-react';
+import { SolanaLogo } from './icons/SolanaLogo';
 import DRIFT_CONFIG from '../config';
 import { useDriftStore } from '../stores/useDriftStore';
 
@@ -28,8 +29,8 @@ export const MarketBar: React.FC = () => {
           onBlur={() => setTimeout(() => setOpen(false), 150)}
           className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-drift-surface transition-all group"
         >
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-accent to-purple flex items-center justify-center shadow-lg shadow-accent/10">
-            <span className="text-[10px] font-bold text-white">{market.symbol[0]}</span>
+          <div className="w-7 h-7 rounded-lg bg-black/40 flex items-center justify-center shadow-lg shadow-accent/10">
+            <SolanaLogo size={18} />
           </div>
           <div className="flex flex-col items-start">
             <span className="font-bold text-[14px] text-txt-0 leading-tight">{market.symbol}</span>
@@ -48,8 +49,8 @@ export const MarketBar: React.FC = () => {
                 className={`w-full flex items-center justify-between px-3 py-2.5 text-xs hover:bg-drift-input transition-all rounded-lg mx-0 ${+idx === selectedMarket ? 'bg-drift-input' : ''}`}
               >
                 <div className="flex items-center gap-2.5">
-                  <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-accent to-purple flex items-center justify-center">
-                    <span className="text-[9px] font-bold text-white">{m.symbol[0]}</span>
+                  <div className="w-6 h-6 rounded-lg bg-black/40 flex items-center justify-center">
+                    <SolanaLogo size={16} />
                   </div>
                   <span className="text-txt-0 font-medium">{m.symbol}</span>
                 </div>

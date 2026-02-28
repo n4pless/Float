@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Layers, ClipboardList, Wallet, Clock, History, X, Wifi, Bot, Activity } from 'lucide-react';
+import { SolanaLogo } from './icons/SolanaLogo';
 import { useDriftStore, selectRecentTrades, selectBotPositions, selectAmmStats } from '../stores/useDriftStore';
 import DRIFT_CONFIG from '../config';
 
@@ -111,8 +112,8 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
                     <tr key={pos.marketIndex} className="hover:bg-drift-surface/30 transition-colors border-b border-drift-border/50">
                       <td className="px-3 py-2.5">
                         <div className="flex items-center gap-2">
-                          <div className="w-5 h-5 rounded-md bg-gradient-to-br from-accent to-purple flex items-center justify-center">
-                            <span className="text-[8px] font-bold text-white">{m?.symbol?.[0] ?? 'P'}</span>
+                          <div className="w-5 h-5 rounded-md bg-black/40 flex items-center justify-center">
+                            <SolanaLogo size={14} />
                           </div>
                           <span className="font-semibold text-txt-0">{m?.symbol ?? `PERP-${pos.marketIndex}`}</span>
                         </div>
@@ -416,7 +417,10 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
                         </div>
                       </td>
                       <td className="px-3 py-2.5">
-                        <span className="font-semibold text-txt-0">{m?.symbol ?? 'SOL-PERP'}</span>
+                        <div className="flex items-center gap-1.5">
+                          <SolanaLogo size={13} />
+                          <span className="font-semibold text-txt-0">{m?.symbol ?? 'SOL-PERP'}</span>
+                        </div>
                       </td>
                       <td className="px-3 py-2.5">
                         <span className={`px-2 py-1 rounded-md text-[10px] font-semibold ${
