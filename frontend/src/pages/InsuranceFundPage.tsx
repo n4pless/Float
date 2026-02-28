@@ -433,9 +433,9 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack }) 
           />
           <StatCard
             icon={Activity}
-            label="Revenue Pool"
-            value={fundStats ? fundStats.revenuePoolBalance : '—'}
-            sub="Pending settlement"
+            label="Total Fees"
+            value={fundStats ? `$${fundStats.totalFeesCollected.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
+            sub="Collected from trading"
             color="text-accent"
             accent="bg-accent"
             loading={!dataLoaded}

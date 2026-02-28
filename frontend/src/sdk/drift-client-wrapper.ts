@@ -169,6 +169,8 @@ export interface InsuranceFundStats {
   lastRevenueSettleTs: number;
   /** Share base exponent */
   sharesBase: number;
+  /** Total trading fees collected across perp markets (USDC) */
+  totalFeesCollected: number;
 }
 
 export interface UserIfStake {
@@ -1597,6 +1599,18 @@ export class DriftTradingClient {
         vaultBalance = Number(bal.value.uiAmountString || '0');
       } catch { /* vault may not exist yet */ }
 
+      // Sum total fees from all perp markets
+      let totalFeesCollected = 0;
+      try {
+        const numMarkets = this.driftClient.getStateAccount().numberOfMarkets;
+        for (let i = 0; i < numMarkets; i++) {
+          const perp = this.driftClient.getPerpMarketAccount(i);
+          if (perp) {
+            totalFeesCollected += perp.amm.totalFee.toNumber() / 1e6;
+          }
+        }
+      } catch { /* ignore */ }
+
       return {
         vaultBalance,
         totalShares: ifData.totalShares.toString(),
@@ -1608,6 +1622,7 @@ export class DriftTradingClient {
         revenuePoolBalance: spotMarket.revenuePool.scaledBalance.toString(),
         lastRevenueSettleTs: ifData.lastRevenueSettleTs.toNumber(),
         sharesBase: typeof ifData.sharesBase === 'number' ? ifData.sharesBase : (ifData.sharesBase as any).toNumber(),
+        totalFeesCollected,
       };
     } catch (err) {
       console.error('[drift] getInsuranceFundStats error', err);
