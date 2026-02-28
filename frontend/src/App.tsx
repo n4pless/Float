@@ -17,6 +17,7 @@ import { useTradeSubscriber } from './hooks/useTradeSubscriber';
 import { Header, type Page } from './components/Header';
 import { MarketBar } from './components/MarketBar';
 import { DocsPage } from './pages/DocsPage';
+import { FeaturesPage } from './pages/FeaturesPage';
 import { PriceChart } from './components/PriceChart';
 import { OrderBook } from './components/OrderBook';
 import { RecentTrades } from './components/RecentTrades';
@@ -81,7 +82,9 @@ function TradingApp() {
         onSwitchAccount={handleSwitchAccount}
       />
 
-      {currentPage === 'docs' ? (
+      {currentPage === 'features' ? (
+        <FeaturesPage onBack={() => setCurrentPage('trade')} />
+      ) : currentPage === 'docs' ? (
         <DocsPage onBack={() => setCurrentPage('trade')} />
       ) : currentPage === 'user' ? (
         <UserManagement
