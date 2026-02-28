@@ -8,10 +8,10 @@
 
 import { Connection, PublicKey, Keypair, Transaction, TransactionInstruction } from '@solana/web3.js';
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from '@solana/spl-token';
-import * as anchor from '@coral-xyz/anchor';
+import anchor from '@coral-xyz/anchor';
 import fs from 'fs';
 
-const { BN } = anchor;
+const BN = anchor.BN;
 
 const RPC = 'https://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966';
 const PROGRAM_ID = new PublicKey('EvKyHhYjCgpu335GdKZtfRsfu4VoUyjHn3kF3wgA5eXE');
