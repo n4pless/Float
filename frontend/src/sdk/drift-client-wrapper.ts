@@ -33,6 +33,8 @@ import {
   createL2Levels,
   getUserStatsAccountPublicKey,
   getUserAccountPublicKeySync,
+  getInsuranceFundStakeAccountPublicKey,
+  unstakeSharesToAmount,
 } from '@drift-labs/sdk';
 import type { Order, L2Level, UserAccount, MakerInfo } from '@drift-labs/sdk';
 export type { Order } from '@drift-labs/sdk';
@@ -144,6 +146,46 @@ export interface AmmStats {
   shortOI: number;
   /** Last funding rate */
   lastFundingRate: number;
+}
+
+export interface InsuranceFundStats {
+  /** USDC balance in the IF vault */
+  vaultBalance: number;
+  /** Total shares outstanding */
+  totalShares: string;
+  /** User (staker) shares outstanding */
+  userShares: string;
+  /** Unstaking cooldown period in seconds */
+  unstakingPeriod: number;
+  /** Revenue settle period in seconds */
+  revenueSettlePeriod: number;
+  /** Total IF factor (basis points out of 10000) */
+  totalFactor: number;
+  /** User IF factor (basis points out of 10000) */
+  userFactor: number;
+  /** Revenue pool scaled balance (raw BN string) */
+  revenuePoolBalance: string;
+  /** Last revenue settle timestamp */
+  lastRevenueSettleTs: number;
+  /** Share base exponent */
+  sharesBase: number;
+}
+
+export interface UserIfStake {
+  /** User's IF shares */
+  ifShares: string;
+  /** Estimated value in USDC */
+  stakeValue: number;
+  /** Pending withdraw request shares */
+  lastWithdrawRequestShares: string;
+  /** Pending withdraw request USDC value */
+  lastWithdrawRequestValue: number;
+  /** Timestamp of last withdraw request */
+  lastWithdrawRequestTs: number;
+  /** Cost basis in USDC */
+  costBasis: number;
+  /** Whether the user has an initialized IF stake account */
+  isInitialized: boolean;
 }
 
 /* Known bot wallet addresses */
@@ -1534,6 +1576,197 @@ export class DriftTradingClient {
     const txSig = await this.driftClient.cancelOrder(orderId);
     // Force-refresh ALL user accounts so the orderbook updates immediately
     this._refreshAllUserAccounts();
+    return typeof txSig === 'string' ? txSig : String(txSig);
+  }
+
+  /* ── Insurance Fund ────────────────────────────── */
+
+  /**
+   * Fetch insurance fund stats from the spot market account (market 0 = USDC).
+   */
+  async getInsuranceFundStats(marketIndex = 0): Promise<InsuranceFundStats | null> {
+    try {
+      const spotMarket = this.driftClient.getSpotMarketAccount(marketIndex);
+      if (!spotMarket) return null;
+      const ifData = spotMarket.insuranceFund;
+
+      // Get IF vault balance
+      let vaultBalance = 0;
+      try {
+        const bal = await this.connection.getTokenAccountBalance(ifData.vault);
+        vaultBalance = Number(bal.value.uiAmountString || '0');
+      } catch { /* vault may not exist yet */ }
+
+      return {
+        vaultBalance,
+        totalShares: ifData.totalShares.toString(),
+        userShares: ifData.userShares.toString(),
+        unstakingPeriod: ifData.unstakingPeriod.toNumber(),
+        revenueSettlePeriod: ifData.revenueSettlePeriod.toNumber(),
+        totalFactor: ifData.totalFactor,
+        userFactor: ifData.userFactor,
+        revenuePoolBalance: spotMarket.revenuePool.scaledBalance.toString(),
+        lastRevenueSettleTs: ifData.lastRevenueSettleTs.toNumber(),
+        sharesBase: typeof ifData.sharesBase === 'number' ? ifData.sharesBase : (ifData.sharesBase as any).toNumber(),
+      };
+    } catch (err) {
+      console.error('[drift] getInsuranceFundStats error', err);
+      return null;
+    }
+  }
+
+  /**
+   * Fetch user's IF stake info.
+   */
+  async getUserIfStake(marketIndex = 0): Promise<UserIfStake> {
+    const notInitialized: UserIfStake = {
+      ifShares: '0',
+      stakeValue: 0,
+      lastWithdrawRequestShares: '0',
+      lastWithdrawRequestValue: 0,
+      lastWithdrawRequestTs: 0,
+      costBasis: 0,
+      isInitialized: false,
+    };
+
+    try {
+      const authority = this.wallet.publicKey;
+      if (!authority) return notInitialized;
+
+      const stakeAccountPubkey = getInsuranceFundStakeAccountPublicKey(
+        this.programId,
+        authority,
+        marketIndex
+      );
+
+      // Check if account exists
+      const acctInfo = await this.connection.getAccountInfo(stakeAccountPubkey);
+      if (!acctInfo) return notInitialized;
+
+      // Decode the InsuranceFundStake account
+      const stakeAccount = (this.driftClient as any).program.account.insuranceFundStake.coder.accounts.decode(
+        'InsuranceFundStake',
+        acctInfo.data
+      );
+
+      // Calculate current value of shares
+      const spotMarket = this.driftClient.getSpotMarketAccount(marketIndex);
+      let stakeValue = 0;
+      if (spotMarket) {
+        try {
+          const ifVaultBal = await this.connection.getTokenAccountBalance(spotMarket.insuranceFund.vault);
+          const vaultBalanceBN = new BN(ifVaultBal.value.amount);
+          const valueBN = unstakeSharesToAmount(
+            stakeAccount.ifShares,
+            spotMarket.insuranceFund.totalShares,
+            vaultBalanceBN
+          );
+          stakeValue = valueBN.toNumber() / QUOTE_PRECISION.toNumber();
+        } catch { /* ignore */ }
+      }
+
+      return {
+        ifShares: stakeAccount.ifShares.toString(),
+        stakeValue,
+        lastWithdrawRequestShares: stakeAccount.lastWithdrawRequestShares.toString(),
+        lastWithdrawRequestValue: stakeAccount.lastWithdrawRequestValue.toNumber() / QUOTE_PRECISION.toNumber(),
+        lastWithdrawRequestTs: stakeAccount.lastWithdrawRequestTs.toNumber(),
+        costBasis: stakeAccount.costBasis.toNumber() / QUOTE_PRECISION.toNumber(),
+        isInitialized: true,
+      };
+    } catch (err) {
+      console.error('[drift] getUserIfStake error', err);
+      return notInitialized;
+    }
+  }
+
+  /**
+   * Initialize insurance fund stake account + add initial stake.
+   */
+  async stakeInInsuranceFund(usdcAmount: number, marketIndex = 0): Promise<string> {
+    const amountBN = new BN(usdcAmount * QUOTE_PRECISION.toNumber());
+    const spotMarket = this.driftClient.getSpotMarketAccount(marketIndex);
+    if (!spotMarket) throw new Error('Spot market not found');
+
+    const ata = getAssociatedTokenAddressSync(
+      spotMarket.mint,
+      this.wallet.publicKey!,
+      true
+    );
+
+    // Check if stake account already exists
+    const stakeAccountPubkey = getInsuranceFundStakeAccountPublicKey(
+      this.programId,
+      this.wallet.publicKey!,
+      marketIndex
+    );
+    const acctInfo = await this.connection.getAccountInfo(stakeAccountPubkey);
+    const needsInit = !acctInfo;
+
+    const txSig = await this.driftClient.addInsuranceFundStake({
+      marketIndex,
+      amount: amountBN,
+      collateralAccountPublicKey: ata,
+      initializeStakeAccount: needsInit,
+    });
+
+    return typeof txSig === 'string' ? txSig : String(txSig);
+  }
+
+  /**
+   * Request to unstake from insurance fund (starts cooldown).
+   */
+  async requestUnstakeInsuranceFund(usdcAmount: number, marketIndex = 0): Promise<string> {
+    const spotMarket = this.driftClient.getSpotMarketAccount(marketIndex);
+    if (!spotMarket) throw new Error('Spot market not found');
+
+    // Convert USDC amount to shares
+    const ifVaultBal = await this.connection.getTokenAccountBalance(spotMarket.insuranceFund.vault);
+    const vaultBalanceBN = new BN(ifVaultBal.value.amount);
+    const amountBN = new BN(usdcAmount * QUOTE_PRECISION.toNumber());
+
+    // Calculate shares for this amount
+    let sharesBN: BN;
+    if (vaultBalanceBN.gt(new BN(0))) {
+      sharesBN = amountBN.mul(spotMarket.insuranceFund.totalShares).div(vaultBalanceBN);
+    } else {
+      sharesBN = amountBN;
+    }
+
+    const txSig = await this.driftClient.requestRemoveInsuranceFundStake(
+      marketIndex,
+      sharesBN
+    );
+
+    return typeof txSig === 'string' ? txSig : String(txSig);
+  }
+
+  /**
+   * Complete unstake after cooldown period has passed.
+   */
+  async completeUnstakeInsuranceFund(marketIndex = 0): Promise<string> {
+    const spotMarket = this.driftClient.getSpotMarketAccount(marketIndex);
+    if (!spotMarket) throw new Error('Spot market not found');
+
+    const ata = getAssociatedTokenAddressSync(
+      spotMarket.mint,
+      this.wallet.publicKey!,
+      true
+    );
+
+    const txSig = await this.driftClient.removeInsuranceFundStake(
+      marketIndex,
+      ata
+    );
+
+    return typeof txSig === 'string' ? txSig : String(txSig);
+  }
+
+  /**
+   * Cancel a pending unstake request.
+   */
+  async cancelUnstakeInsuranceFund(marketIndex = 0): Promise<string> {
+    const txSig = await this.driftClient.cancelRequestRemoveInsuranceFundStake(marketIndex);
     return typeof txSig === 'string' ? txSig : String(txSig);
   }
 

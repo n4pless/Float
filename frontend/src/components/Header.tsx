@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { TrendingUp, Settings, ExternalLink, User, FileText, Droplets, Sparkles } from 'lucide-react';
+import { TrendingUp, Settings, ExternalLink, User, FileText, Droplets, Sparkles, Shield } from 'lucide-react';
 import { UserAccountSelector } from './UserAccountSelector';
 
-export type Page = 'trade' | 'user' | 'docs' | 'features';
+export type Page = 'trade' | 'user' | 'docs' | 'features' | 'insurance';
 
 interface HeaderProps {
   currentPage?: Page;
@@ -14,6 +14,7 @@ interface HeaderProps {
 
 const NAV = [
   { id: 'trade' as const, label: 'Trade', icon: TrendingUp },
+  { id: 'insurance' as const, label: 'Insurance', icon: Shield },
   { id: 'user' as const, label: 'User', icon: User },
   { id: 'docs' as const, label: 'Docs', icon: FileText },
   { id: 'features' as const, label: 'Features', icon: Sparkles },

@@ -17,6 +17,8 @@ import type {
   SpotBalance,
   BotPosition,
   AmmStats,
+  InsuranceFundStats,
+  UserIfStake,
 } from '../sdk/drift-client-wrapper';
 import type { Order } from '../sdk/drift-client-wrapper';
 
@@ -92,6 +94,8 @@ interface DriftStoreState {
   priceHistory: PriceSnapshot[];
   botPositions: BotPosition[];
   ammStats: AmmStats | null;
+  insuranceFundStats: InsuranceFundStats | null;
+  userIfStake: UserIfStake | null;
 
   /* ── Actions ── */
   setClient: (c: DriftTradingClient | null) => void;
@@ -119,6 +123,8 @@ interface DriftStoreState {
   addPriceSnapshot: (s: PriceSnapshot) => void;
   setBotPositions: (b: BotPosition[]) => void;
   setAmmStats: (a: AmmStats | null) => void;
+  setInsuranceFundStats: (s: InsuranceFundStats | null) => void;
+  setUserIfStake: (s: UserIfStake | null) => void;
 
   /* ── Computed reset ── */
   reset: () => void;
@@ -149,6 +155,8 @@ const initialState = {
   priceHistory: [],
   botPositions: [],
   ammStats: null,
+  insuranceFundStats: null,
+  userIfStake: null,
   subAccounts: [],
   activeSubAccountId: 0,
 };
@@ -197,6 +205,8 @@ export const useDriftStore = create<DriftStoreState>((set, get) => ({
     })),
   setBotPositions: (b) => set({ botPositions: b }),
   setAmmStats: (a) => set({ ammStats: a }),
+  setInsuranceFundStats: (s) => set({ insuranceFundStats: s }),
+  setUserIfStake: (s) => set({ userIfStake: s }),
 
   /* ── User management ── */
   setSubAccounts: (accounts) => set({ subAccounts: accounts }),
@@ -227,3 +237,5 @@ export const selectSubAccounts = (s: DriftStoreState) => s.subAccounts;
 export const selectActiveSubAccountId = (s: DriftStoreState) => s.activeSubAccountId;
 export const selectBotPositions = (s: DriftStoreState) => s.botPositions;
 export const selectAmmStats = (s: DriftStoreState) => s.ammStats;
+export const selectInsuranceFundStats = (s: DriftStoreState) => s.insuranceFundStats;
+export const selectUserIfStake = (s: DriftStoreState) => s.userIfStake;
