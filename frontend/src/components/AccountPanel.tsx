@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { Wallet, Shield, Coins, ArrowDownToLine, ArrowUpFromLine, Plus, CheckCircle, Circle, AlertCircle } from 'lucide-react';
@@ -26,10 +26,20 @@ export const AccountPanel: React.FC<Props> = ({ trading }) => {
   const [loading, setLoading] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [amount, setAmount] = useState('1000');
+  const [claimsUsed, setClaimsUsed] = useState(0);
 
   const pubkeyStr = client
     ? (client as any).wallet?.publicKey?.toString()
     : null;
+
+  // Fetch faucet claim status when wallet connects
+  useEffect(() => {
+    if (!pubkeyStr) return;
+    fetch(`/api/faucet-status?publicKey=${pubkeyStr}`)
+      .then(r => r.json())
+      .then(d => setClaimsUsed(d.claimsUsed ?? 0))
+      .catch(() => {});
+  }, [pubkeyStr]);
 
   /* ── Faucet handlers ── */
   const handleAirdropSol = async () => {
@@ -60,11 +70,12 @@ export const AccountPanel: React.FC<Props> = ({ trading }) => {
       const res = await fetch('/api/mint-usdc', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ publicKey: pubkeyStr, amount: 10000 }),
+        body: JSON.stringify({ publicKey: pubkeyStr }),
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
-      setMsg({ type: 'ok', text: `Received ${data.amount.toLocaleString()} USDC!` });
+      setClaimsUsed(data.claimsUsed ?? 0);
+      setMsg({ type: 'ok', text: `Received ${data.amount.toLocaleString()} USDC! (${data.claimsMax - data.claimsUsed} claims left)` });
     } catch (e: any) {
       setMsg({ type: 'err', text: `USDC: ${e.message}` });
     } finally {
@@ -221,11 +232,11 @@ export const AccountPanel: React.FC<Props> = ({ trading }) => {
             </div>
             <button
               onClick={handleMintUsdc}
-              disabled={loading === 'usdc'}
+              disabled={loading === 'usdc' || claimsUsed >= 2}
               className="flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold rounded-lg bg-accent/10 text-accent hover:bg-accent/20 disabled:opacity-50 transition-all"
             >
               <Plus className="w-3 h-3" />
-              {loading === 'usdc' ? 'Minting…' : '10K USDC'}
+              {loading === 'usdc' ? 'Minting…' : claimsUsed >= 2 ? 'Limit Reached' : `+1K USDC (${2 - claimsUsed} left)`}
             </button>
           </div>
         </Section>
@@ -382,7 +393,7 @@ export const AccountPanel: React.FC<Props> = ({ trading }) => {
                 {usdcBalance != null && usdcBalance <= 0 && (solBalance ?? 0) >= 0.01 && (
                   <p className="text-[10px] text-bear text-center flex items-center justify-center gap-1">
                     <AlertCircle className="w-3 h-3" />
-                    Click "+ 10K USDC" above to get test USDC
+                    Click "+1K USDC" above to get test USDC
                   </p>
                 )}
               </div>

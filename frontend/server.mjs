@@ -43,6 +43,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// ─── Faucet claim tracking (per-wallet) ──────────────────────────────
+const USDC_PER_CLAIM = 1000;   // 1K USDC per claim
+const MAX_CLAIMS = 2;          // max 2 claims per wallet
+const claimCounts = new Map(); // walletPubkey → number of claims
+
 // Health check
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', service: 'float-faucet', uptime: process.uptime() });
@@ -71,21 +76,36 @@ app.post('/api/airdrop-sol', async (req, res) => {
 // POST /api/mint-usdc — mint custom devnet USDC
 app.post('/api/mint-usdc', async (req, res) => {
   try {
-    const { publicKey, amount } = req.body;
+    const { publicKey } = req.body;
     if (!publicKey) return res.status(400).json({ success: false, error: 'publicKey required' });
 
-    const recipient = new PublicKey(publicKey);
-    const amt = Math.min(Number(amount) || 10000, 100000); // max 100K per mint
+    const walletKey = String(publicKey);
+    const used = claimCounts.get(walletKey) || 0;
+    if (used >= MAX_CLAIMS) {
+      return res.status(429).json({ success: false, error: `Faucet limit reached (${MAX_CLAIMS} claims max)`, claimsUsed: used, claimsMax: MAX_CLAIMS });
+    }
 
-    console.log(`[faucet] mint-usdc: ${amt} USDC → ${recipient.toBase58().slice(0, 8)}...`);
+    const recipient = new PublicKey(publicKey);
+    const amt = USDC_PER_CLAIM;
+
+    console.log(`[faucet] mint-usdc: ${amt} USDC → ${recipient.toBase58().slice(0, 8)}... (claim ${used + 1}/${MAX_CLAIMS})`);
     const ata = await getOrCreateAssociatedTokenAccount(connection, adminKeypair, USDC_MINT, recipient);
     const sig = await mintTo(connection, adminKeypair, USDC_MINT, ata.address, adminKeypair, Math.floor(amt * 1e6));
 
-    res.json({ success: true, signature: String(sig), amount: amt });
+    claimCounts.set(walletKey, used + 1);
+    res.json({ success: true, signature: String(sig), amount: amt, claimsUsed: used + 1, claimsMax: MAX_CLAIMS });
   } catch (err) {
     console.error('[faucet] mint-usdc error:', err.message);
     res.status(500).json({ success: false, error: err.message || String(err) });
   }
+});
+
+// GET /api/faucet-status — check remaining claims for a wallet
+app.get('/api/faucet-status', (req, res) => {
+  const { publicKey } = req.query;
+  if (!publicKey) return res.status(400).json({ error: 'publicKey required' });
+  const used = claimCounts.get(String(publicKey)) || 0;
+  res.json({ claimsUsed: used, claimsMax: MAX_CLAIMS, remaining: MAX_CLAIMS - used });
 });
 
 // ─── Start ───────────────────────────────────────────────────────────
