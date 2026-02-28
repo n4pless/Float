@@ -1,18 +1,18 @@
 module.exports = {
   apps: [
-    // float-validator removed — now using Solana devnet directly
+    // Frontend is now served by nginx (static dist/ build).
+    // This faucet server handles /api/* requests proxied by nginx.
     {
-      name: 'float-frontend',
-      script: 'npx',
-      args: 'vite --host 0.0.0.0 --port 5173',
+      name: 'float-faucet',
+      script: '/home/gorcore/Drift-Clone/frontend/server.mjs',
       cwd: '/home/gorcore/Drift-Clone/frontend',
-      interpreter: 'none',
       autorestart: true,
       max_restarts: 10,
       restart_delay: 3000,
       env: {
-        PATH: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
+        PORT: '3001',
         NODE_ENV: 'production',
+        RPC_URL: 'https://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966',
       },
     },
     {
