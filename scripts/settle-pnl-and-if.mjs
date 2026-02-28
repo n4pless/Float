@@ -16,9 +16,10 @@ const {
 import fs from 'fs';
 
 const RPC = 'https://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966';
+const WS = 'wss://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966';
 const PROGRAM_ID = new PublicKey('EvKyHhYjCgpu335GdKZtfRsfu4VoUyjHn3kF3wgA5eXE');
 
-const conn = new Connection(RPC, 'confirmed');
+const conn = new Connection(RPC, { commitment: 'confirmed', wsEndpoint: WS });
 const kp = Keypair.fromSecretKey(
   Uint8Array.from(JSON.parse(fs.readFileSync('./keys/admin-keypair.json', 'utf8')))
 );
@@ -29,17 +30,13 @@ async function main() {
 
   const sdkConfig = initialize({ env: 'devnet' });
 
-  // Override program ID for our fork
-  const bulkAccountLoader = new BulkAccountLoader(conn, 'confirmed', 5000);
-
   const driftClient = new DriftClient({
     connection: conn,
     wallet: wallet,
     programID: PROGRAM_ID,
     env: 'devnet',
     accountSubscription: {
-      type: 'polling',
-      accountLoader: bulkAccountLoader,
+      type: 'websocket',
     },
     activeSubAccountId: 0,
     subAccountIds: [0],
@@ -104,8 +101,8 @@ async function main() {
     console.log('No active positions to settle.');
   }
 
-  // Re-fetch spot market after settle
-  await bulkAccountLoader.load();
+  // Re-fetch spot market after settle (wait a moment for ws to update)
+  await new Promise(r => setTimeout(r, 2000));
   const spotAfter = driftClient.getSpotMarketAccount(0);
   console.log('\nRevenuePool after settlePnl:', spotAfter.revenuePool.scaledBalance.toString());
 
