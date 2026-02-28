@@ -1267,30 +1267,37 @@ export class DriftTradingClient {
       console.log(`[drift]   maker=${m.maker.toBase58()}, order price=${m.order?.price?.toString()}, dir=${JSON.stringify(m.order?.direction)}`);
     }
 
-    // Compute a generous worst-case price and explicit auction params
-    // so the on-chain program has room to cross against makers.
-    // On fresh devnet markets the TWAP-derived auction is often too tight.
+    // Compute a generous worst-case price for placeAndTake market orders.
+    //
+    // IMPORTANT: For placeAndTake, the auction start price determines the
+    // taker's price at the exact slot the instruction executes (slot 0 of
+    // the auction).  The on-chain program only matches maker orders whose
+    // effective price crosses the taker's price at that slot.
+    //
+    // The maker bot uses oracle-offset limit orders (e.g. ask = oracle + 0.16).
+    // If we set auctionStartPrice = oracle, the taker price at slot 0 is just
+    // oracle, which is BELOW the maker's asks → no maker match → entire fill
+    // goes to the AMM and the maker's position never changes.
+    //
+    // Fix: set auctionStartPrice = worstCasePrice so the taker immediately
+    // crosses with ALL maker orders at slot 0.  The on-chain program still
+    // fills at the BEST available price (makers first, then AMM), so the user
+    // gets price improvement despite the generous limit.
     const oraclePriceBN = this._getOraclePriceBN(marketIndex);
     const oracleNum = oraclePriceBN.toNumber();
     const slippageBps = 500; // 5% slippage tolerance
 
     let worstCasePrice: BN;
-    let auctionStartPrice: BN;
-    let auctionEndPrice: BN;
 
     if (direction === 'long') {
       // Buyer: willing to pay up to oracle * 1.05
       worstCasePrice = new BN(Math.ceil(oracleNum * (1 + slippageBps / 10000)));
-      auctionStartPrice = oraclePriceBN;
-      auctionEndPrice = worstCasePrice;
     } else {
       // Seller: willing to sell down to oracle * 0.95
       worstCasePrice = new BN(Math.floor(oracleNum * (1 - slippageBps / 10000)));
-      auctionStartPrice = oraclePriceBN;
-      auctionEndPrice = worstCasePrice;
     }
 
-    console.log(`[drift] oracle=${oracleNum}, worstCase=${worstCasePrice.toString()}, auctionStart=${auctionStartPrice.toString()}, auctionEnd=${auctionEndPrice.toString()}`);
+    console.log(`[drift] oracle=${oracleNum}, worstCase=${worstCasePrice.toString()}, makers=${makerInfo.length}`);
 
     try {
       const txSig = await this.driftClient.placeAndTakePerpOrder(
@@ -1300,14 +1307,16 @@ export class DriftTradingClient {
           baseAssetAmount: baseAmount,
           orderType: OrderType.MARKET,
           price: worstCasePrice,
+          // For placeAndTake: start the auction at the worst-case price so
+          // maker orders cross immediately at slot 0.  The program fills at
+          // the best available price regardless.
           auctionDuration: 10,
-          auctionStartPrice: auctionStartPrice,
-          auctionEndPrice: auctionEndPrice,
+          auctionStartPrice: worstCasePrice,
+          auctionEndPrice: worstCasePrice,
         },
         makerInfo.length > 0 ? makerInfo : undefined,
         undefined,  // referrerInfo
         undefined,  // successCondition
-        100,        // auctionDurationPercentage — fill at auction end price immediately
       );
       const txSigStr = typeof txSig === 'string' ? txSig : String(txSig);
       console.log('[drift] market order tx:', txSigStr, makerInfo.length > 0 ? `(matched ${makerInfo.length} maker(s))` : '(AMM only)');
@@ -1358,17 +1367,11 @@ export class DriftTradingClient {
       const slippageBps = 500; // 5 %
 
       let worstCasePrice: BN;
-      let auctionStartPrice: BN;
-      let auctionEndPrice: BN;
 
       if (closeDir === PositionDirection.LONG) {
         worstCasePrice = new BN(Math.ceil(oracleNum * (1 + slippageBps / 10000)));
-        auctionStartPrice = oraclePriceBN;
-        auctionEndPrice = worstCasePrice;
       } else {
         worstCasePrice = new BN(Math.floor(oracleNum * (1 - slippageBps / 10000)));
-        auctionStartPrice = oraclePriceBN;
-        auctionEndPrice = worstCasePrice;
       }
 
       console.log(`[drift] closing position: dir=${closeDir === PositionDirection.LONG ? 'LONG' : 'SHORT'}, size=${pos.baseAssetAmount.abs().toString()}, oracle=${oracleNum}, worstCase=${worstCasePrice.toString()}`);
@@ -1381,14 +1384,14 @@ export class DriftTradingClient {
           orderType: OrderType.MARKET,
           reduceOnly: true,
           price: worstCasePrice,
+          // Start auction at worst-case price so maker orders cross immediately
           auctionDuration: 10,
-          auctionStartPrice,
-          auctionEndPrice,
+          auctionStartPrice: worstCasePrice,
+          auctionEndPrice: worstCasePrice,
         },
         makerInfo.length > 0 ? makerInfo : undefined,
-        undefined,
-        undefined,
-        100,
+        undefined, // referrerInfo
+        undefined, // successCondition
       );
 
       const txSigStr = typeof txSig === 'string' ? txSig : String(txSig);
