@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Layers, ClipboardList, Wallet, Clock, History, X, Wifi, Bot } from 'lucide-react';
-import { useDriftStore, selectRecentTrades, selectBotPositions } from '../stores/useDriftStore';
+import { Layers, ClipboardList, Wallet, Clock, History, X, Wifi, Bot, Activity } from 'lucide-react';
+import { useDriftStore, selectRecentTrades, selectBotPositions, selectAmmStats } from '../stores/useDriftStore';
 import DRIFT_CONFIG from '../config';
 
 interface Props {
@@ -36,6 +36,7 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
   const oraclePrice = useDriftStore((s) => s.oraclePrice);
   const recentTrades = useDriftStore(selectRecentTrades);
   const botPositions = useDriftStore(selectBotPositions);
+  const ammStats = useDriftStore(selectAmmStats);
 
   const handleClose = async (mi: number) => {
     try {
@@ -264,8 +265,44 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
           </div>
           )
         ) : tab === 'bots' ? (
-          botPositions.length === 0 ? <Empty icon={Bot} text="No bot data — waiting for account sync" /> : (
+          botPositions.length === 0 && !ammStats ? <Empty icon={Bot} text="No bot data — waiting for account sync" /> : (
             <div className="overflow-x-auto">
+            {/* ── AMM Liquidity Stats ── */}
+            {ammStats && (
+              <div className="px-3 py-2.5 border-b border-drift-border/50 bg-drift-surface/10">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Activity className="w-3.5 h-3.5 text-purple-400" />
+                  <span className="text-[11px] font-semibold text-txt-0">AMM Liquidity Pool</span>
+                  <span className="text-[9px] text-txt-3 ml-1">SOL-PERP</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-x-4 gap-y-1.5">
+                  <AmmStat label="Net Position" value={
+                    ammStats.netDirection === 'FLAT' ? 'FLAT' :
+                    `${ammStats.netPosition.toFixed(4)} SOL`
+                  } color={ammStats.netDirection === 'LONG' ? 'text-bull' : ammStats.netDirection === 'SHORT' ? 'text-bear' : 'text-txt-3'}
+                    sub={ammStats.netDirection !== 'FLAT' ? ammStats.netDirection : undefined} />
+                  <AmmStat label="Liquidity (√k)" value={ammStats.sqrtK.toFixed(2)} />
+                  <AmmStat label="Long Spread" value={`${ammStats.longSpread.toFixed(2)} bps`}
+                    color="text-bull" />
+                  <AmmStat label="Short Spread" value={`${ammStats.shortSpread.toFixed(2)} bps`}
+                    color="text-bear" />
+                  <AmmStat label="Total Fees" value={`$${ammStats.totalFee.toFixed(2)}`}
+                    color="text-accent" />
+                  <AmmStat label="Long OI" value={`${ammStats.longOI.toFixed(4)} SOL`} color="text-bull" />
+                  <AmmStat label="Short OI" value={`${ammStats.shortOI.toFixed(4)} SOL`} color="text-bear" />
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-x-4 gap-y-1.5 mt-1.5">
+                  <AmmStat label="Peg" value={`$${ammStats.pegMultiplier.toFixed(2)}`} />
+                  <AmmStat label="Base Reserve" value={`${ammStats.baseReserve.toFixed(2)}`} />
+                  <AmmStat label="Quote Reserve" value={`${ammStats.quoteReserve.toFixed(2)}`} />
+                  <AmmStat label="Base Spread" value={`${ammStats.baseSpread.toFixed(2)} bps`} />
+                  <AmmStat label="Max Spread" value={`${ammStats.maxSpread.toFixed(2)} bps`} />
+                  <AmmStat label="Funding Rate" value={`${ammStats.lastFundingRate.toFixed(6)}`} />
+                  <AmmStat label="Net Fees" value={`$${ammStats.totalFeeMinusDistributions.toFixed(2)}`}
+                    color={ammStats.totalFeeMinusDistributions >= 0 ? 'text-bull' : 'text-bear'} />
+                </div>
+              </div>
+            )}
             <table className="w-full text-[11px] min-w-[640px]">
               <thead>
                 <tr className="bg-drift-surface/30">
@@ -444,6 +481,16 @@ const Empty: React.FC<{ icon: any; text: string }> = ({ icon: Icon, text }) => (
   <div className="flex flex-col items-center justify-center h-full gap-2">
     <Icon className="w-5 h-5 text-txt-3/50" />
     <span className="text-[11px] text-txt-3">{text}</span>
+  </div>
+);
+
+const AmmStat: React.FC<{ label: string; value: string; color?: string; sub?: string }> = ({ label, value, color, sub }) => (
+  <div className="flex flex-col">
+    <span className="text-[9px] text-txt-3 uppercase tracking-wider">{label}</span>
+    <div className="flex items-baseline gap-1">
+      <span className={`text-[11px] font-semibold tabular-nums ${color ?? 'text-txt-1'}`}>{value}</span>
+      {sub && <span className={`text-[8px] font-semibold ${color ?? 'text-txt-3'}`}>{sub}</span>}
+    </div>
   </div>
 );
 

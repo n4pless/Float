@@ -51,6 +51,10 @@ export function useReadOnlyDrift() {
     if (oraclePrice > 0) {
       updateMarketData({ oraclePrice, markPrice: oraclePrice, fundingRate, openInterest });
     }
+
+    // Sync AMM stats for Bot Monitor
+    const ammStats = client.getAmmStats(market);
+    useDriftStore.getState().setAmmStats(ammStats);
   }, []);
 
   const startSyncLoop = useCallback(() => {

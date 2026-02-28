@@ -67,6 +67,10 @@ export function useSetupDrift(
         openInterest,
       });
     }
+
+    // Sync AMM stats
+    const ammStats = client.getAmmStats(market);
+    useDriftStore.getState().setAmmStats(ammStats);
   }, []);
 
   /* ── Sync user data from SDK ── */

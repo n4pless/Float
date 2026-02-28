@@ -113,6 +113,39 @@ export interface BotPosition {
   openOrders: number;
 }
 
+export interface AmmStats {
+  /** Net base position held by the AMM (SOL units, negative = AMM is short) */
+  netPosition: number;
+  /** Direction label */
+  netDirection: 'LONG' | 'SHORT' | 'FLAT';
+  /** sqrt(k) — overall AMM liquidity depth */
+  sqrtK: number;
+  /** Base asset reserve in SOL */
+  baseReserve: number;
+  /** Quote asset reserve in USD */
+  quoteReserve: number;
+  /** Peg multiplier (≈ target price) */
+  pegMultiplier: number;
+  /** Current long spread from oracle (bps) */
+  longSpread: number;
+  /** Current short spread from oracle (bps) */
+  shortSpread: number;
+  /** Base spread (bps) */
+  baseSpread: number;
+  /** Max spread (bps) */
+  maxSpread: number;
+  /** Total fees collected (USD) */
+  totalFee: number;
+  /** Total fees minus distributions (USD) */
+  totalFeeMinusDistributions: number;
+  /** Long open interest (SOL) */
+  longOI: number;
+  /** Short open interest (SOL) */
+  shortOI: number;
+  /** Last funding rate */
+  lastFundingRate: number;
+}
+
 /* Known bot wallet addresses */
 export const BOT_WALLETS: Record<string, string> = {
   'DXosop8DZbV7VU6ZxQitnDs7GBR4D5Nktw2uqSduNd5G': 'Admin',
@@ -1159,6 +1192,60 @@ export class DriftTradingClient {
       const shortOI = market.amm.baseAssetAmountShort.abs().toNumber() / BASE_PRECISION.toNumber();
       return (longOI + shortOI) / 2; // one side of the market
     } catch { return 0; }
+  }
+
+  /**
+   * Get comprehensive AMM stats for display in Bot Monitor.
+   */
+  getAmmStats(marketIndex: number): AmmStats | null {
+    try {
+      const market = this.driftClient.getPerpMarketAccount(marketIndex);
+      if (!market) return null;
+      const amm = market.amm;
+      const basePrecNum = BASE_PRECISION.toNumber();
+      const pricePrecNum = PRICE_PRECISION.toNumber();
+      const PEG_PRECISION = 1e6;
+      const SPREAD_PRECISION = 1e6;
+
+      const netBase = amm.baseAssetAmountWithAmm.toNumber() / basePrecNum;
+      const sqrtK = amm.sqrtK.toNumber() / basePrecNum;
+      const baseReserve = amm.baseAssetReserve.toNumber() / basePrecNum;
+      const quoteReserve = amm.quoteAssetReserve.toNumber() / basePrecNum;
+      const pegMultiplier = amm.pegMultiplier.toNumber() / PEG_PRECISION;
+
+      const longSpread = (amm.longSpread ?? 0);
+      const shortSpread = (amm.shortSpread ?? 0);
+      const baseSpread = amm.baseSpread;
+      const maxSpread = amm.maxSpread;
+
+      const totalFee = amm.totalFee.toNumber() / pricePrecNum;
+      const totalFeeMinusDist = amm.totalFeeMinusDistributions.toNumber() / pricePrecNum;
+
+      const longOI = amm.baseAssetAmountLong.abs().toNumber() / basePrecNum;
+      const shortOI = amm.baseAssetAmountShort.abs().toNumber() / basePrecNum;
+      const lastFundingRate = amm.lastFundingRate.toNumber() / pricePrecNum;
+
+      return {
+        netPosition: Math.abs(netBase),
+        netDirection: netBase > 0.0001 ? 'LONG' : netBase < -0.0001 ? 'SHORT' : 'FLAT',
+        sqrtK,
+        baseReserve,
+        quoteReserve,
+        pegMultiplier,
+        longSpread: longSpread / (SPREAD_PRECISION / 10000),  // convert to bps
+        shortSpread: shortSpread / (SPREAD_PRECISION / 10000),
+        baseSpread: baseSpread / (SPREAD_PRECISION / 10000),
+        maxSpread: maxSpread / (SPREAD_PRECISION / 10000),
+        totalFee,
+        totalFeeMinusDistributions: totalFeeMinusDist,
+        longOI,
+        shortOI,
+        lastFundingRate,
+      };
+    } catch (err) {
+      console.warn('[drift] getAmmStats failed:', err);
+      return null;
+    }
   }
 
   /* ── trading ───────────────────────────────────── */
