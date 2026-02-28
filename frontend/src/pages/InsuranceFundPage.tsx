@@ -4,7 +4,6 @@ import {
   Shield,
   ShieldCheck,
   TrendingUp,
-  Clock,
   DollarSign,
   Users,
   Percent,
@@ -18,7 +17,6 @@ import {
   AlertTriangle,
   Wallet,
   Zap,
-  Lock,
   CircleDollarSign,
   Activity,
   ChevronRight,
@@ -66,13 +64,6 @@ function formatDuration(seconds: number): string {
   if (d > 0) return `${d}d ${h}h`;
   if (h > 0) return `${h}h ${m}m`;
   return `${m}m`;
-}
-
-function formatCountdown(targetTs: number): string {
-  const now = Math.floor(Date.now() / 1000);
-  const remaining = targetTs - now;
-  if (remaining <= 0) return 'Ready';
-  return formatDuration(remaining);
 }
 
 /* ─── Skeleton Loader ─── */
@@ -242,7 +233,7 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack }) 
     setSuccess(null);
     try {
       const tx = await client.requestUnstakeInsuranceFund(amount, 0);
-      setSuccess(`Unstake requested — ${formatDuration(fundStats?.unstakingPeriod || 0)} cooldown — tx: ${tx.slice(0, 12)}…`);
+      setSuccess(`Unstake requested — tx: ${tx.slice(0, 12)}…`);
       setUnstakeAmount('');
       await fetchIfData();
     } catch (err: any) {
@@ -296,11 +287,6 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack }) 
     userStake?.isInitialized &&
     userStake.lastWithdrawRequestShares !== '0' &&
     userStake.lastWithdrawRequestTs > 0;
-  const cooldownEnd =
-    hasPendingWithdraw && fundStats
-      ? userStake!.lastWithdrawRequestTs + fundStats.unstakingPeriod
-      : 0;
-  const cooldownReady = cooldownEnd > 0 && cooldownEnd <= Math.floor(Date.now() / 1000);
   const walletUsdc = usdcBalance != null ? usdcBalance : 0;
 
   /* Stake preset amounts */
@@ -382,7 +368,7 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack }) 
                 {[
                   { icon: ShieldCheck, label: 'Backstop Protection', color: 'text-bull', bg: 'bg-bull/8 border-bull/15' },
                   { icon: Zap, label: 'Earn Protocol Revenue', color: 'text-accent', bg: 'bg-accent/8 border-accent/15' },
-                  { icon: Lock, label: `${fundStats ? formatDuration(fundStats.unstakingPeriod) : '7d'} Lock`, color: 'text-yellow', bg: 'bg-yellow/8 border-yellow/15' },
+                  { icon: CheckCircle2, label: 'Instant Withdrawal', color: 'text-bull', bg: 'bg-bull/8 border-bull/15' },
                 ].map(tag => (
                   <div key={tag.label} className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-semibold ${tag.color} ${tag.bg}`}>
                     <tag.icon className="w-3 h-3" />
@@ -437,12 +423,12 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack }) 
             loading={!dataLoaded}
           />
           <StatCard
-            icon={Lock}
-            label="Lock Period"
-            value={fundStats ? formatDuration(fundStats.unstakingPeriod) : '—'}
-            sub={`Settles every ${fundStats ? formatDuration(fundStats.revenueSettlePeriod) : '—'}`}
-            color="text-yellow"
-            accent="bg-yellow"
+            icon={CheckCircle2}
+            label="Withdrawals"
+            value="Instant"
+            sub={`Revenue settles every ${fundStats ? formatDuration(fundStats.revenueSettlePeriod) : '—'}`}
+            color="text-bull"
+            accent="bg-bull"
             loading={!dataLoaded}
           />
           <StatCard
@@ -566,8 +552,7 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack }) 
                   <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-accent/70" />
                   <span>
                     USDC will be deposited from your wallet into the Insurance Fund vault.
-                    You'll receive shares proportional to the fund's total value. Unstaking requires a{' '}
-                    {fundStats ? formatDuration(fundStats.unstakingPeriod) : '7d'} cooldown.
+                    You'll receive shares proportional to the fund's total value. Withdrawals are instant — no lock-up period.
                   </span>
                 </div>
               </div>
@@ -579,67 +564,35 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack }) 
                 <div className="p-5 space-y-4">
                   {/* Pending withdraw banner */}
                   {hasPendingWithdraw && (
-                    <div className={`rounded-xl p-4 border ${
-                      cooldownReady
-                        ? 'bg-gradient-to-r from-bull/8 to-bull/3 border-bull/20'
-                        : 'bg-gradient-to-r from-yellow/8 to-yellow/3 border-yellow/20'
-                    }`}>
+                    <div className="rounded-xl p-4 border bg-gradient-to-r from-bull/8 to-bull/3 border-bull/20">
                       <div className="flex items-center gap-2 mb-2.5">
-                        {cooldownReady ? (
-                          <div className="p-1 rounded-full bg-bull/15">
-                            <CheckCircle2 className="w-4 h-4 text-bull" />
-                          </div>
-                        ) : (
-                          <div className="p-1 rounded-full bg-yellow/15">
-                            <Clock className="w-4 h-4 text-yellow animate-pulse" />
-                          </div>
-                        )}
-                        <span className={`text-sm font-bold ${cooldownReady ? 'text-bull' : 'text-yellow'}`}>
-                          {cooldownReady ? 'Unstake Ready!' : 'Cooldown In Progress'}
+                        <div className="p-1 rounded-full bg-bull/15">
+                          <CheckCircle2 className="w-4 h-4 text-bull" />
+                        </div>
+                        <span className="text-sm font-bold text-bull">
+                          Unstake Ready!
                         </span>
                       </div>
-
-                      {/* Cooldown progress bar */}
-                      {!cooldownReady && cooldownEnd > 0 && fundStats && (
-                        <div className="mb-3">
-                          <div className="h-1.5 w-full rounded-full bg-drift-surface/50 overflow-hidden">
-                            <div
-                              className="h-full rounded-full bg-gradient-to-r from-yellow to-yellow/70 transition-all duration-1000"
-                              style={{
-                                width: `${Math.max(0, Math.min(100,
-                                  ((Date.now() / 1000 - userStake!.lastWithdrawRequestTs) / fundStats.unstakingPeriod) * 100
-                                ))}%`
-                              }}
-                            />
-                          </div>
-                        </div>
-                      )}
 
                       <div className="flex items-center justify-between text-xs text-txt-1 mb-3">
                         <span className="flex items-center gap-1.5">
                           <UsdcBadge />
                           {formatUsd(userStake!.lastWithdrawRequestValue)}
                         </span>
-                        <span className="font-mono">
-                          {cooldownReady
-                            ? <span className="text-bull font-bold">Ready to withdraw</span>
-                            : formatCountdown(cooldownEnd) + ' remaining'}
-                        </span>
+                        <span className="font-mono text-bull font-bold">Ready to withdraw</span>
                       </div>
 
                       <div className="flex gap-2">
-                        {cooldownReady && (
-                          <button
-                            onClick={handleCompleteUnstake}
-                            disabled={loading}
-                            className="flex-1 py-2.5 rounded-lg bg-gradient-to-r from-bull to-bull/80 text-white text-sm font-bold
-                                       hover:shadow-lg hover:shadow-bull/20 disabled:opacity-40 transition-all
-                                       flex items-center justify-center gap-2"
-                          >
-                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                            Complete Unstake
-                          </button>
-                        )}
+                        <button
+                          onClick={handleCompleteUnstake}
+                          disabled={loading}
+                          className="flex-1 py-2.5 rounded-lg bg-gradient-to-r from-bull to-bull/80 text-white text-sm font-bold
+                                     hover:shadow-lg hover:shadow-bull/20 disabled:opacity-40 transition-all
+                                     flex items-center justify-center gap-2"
+                        >
+                          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                          Complete Withdrawal
+                        </button>
                         <button
                           onClick={handleCancelUnstake}
                           disabled={loading}
@@ -720,7 +673,7 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack }) 
                           ) : (
                             <ArrowUpFromLine className="w-4 h-4" />
                           )}
-                          {loading ? 'Processing…' : 'Request Unstake'}
+                          {loading ? 'Processing…' : 'Withdraw'}
                         </button>
                       )}
                     </>
@@ -731,9 +684,8 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack }) 
                 <div className="px-5 py-3 bg-drift-surface/20 border-t border-drift-border/50 flex items-start gap-2.5 text-[11px] text-txt-3">
                   <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-yellow/70" />
                   <span>
-                    Two-step process: first request unstake (starts{' '}
-                    {fundStats ? formatDuration(fundStats.unstakingPeriod) : '7d'} cooldown), then
-                    complete the withdrawal. You can cancel anytime during cooldown.
+                    Withdrawals are instant — no lock-up period. Request unstake, then
+                    complete the withdrawal immediately.
                   </span>
                 </div>
               </div>
@@ -857,8 +809,7 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack }) 
                   {[
                     { step: 1, title: 'Stake USDC', desc: 'Deposit from your wallet into the vault', color: 'from-accent to-accent' },
                     { step: 2, title: 'Earn Yield', desc: `${ifFeePct}% of fees → fund (${stakerSharePct}% to stakers)`, color: 'from-bull to-bull' },
-                    { step: 3, title: 'Request Unstake', desc: `Begins ${fundStats ? formatDuration(fundStats.unstakingPeriod) : '7d'} cooldown`, color: 'from-yellow to-yellow' },
-                    { step: 4, title: 'Withdraw', desc: 'Complete after cooldown ends', color: 'from-purple to-purple' },
+                    { step: 3, title: 'Withdraw Anytime', desc: 'No lock-up — instant withdrawals', color: 'from-bull to-bull' },
                   ].map(({ step, title, desc, color }) => (
                     <li key={step} className="flex gap-3 items-start">
                       <div className={`shrink-0 w-6 h-6 rounded-full bg-gradient-to-br ${color} flex items-center justify-center text-[10px] font-bold text-white shadow-sm`}>
@@ -882,8 +833,7 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack }) 
               </div>
               <p className="text-[11px] text-txt-3 leading-relaxed">
                 Stakers take on the risk of covering bankrupt accounts. If losses exceed the fund,
-                you may lose part of your deposit. The cooldown period prevents bank runs during
-                volatile markets.
+                you may lose part of your deposit. Withdrawals are available instantly.
               </p>
             </div>
           </div>
