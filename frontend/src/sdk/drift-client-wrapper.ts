@@ -1581,6 +1581,47 @@ export class DriftTradingClient {
     return typeof txSig === 'string' ? txSig : String(txSig);
   }
 
+  /**
+   * Settle PnL for the connected user on a given perp market.
+   * Converts unrealized PnL into realized (settled) balance.
+   */
+  async settlePnl(marketIndex: number): Promise<string> {
+    const user = this.driftClient.getUser();
+    const userAccountPubkey = await this.driftClient.getUserAccountPublicKey();
+    const userAccount = user.getUserAccount();
+
+    console.log(`[drift] settling PnL for market ${marketIndex}...`);
+    const txSig = await this.driftClient.settlePNL(
+      userAccountPubkey,
+      userAccount,
+      marketIndex,
+    );
+    const txStr = typeof txSig === 'string' ? txSig : String(txSig);
+    console.log('[drift] settle PnL tx:', txStr);
+    this._refreshAllUserAccounts();
+    return txStr;
+  }
+
+  /**
+   * Settle PnL for ALL perp markets where the user has positions.
+   */
+  async settleAllPnl(): Promise<string[]> {
+    const user = this.driftClient.getUser();
+    const userAccount = user.getUserAccount();
+    const results: string[] = [];
+
+    for (const perpPos of userAccount.perpPositions) {
+      if (perpPos.baseAssetAmount.isZero() && perpPos.quoteAssetAmount.isZero()) continue;
+      try {
+        const tx = await this.settlePnl(perpPos.marketIndex);
+        results.push(tx);
+      } catch (err: any) {
+        console.warn(`[drift] settle PnL market ${perpPos.marketIndex} failed:`, err?.message);
+      }
+    }
+    return results;
+  }
+
   /* ── Insurance Fund ────────────────────────────── */
 
   /**

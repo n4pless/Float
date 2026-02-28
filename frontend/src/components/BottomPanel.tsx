@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Layers, ClipboardList, Wallet, Clock, History, X, Wifi, Bot, Activity } from 'lucide-react';
+import { Layers, ClipboardList, Wallet, Clock, History, X, Wifi, Bot, Activity, ArrowDownToLine } from 'lucide-react';
 import { SolanaLogo } from './icons/SolanaLogo';
 import { useDriftStore, selectRecentTrades, selectBotPositions, selectAmmStats } from '../stores/useDriftStore';
 import DRIFT_CONFIG from '../config';
@@ -28,6 +28,10 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
   const [tab, setTab] = useState<Tab>('positions');
   const [closingIdx, setClosingIdx] = useState<number | null>(null);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
+  const [settling, setSettling] = useState(false);
+
+  // Client for settle PnL
+  const client = useDriftStore((s) => s.client);
 
   // Store subscriptions
   const positions = useDriftStore((s) => s.positions);
@@ -53,6 +57,15 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
       await trading.cancelOrder(orderId);
     } catch (e) { console.error(e); }
     finally { setCancellingId(null); }
+  };
+
+  const handleSettlePnl = async () => {
+    if (!client || settling) return;
+    try {
+      setSettling(true);
+      await client.settleAllPnl();
+    } catch (e) { console.error('[settle]', e); }
+    finally { setSettling(false); }
   };
 
   const tabs: { key: Tab; label: string; count?: number }[] = [
@@ -238,8 +251,18 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
                       <span className="font-semibold text-txt-1">Unrealized PnL</span>
                     </div>
                   </td>
-                  <td className="px-3 py-2.5 text-right tabular-nums text-txt-3" colSpan={3}>
+                  <td className="px-3 py-2.5 text-right tabular-nums text-txt-3" colSpan={2}>
                     <span className="text-[10px] text-txt-3">{positions.length} open position{positions.length > 1 ? 's' : ''}</span>
+                  </td>
+                  <td className="px-3 py-2.5 text-right">
+                    <button
+                      onClick={handleSettlePnl}
+                      disabled={settling || !client}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-semibold bg-accent/10 text-accent hover:bg-accent/20 transition-all disabled:opacity-50"
+                    >
+                      <ArrowDownToLine className="w-3 h-3" />
+                      {settling ? 'Settling…' : 'Settle'}
+                    </button>
                   </td>
                   <td className={`px-3 py-2.5 text-right tabular-nums font-medium ${
                     (accountState?.unrealizedPnl ?? 0) >= 0 ? 'text-bull' : 'text-bear'
