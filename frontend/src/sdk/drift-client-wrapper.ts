@@ -65,6 +65,7 @@ export interface UserPosition {
   entryPrice: number;
   markPrice: number;
   unrealizedPnl: number;
+  settledPnl: number;        // cumulative realised PnL settled to balance
   liquidationPrice: number;
   marginUsed: number;
 }
@@ -911,6 +912,11 @@ export class DriftTradingClient {
         const quoteNum = pos.quoteEntryAmount.toNumber() / PRICE_PRECISION.toNumber();
         const entryPrice = baseNum !== 0 ? Math.abs(quoteNum / baseNum) : 0;
         const unrealizedPnl = baseNum * (markPrice - entryPrice);
+        const settledPnl = (pos as any).settledPnl
+          ? (typeof (pos as any).settledPnl.toNumber === 'function'
+              ? (pos as any).settledPnl.toNumber() / PRICE_PRECISION.toNumber()
+              : Number((pos as any).settledPnl) / PRICE_PRECISION.toNumber())
+          : 0;
 
         // Liquidation price via the SDK's User.liquidationPrice() method
         let liquidationPrice = 0;
@@ -945,6 +951,7 @@ export class DriftTradingClient {
           entryPrice,
           markPrice,
           unrealizedPnl,
+          settledPnl,
           liquidationPrice,
           marginUsed: Math.abs(quoteNum),
         });

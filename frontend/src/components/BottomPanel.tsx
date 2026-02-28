@@ -112,7 +112,7 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
             <table className="w-full text-[11px] min-w-[640px]">
               <thead>
                 <tr className="bg-drift-surface/30">
-                  {['Market','Side','Size','Entry Price','Mark Price','P&L','Liq. Price',''].map(h => (
+                  {['Market','Side','Size','Entry Price','Mark Price','Total P&L','Liq. Price',''].map(h => (
                     <th key={h} className={`px-3 py-2 font-medium text-txt-3 ${h === '' ? 'text-center' : h === 'Market' || h === 'Side' ? 'text-left' : 'text-right'}`}>{h}</th>
                   ))}
                 </tr>
@@ -141,9 +141,21 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
                       <td className="px-3 py-2.5 text-right tabular-nums text-txt-1">${pos.entryPrice.toFixed(2)}</td>
                       <td className="px-3 py-2.5 text-right tabular-nums text-txt-1">${pos.markPrice.toFixed(2)}</td>
                       <td className="px-3 py-2.5 text-right tabular-nums">
-                        <span className={`font-semibold ${pos.unrealizedPnl >= 0 ? 'text-bull' : 'text-bear'}`}>
-                          {pos.unrealizedPnl >= 0 ? '+' : ''}{pos.unrealizedPnl.toFixed(2)}
-                        </span>
+                        {(() => {
+                          const totalPnl = pos.unrealizedPnl + (pos.settledPnl ?? 0);
+                          return (
+                            <div>
+                              <span className={`font-semibold ${totalPnl >= 0 ? 'text-bull' : 'text-bear'}`}>
+                                {totalPnl >= 0 ? '+' : ''}{totalPnl.toFixed(2)}
+                              </span>
+                              {pos.settledPnl !== 0 && (
+                                <div className="text-[9px] text-txt-3 mt-0.5">
+                                  {pos.unrealizedPnl >= 0 ? '+' : ''}{pos.unrealizedPnl.toFixed(2)} unsettled
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td className="px-3 py-2.5 text-right tabular-nums text-txt-2">
                         {pos.liquidationPrice > 0 ? `$${pos.liquidationPrice.toFixed(2)}` : '—'}
