@@ -3,14 +3,16 @@
 // This script properly constructs all remaining accounts via DriftClient
 
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
-import { Wallet, BN } from '@coral-xyz/anchor';
-import {
+import anchor from '@coral-xyz/anchor';
+const { Wallet, BN } = anchor;
+import driftSdk from '@drift-labs/sdk';
+const {
   DriftClient,
   initialize,
   getMarketsAndOraclesForSubscription,
   BulkAccountLoader,
   QUOTE_PRECISION,
-} from '@drift-labs/sdk';
+} = driftSdk;
 import fs from 'fs';
 
 const RPC = 'https://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966';
