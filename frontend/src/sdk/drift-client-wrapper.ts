@@ -455,12 +455,17 @@ export class DriftTradingClient {
 
         hasPosition = true;
         const baseNum = (typeof baseAmt.toNumber === 'function' ? baseAmt.toNumber() : Number(baseAmt)) / BASE_PRECISION.toNumber();
-        const quoteNum = pos.quoteEntryAmount
+        // Use quoteAssetAmount (includes fees + funding) for accurate PnL
+        const quoteAssetAmt = pos.quoteAssetAmount ?? pos.quoteEntryAmount;
+        const quoteAssetNum = quoteAssetAmt
+          ? (typeof quoteAssetAmt.toNumber === 'function' ? quoteAssetAmt.toNumber() : Number(quoteAssetAmt)) / PRICE_PRECISION.toNumber()
+          : 0;
+        const quoteEntryNum = pos.quoteEntryAmount
           ? (typeof pos.quoteEntryAmount.toNumber === 'function' ? pos.quoteEntryAmount.toNumber() : Number(pos.quoteEntryAmount)) / PRICE_PRECISION.toNumber()
           : 0;
-        const entryPrice = baseNum !== 0 ? Math.abs(quoteNum / baseNum) : 0;
+        const entryPrice = baseNum !== 0 ? Math.abs(quoteEntryNum / baseNum) : 0;
         const markPrice = oraclePrice > 0 ? oraclePrice : 0;
-        const unrealizedPnl = baseNum * (markPrice - entryPrice);
+        const unrealizedPnl = baseNum * markPrice + quoteAssetNum;
 
         // Count open orders for this user
         const orders = (ua.account as any).orders ?? [];
@@ -909,9 +914,22 @@ export class DriftTradingClient {
         const markPrice = oracle ? this.bnToNum(oracle.price) : 0;
 
         const baseNum = baseAmt.toNumber() / BASE_PRECISION.toNumber();
-        const quoteNum = pos.quoteEntryAmount.toNumber() / PRICE_PRECISION.toNumber();
-        const entryPrice = baseNum !== 0 ? Math.abs(quoteNum / baseNum) : 0;
-        const unrealizedPnl = baseNum * (markPrice - entryPrice);
+        const quoteEntryNum = pos.quoteEntryAmount.toNumber() / PRICE_PRECISION.toNumber();
+        // quoteAssetAmount includes funding payments and fee adjustments — most accurate PnL
+        const quoteAssetNum = pos.quoteAssetAmount
+          ? (typeof pos.quoteAssetAmount.toNumber === 'function'
+              ? pos.quoteAssetAmount.toNumber() / PRICE_PRECISION.toNumber()
+              : Number(pos.quoteAssetAmount) / PRICE_PRECISION.toNumber())
+          : quoteEntryNum;
+        // quoteBreakEvenAmount includes fees but not funding — used for entry price display
+        const quoteBreakEvenNum = (pos as any).quoteBreakEvenAmount
+          ? (typeof (pos as any).quoteBreakEvenAmount.toNumber === 'function'
+              ? (pos as any).quoteBreakEvenAmount.toNumber() / PRICE_PRECISION.toNumber()
+              : Number((pos as any).quoteBreakEvenAmount) / PRICE_PRECISION.toNumber())
+          : quoteEntryNum;
+        const entryPrice = baseNum !== 0 ? Math.abs(quoteBreakEvenNum / baseNum) : 0;
+        // PnL = base * mark + quoteAssetAmount (includes fees + funding)
+        const unrealizedPnl = baseNum * markPrice + quoteAssetNum;
         const settledPnl = (pos as any).settledPnl
           ? (typeof (pos as any).settledPnl.toNumber === 'function'
               ? (pos as any).settledPnl.toNumber() / PRICE_PRECISION.toNumber()
@@ -945,7 +963,7 @@ export class DriftTradingClient {
         positions.push({
           marketIndex: pos.marketIndex,
           baseAssetAmount: Math.abs(baseNum),
-          quoteEntryAmount: Math.abs(quoteNum),
+          quoteEntryAmount: Math.abs(quoteEntryNum),
           direction: baseAmt.gt(new BN(0)) ? 'LONG' : 'SHORT',
           leverage,
           entryPrice,
@@ -953,7 +971,7 @@ export class DriftTradingClient {
           unrealizedPnl,
           settledPnl,
           liquidationPrice,
-          marginUsed: Math.abs(quoteNum),
+          marginUsed: Math.abs(quoteEntryNum),
         });
       }
       return positions;
