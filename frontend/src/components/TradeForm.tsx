@@ -82,6 +82,14 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
 
   const handleSubmit = async () => {
     if (!client || !sizeNum) return;
+
+    // Pre-trade margin check: notional / leverage must not exceed free collateral
+    const requiredMargin = notional / leverage;
+    if (collateralUsd > 0 && requiredMargin > collateralUsd * 1.01) {
+      setMsg({ type: 'err', text: `Insufficient margin: need $${requiredMargin.toFixed(2)} but only $${collateralUsd.toFixed(2)} available. Reduce size or add collateral.` });
+      return;
+    }
+
     setLoading(true);
     setMsg(null);
     try {
@@ -99,7 +107,17 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
       setSize('');
       setPct(0);
     } catch (e: any) {
-      setMsg({ type: 'err', text: e.message || 'Order failed' });
+      const raw = e.message || 'Order failed';
+      // Parse common on-chain errors into user-friendly messages
+      let text = raw;
+      if (raw.includes('Access violation in stack frame')) {
+        text = 'Order too large for current margin. Reduce size or add collateral.';
+      } else if (raw.includes('Simulation failed') || raw.includes('simulation failed')) {
+        text = 'Transaction simulation failed — likely insufficient margin or collateral.';
+      } else if (raw.includes('Insufficient collateral') || raw.includes('InsufficientCollateral')) {
+        text = 'Insufficient collateral. Deposit more USDC to trade this size.';
+      }
+      setMsg({ type: 'err', text });
     } finally {
       setLoading(false);
     }
