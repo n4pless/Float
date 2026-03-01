@@ -96,6 +96,7 @@ export interface OrderbookLevel {
   size: number;     // base units
   sizeUsd: number;
   total: number;    // cumulative USD
+  isMine?: boolean; // true if user has an order at this price
 }
 
 export interface L2Orderbook {
@@ -225,6 +226,9 @@ export class DriftTradingClient {
   private _prevPositions: Map<string, string> = new Map();
   private _allUserAccountsRefreshTimer: ReturnType<typeof setInterval> | null = null;
   private _allUserAccountsLoading = false;
+
+  // Optimistic pending orders — shown immediately in orderbook before on-chain confirmation
+  private _pendingOrders: { marketIndex: number; direction: 'long' | 'short'; price: number; sizeBase: number; placedAt: number }[] = [];
 
   constructor(config: TradingConfig) {
     this.connection = new Connection(config.rpcUrl, 'confirmed');
@@ -1111,9 +1115,20 @@ export class DriftTradingClient {
         return 0; // can't resolve
       };
 
-      // Iterate over ALL cached user accounts (not just the connected wallet)
-      for (const { account: userAccount } of this._allUserAccounts) {
+      // Compute the connected user's account PDA so we can avoid double-counting
+      let myUserPDA: string | null = null;
+      if (this._userInitialized) {
+        try {
+          myUserPDA = getUserAccountPublicKeySync(this.programId, this.wallet.publicKey, 0).toBase58();
+        } catch { /* ignore */ }
+      }
+
+      // Iterate over ALL cached user accounts — skip the connected user
+      // (their orders are added from getOpenOrders() below for freshness)
+      for (const { publicKey, account: userAccount } of this._allUserAccounts) {
         if (!userAccount || !userAccount.orders) continue;
+        // Skip connected user — we use getOpenOrders() for them (more up-to-date)
+        if (myUserPDA && publicKey.toBase58() === myUserPDA) continue;
         for (const order of userAccount.orders) {
           // Only include OPEN orders for the right market
           if (!order || !('open' in (order.status as any))) continue;
@@ -1133,39 +1148,61 @@ export class DriftTradingClient {
         }
       }
 
-      // Also include current user's open orders (in case fetchAll hasn't refreshed yet)
+      // Always include current user's open orders (freshest via websocket subscription)
+      const myBidPrices = new Set<number>();
+      const myAskPrices = new Set<number>();
       if (this._userInitialized) {
         try {
           const myOrders = this.getOpenOrders().filter(
             o => o.marketIndex === marketIndex && 'perp' in (o.marketType as any)
           );
           for (const o of myOrders) {
+            if (!('limit' in (o.orderType as any))) continue;
             const price = resolvePrice(o);
             const remaining = (o.baseAssetAmount.toNumber() - o.baseAssetAmountFilled.toNumber()) / basePrecNum;
             if (remaining <= 0 || price <= 0) continue;
             const isLong = 'long' in (o.direction as any);
             const map = isLong ? bidMap : askMap;
-            // Don't double-count — only add if not already from fetchAll
-            if (!map.has(price)) {
-              map.set(price, remaining);
-            }
+            map.set(price, (map.get(price) || 0) + remaining);
+            (isLong ? myBidPrices : myAskPrices).add(price);
           }
         } catch { /* ignore */ }
       }
 
-      const buildLevels = (map: Map<number, number>, ascending: boolean): OrderbookLevel[] => {
+      // Include optimistic pending orders (not yet confirmed on-chain)
+      const now = Date.now();
+      this._pendingOrders = this._pendingOrders.filter(po => now - po.placedAt < 30_000);
+      for (const po of this._pendingOrders) {
+        if (po.marketIndex !== marketIndex) continue;
+        // Skip if already confirmed in getOpenOrders
+        const alreadyOnChain = this._userInitialized && (() => {
+          try {
+            return this.getOpenOrders().some(o =>
+              o.marketIndex === marketIndex &&
+              'limit' in (o.orderType as any) &&
+              Math.abs(resolvePrice(o) - po.price) < 0.01
+            );
+          } catch { return false; }
+        })();
+        if (alreadyOnChain) continue;
+        const map = po.direction === 'long' ? bidMap : askMap;
+        map.set(po.price, (map.get(po.price) || 0) + po.sizeBase);
+        (po.direction === 'long' ? myBidPrices : myAskPrices).add(po.price);
+      }
+
+      const buildLevels = (map: Map<number, number>, ascending: boolean, myPrices: Set<number>): OrderbookLevel[] => {
         const entries = [...map.entries()].sort((a, b) => ascending ? a[0] - b[0] : b[0] - a[0]);
         let cumTotal = 0;
         return entries.map(([price, size]) => {
           const sizeUsd = price * size;
           cumTotal += sizeUsd;
-          return { price, size, sizeUsd, total: cumTotal };
+          return { price, size, sizeUsd, total: cumTotal, isMine: myPrices.has(price) };
         });
       };
 
       return {
-        asks: buildLevels(askMap, true),
-        bids: buildLevels(bidMap, false),
+        asks: buildLevels(askMap, true, myAskPrices),
+        bids: buildLevels(bidMap, false, myBidPrices),
         slot: 0,
       };
     } catch (err) {
@@ -1441,6 +1478,15 @@ export class DriftTradingClient {
       }
 
       // No crossing makers (or placeAndTake failed) — just place a resting limit order
+      // Add optimistic entry so it shows in orderbook immediately
+      this._pendingOrders.push({
+        marketIndex,
+        direction,
+        price: limitPrice!,
+        sizeBase,
+        placedAt: Date.now(),
+      });
+
       const txSig = await this.driftClient.placePerpOrder({
         marketIndex,
         direction: dir,
@@ -1448,10 +1494,11 @@ export class DriftTradingClient {
         orderType: OrderType.LIMIT,
         price: priceBN,
       });
-      console.log('[drift] limit order placed (resting):', txSig);
-      // Force-refresh so the new order shows in orderbook immediately
-      this._refreshAllUserAccounts();
-      return typeof txSig === 'string' ? txSig : String(txSig);
+      const txSigStr = typeof txSig === 'string' ? txSig : String(txSig);
+      console.log('[drift] limit order placed (resting):', txSigStr);
+      // Force-refresh so the on-chain order replaces the optimistic entry
+      await this._refreshAllUserAccounts();
+      return txSigStr;
     }
 
     // ── Market order via placeAndTakePerpOrder ──────────────────

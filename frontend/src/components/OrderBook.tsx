@@ -34,7 +34,7 @@ export const OrderBook: React.FC<Props> = ({ onPriceClick }) => {
     };
 
     poll();
-    intervalRef.current = setInterval(poll, 2000);
+    intervalRef.current = setInterval(poll, 1000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [client, isSubscribed, selectedMarket]);
 
@@ -152,14 +152,17 @@ const Row: React.FC<{
 }> = ({ level, maxTotal, dec, fmt, fmtSize, side, onClick }) => {
   const color = side === 'ask' ? 'text-bear' : 'text-bull';
   const barColor = side === 'ask' ? 'rgba(248,73,96,.08)' : 'rgba(49,208,170,.08)';
+  const mineHighlight = level.isMine ? 'ring-1 ring-inset ring-accent/30 bg-accent/5' : '';
   return (
     <div
-      className="grid grid-cols-3 px-3 py-px text-[11px] relative cursor-pointer hover:bg-drift-surface/50 transition-colors"
+      className={`grid grid-cols-3 px-3 py-px text-[11px] relative cursor-pointer hover:bg-drift-surface/50 transition-colors ${mineHighlight}`}
       style={{ height: 22 }}
       onClick={() => onClick?.(level.price)}
+      title={level.isMine ? 'Your order' : undefined}
     >
       <div className="absolute inset-y-0 right-0" style={{ width: `${(level.total / maxTotal) * 100}%`, background: barColor }} />
       <span className={`relative z-10 tabular-nums font-medium ${color}`}>
+        {level.isMine && <span className="inline-block w-1.5 h-1.5 rounded-full bg-accent mr-1 align-middle" />}
         {level.price.toFixed(dec)}
       </span>
       <span className="relative z-10 text-right tabular-nums text-txt-1">{fmtSize(level.size)}</span>
