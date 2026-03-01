@@ -92,7 +92,8 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
         orderType: ordType,
         limitPrice: ordType === 'limit' ? parseFloat(price) : undefined,
       });
-      setMsg({ type: 'ok', text: 'Order placed!' });
+      const feeStr = fee > 0 ? ` · Fee: $${fee.toFixed(4)}` : '';
+      setMsg({ type: 'ok', text: `${ordType === 'limit' ? 'Limit' : 'Market'} ${side.toUpperCase()} filled · $${notional.toFixed(2)} notional${feeStr}` });
       setSize('');
       setPct(0);
     } catch (e: any) {

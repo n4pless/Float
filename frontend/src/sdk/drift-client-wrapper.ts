@@ -367,6 +367,8 @@ export class DriftTradingClient {
                   Math.abs(t.size - sizeUsd) < sizeUsd * 0.1
                 );
                 if (!isDuplicate) {
+                  const TAKER_FEE_RATE = 0.0005;
+                  const takerFee = sizeUsd * TAKER_FEE_RATE;
                   useDriftStore.getState().addRecentTrade({
                     price: oraclePrice,
                     size: sizeUsd,
@@ -374,8 +376,9 @@ export class DriftTradingClient {
                     ts: Date.now(),
                     taker: key,
                     marketIndex: 0,
+                    takerFee,
                   });
-                  console.log(`[drift] detected fill via position change: ${side} $${sizeUsd.toFixed(2)} by ${key.slice(0,8)}...`);
+                  console.log(`[drift] detected fill via position change: ${side} $${sizeUsd.toFixed(2)} (fee: $${takerFee.toFixed(4)}) by ${key.slice(0,8)}...`);
                 }
               }
             } catch { /* ignore parse errors */ }
@@ -1336,6 +1339,10 @@ export class DriftTradingClient {
       const side: 'buy' | 'sell' =
         direction === 'long' || direction === 'buy' ? 'buy' : 'sell';
 
+      // Estimate taker fee from notional value (0.05% default)
+      const TAKER_FEE_RATE = 0.0005;
+      const takerFee = sizeUsd * TAKER_FEE_RATE;
+
       useDriftStore.getState().addRecentTrade({
         price,
         size: sizeUsd,
@@ -1343,8 +1350,9 @@ export class DriftTradingClient {
         ts: Date.now(),
         txSig,
         marketIndex,
+        takerFee,
       });
-      console.log(`[drift] emitted recent trade: ${side} ${sizeBase.toFixed(4)} @ $${price.toFixed(2)}`);
+      console.log(`[drift] emitted recent trade: ${side} ${sizeBase.toFixed(4)} @ $${price.toFixed(2)} (fee: $${takerFee.toFixed(4)})`);
     } catch (err) {
       console.debug('[drift] _emitRecentTrade error:', err);
     }

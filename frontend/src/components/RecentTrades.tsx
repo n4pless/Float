@@ -22,9 +22,10 @@ export const RecentTrades: React.FC = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-3 px-3 py-1.5 text-[10px] text-txt-3 font-medium bg-drift-surface/30">
+      <div className="grid grid-cols-4 px-3 py-1.5 text-[10px] text-txt-3 font-medium bg-drift-surface/30">
         <span>Price</span>
         <span className="text-right">Size</span>
+        <span className="text-right">Fee</span>
         <span className="text-right">Time</span>
       </div>
 
@@ -52,7 +53,7 @@ export const RecentTrades: React.FC = () => {
             return (
               <div
                 key={`${t.ts}-${i}`}
-                className="grid grid-cols-3 px-3 py-px text-[11px] hover:bg-drift-surface/50 transition-colors cursor-default"
+                className="grid grid-cols-4 px-3 py-px text-[11px] hover:bg-drift-surface/50 transition-colors cursor-default"
                 style={{ height: 20 }}
               >
                 <span className={`tabular-nums font-medium ${t.side === 'buy' ? 'text-bull' : 'text-bear'}`}>
@@ -60,6 +61,9 @@ export const RecentTrades: React.FC = () => {
                 </span>
                 <span className="text-right tabular-nums text-txt-1">
                   ${t.size.toFixed(0)}
+                </span>
+                <span className="text-right tabular-nums text-txt-3">
+                  {(t.takerFee ?? 0) > 0 ? `$${(t.takerFee!).toFixed(2)}` : '—'}
                 </span>
                 <span className="text-right tabular-nums text-txt-3">{time}</span>
               </div>
