@@ -184,33 +184,40 @@ function TradingApp() {
             </div>
 
             {/* Right: Trade / Account tabs */}
-            <div className="w-[300px] xl:w-[320px] shrink-0 flex flex-col bg-drift-bg">
+            <div className="w-[300px] xl:w-[320px] shrink-0 flex flex-col bg-drift-bg border-l border-drift-border/30">
               {/* Tab bar */}
-              <div className="flex shrink-0 border-b border-drift-border">
+              <div className="flex shrink-0 bg-drift-surface/20">
                 <button
                   onClick={() => setSideTab('trade')}
-                  className={`flex-1 py-2.5 text-xs font-semibold transition-all ${
+                  className={`flex-1 py-2.5 text-[11px] font-bold tracking-wide transition-all relative ${
                     sideTab === 'trade'
-                      ? 'text-txt-0 border-b-2 border-accent bg-accent/5'
-                      : 'text-txt-3 hover:text-txt-1 hover:bg-drift-surface/50'
+                      ? 'text-txt-0'
+                      : 'text-txt-3 hover:text-txt-2 hover:bg-drift-surface/30'
                   }`}
                 >
                   Trade
+                  {sideTab === 'trade' && (
+                    <div className="absolute bottom-0 left-4 right-4 h-[2px] rounded-full bg-accent" />
+                  )}
                 </button>
                 <button
                   onClick={() => setSideTab('account')}
-                  className={`flex-1 py-2.5 text-xs font-semibold transition-all relative ${
+                  className={`flex-1 py-2.5 text-[11px] font-bold tracking-wide transition-all relative ${
                     sideTab === 'account'
-                      ? 'text-txt-0 border-b-2 border-accent bg-accent/5'
-                      : 'text-txt-3 hover:text-txt-1 hover:bg-drift-surface/50'
+                      ? 'text-txt-0'
+                      : 'text-txt-3 hover:text-txt-2 hover:bg-drift-surface/30'
                   }`}
                 >
                   Account
+                  {sideTab === 'account' && (
+                    <div className="absolute bottom-0 left-4 right-4 h-[2px] rounded-full bg-accent" />
+                  )}
                   {!isUserInitialized && client && (
                     <span className="absolute top-1.5 right-3 w-2 h-2 rounded-full bg-bear animate-pulse" />
                   )}
                 </button>
               </div>
+              <div className="h-px bg-drift-border/40" />
 
               {/* Tab content */}
               <div className="flex-1 min-h-0">

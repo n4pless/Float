@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { AlertCircle, Shield, Zap, ChevronDown, TrendingUp, TrendingDown } from 'lucide-react';
+import { AlertCircle, Shield, Zap, TrendingUp, TrendingDown, Info, ChevronDown } from 'lucide-react';
 import { useDriftStore } from '../stores/useDriftStore';
 import DRIFT_CONFIG from '../config';
 
@@ -18,13 +18,13 @@ interface Props {
 type Side = 'long' | 'short';
 type OrdType = 'market' | 'limit';
 
-const PCT = [0, 25, 50, 75, 100];
+const PCT = [25, 50, 75, 100];
 const SLIP = [0.1, 0.5, 1.0];
+const LEV_PRESETS = [1, 2, 3, 5, 10];
 
 export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitchToAccount }) => {
   const { connected } = useWallet();
 
-  // Store subscriptions
   const client = useDriftStore((s) => s.client);
   const isUserInitialized = useDriftStore((s) => s.isUserInitialized);
   const accountState = useDriftStore((s) => s.accountState);
@@ -43,11 +43,11 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
   const [showTpSl, setShowTpSl] = useState(false);
   const [tp, setTp] = useState('');
   const [sl, setSl] = useState('');
-  const [slippage, setSlippage] = useState(0.1);
+  const [slippage, setSlippage] = useState(0.5);
+  const [showSlippage, setShowSlippage] = useState(false);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
-  // Auto-fill limit price when OrderBook price is clicked
   React.useEffect(() => {
     if (initialLimitPrice != null) {
       setOrdType('limit');
@@ -69,11 +69,12 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
   const collateralUsd = accountState?.freeCollateral ?? 0;
   const maxSize = collateralUsd > 0 ? (collateralUsd * leverage) / markPrice : 0;
 
+  const sideColor = side === 'long' ? 'bull' : 'bear';
+
   const handlePct = (p: number) => {
     setPct(p);
     if (maxSize > 0 && p > 0) {
-      const val = (maxSize * p) / 100;
-      setSize(val.toFixed(4));
+      setSize(((maxSize * p) / 100).toFixed(4));
     } else {
       setSize('');
     }
@@ -103,22 +104,20 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
     }
   };
 
-  /* ════════════════════════════════════════════════
-   * ONBOARDING: show setup prompt if no Drift account
-   * ════════════════════════════════════════════════ */
+  /* ── Onboarding: No account ── */
   if (connected && client && !isUserInitialized) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-        <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-4">
-          <AlertCircle className="w-6 h-6 text-accent" />
+        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-accent/20 to-purple/20 flex items-center justify-center mb-4 ring-1 ring-accent/10">
+          <AlertCircle className="w-7 h-7 text-accent" />
         </div>
-        <h3 className="text-sm font-bold text-txt-0 mb-2">Account Setup Required</h3>
-        <p className="text-[11px] text-txt-3 mb-5 leading-relaxed max-w-[200px]">
+        <h3 className="text-sm font-bold text-txt-0 mb-1.5">Account Setup Required</h3>
+        <p className="text-[11px] text-txt-3 mb-5 leading-relaxed max-w-[220px]">
           Create a Float trading account with USDC collateral to start trading.
         </p>
         {onSwitchToAccount && (
           <button onClick={onSwitchToAccount}
-            className="px-5 py-2.5 rounded-lg text-xs font-bold bg-gradient-to-r from-accent to-purple text-white transition-all hover:opacity-90 shadow-lg shadow-accent/20">
+            className="px-6 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-accent to-purple text-white transition-all hover:scale-[1.02] hover:shadow-xl shadow-lg shadow-accent/25 active:scale-[0.98]">
             Set Up Account
           </button>
         )}
@@ -126,22 +125,20 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
     );
   }
 
-  /* ════════════════════════════════════════════════
-   * ZERO COLLATERAL: account exists but nothing deposited
-   * ════════════════════════════════════════════════ */
+  /* ── Zero collateral ── */
   if (connected && client && isUserInitialized && (accountState?.totalCollateral ?? 0) === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-        <div className="w-12 h-12 rounded-xl bg-bull/10 flex items-center justify-center mb-4">
-          <Shield className="w-6 h-6 text-bull" />
+        <div className="w-14 h-14 rounded-2xl bg-bull/10 flex items-center justify-center mb-4 ring-1 ring-bull/10">
+          <Shield className="w-7 h-7 text-bull" />
         </div>
-        <h3 className="text-sm font-bold text-txt-0 mb-2">Deposit Collateral</h3>
-        <p className="text-[11px] text-txt-3 mb-5 leading-relaxed max-w-[200px]">
-          Deposit USDC collateral on the Account tab to start trading.
+        <h3 className="text-sm font-bold text-txt-0 mb-1.5">Deposit Collateral</h3>
+        <p className="text-[11px] text-txt-3 mb-5 leading-relaxed max-w-[220px]">
+          Deposit USDC collateral to start trading perpetual futures.
         </p>
         {onSwitchToAccount && (
           <button onClick={onSwitchToAccount}
-            className="px-5 py-2.5 rounded-lg text-xs font-bold bg-bull text-white transition-all hover:opacity-90 shadow-lg shadow-bull/20">
+            className="px-6 py-2.5 rounded-xl text-xs font-bold bg-bull text-white transition-all hover:scale-[1.02] hover:shadow-xl shadow-lg shadow-bull/25 active:scale-[0.98]">
             Deposit USDC
           </button>
         )}
@@ -150,36 +147,34 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
   }
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto">
-      {/* Side toggle */}
-      <div className="flex gap-0 shrink-0">
-        <button onClick={() => setSide('long')}
-          className={`flex-1 py-3 text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-            side === 'long'
-              ? 'bg-bull/10 text-bull border-b-2 border-bull'
-              : 'text-txt-3 hover:text-txt-1 hover:bg-drift-surface/30 border-b-2 border-transparent'
-          }`}>
-          <TrendingUp className="w-3.5 h-3.5" />
-          Long
-        </button>
-        <button onClick={() => setSide('short')}
-          className={`flex-1 py-3 text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-            side === 'short'
-              ? 'bg-bear/10 text-bear border-b-2 border-bear'
-              : 'text-txt-3 hover:text-txt-1 hover:bg-drift-surface/30 border-b-2 border-transparent'
-          }`}>
-          <TrendingDown className="w-3.5 h-3.5" />
-          Short
-        </button>
+    <div className="flex flex-col h-full overflow-y-auto custom-scrollbar">
+      {/* ── Side toggle ── */}
+      <div className="flex shrink-0 p-1.5 mx-2 mt-2 rounded-xl bg-drift-surface/60">
+        {(['long', 'short'] as Side[]).map(s => {
+          const active = side === s;
+          const Icon = s === 'long' ? TrendingUp : TrendingDown;
+          const color = s === 'long' ? 'bull' : 'bear';
+          return (
+            <button key={s} onClick={() => setSide(s)}
+              className={`flex-1 py-2.5 text-[11px] font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                active
+                  ? `bg-${color}/15 text-${color} shadow-sm ring-1 ring-${color}/20`
+                  : 'text-txt-3 hover:text-txt-2 hover:bg-drift-surface/40'
+              }`}>
+              <Icon className="w-3.5 h-3.5" />
+              {s === 'long' ? 'Long' : 'Short'}
+            </button>
+          );
+        })}
       </div>
 
-      {/* Order type tabs */}
-      <div className="flex items-center gap-0 px-3 pt-3 shrink-0">
+      {/* ── Order type pill ── */}
+      <div className="flex items-center gap-0 mx-3 mt-3 shrink-0 bg-drift-surface/40 rounded-lg p-0.5">
         {(['market', 'limit'] as OrdType[]).map(t => (
           <button key={t} onClick={() => setOrdType(t)}
-            className={`px-3 py-1.5 text-[11px] font-semibold capitalize relative rounded-lg transition-all ${
+            className={`flex-1 px-3 py-1.5 text-[11px] font-semibold capitalize rounded-md transition-all ${
               ordType === t
-                ? 'text-txt-0 bg-drift-surface'
+                ? 'text-txt-0 bg-drift-bg shadow-sm'
                 : 'text-txt-3 hover:text-txt-2'
             }`}>
             {t}
@@ -187,182 +182,245 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
         ))}
       </div>
 
-      <div className="p-3 space-y-3 flex-1">
+      <div className="p-3 space-y-2.5 flex-1">
         {/* Messages */}
         {msg && (
-          <div className={`px-3 py-2.5 rounded-lg text-[11px] flex items-center gap-2 ${
-            msg.type === 'ok' ? 'bg-bull/10 text-bull border border-bull/20' : 'bg-bear/10 text-bear border border-bear/20'}`}>
-            {msg.type === 'ok' ? <Zap className="w-3.5 h-3.5 shrink-0" /> : <AlertCircle className="w-3.5 h-3.5 shrink-0" />}
-            {msg.text}
+          <div className={`px-3 py-2 rounded-xl text-[11px] flex items-start gap-2 leading-relaxed ${
+            msg.type === 'ok'
+              ? 'bg-bull/8 text-bull border border-bull/15'
+              : 'bg-bear/8 text-bear border border-bear/15'
+          }`}>
+            {msg.type === 'ok' ? <Zap className="w-3.5 h-3.5 shrink-0 mt-0.5" /> : <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />}
+            <span>{msg.text}</span>
           </div>
         )}
 
-        {/* Leverage slider */}
-        <div className="rounded-lg bg-drift-surface/50 p-3 space-y-2">
+        {/* ── Leverage ── */}
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-[11px] text-txt-3 font-medium">Leverage</span>
-            <span className="text-[12px] font-bold text-accent tabular-nums bg-accent/10 px-2 py-0.5 rounded-md">{leverage}x</span>
+            <span className={`text-[12px] font-bold tabular-nums text-${sideColor} bg-${sideColor}/10 px-2 py-0.5 rounded-md`}>
+              {leverage}×
+            </span>
+          </div>
+          <div className="flex items-center gap-1">
+            {LEV_PRESETS.map(l => (
+              <button key={l} onClick={() => setLeverage(l)}
+                className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                  leverage === l
+                    ? `bg-${sideColor}/12 text-${sideColor} ring-1 ring-${sideColor}/20`
+                    : 'bg-drift-surface/60 text-txt-3 hover:bg-drift-surface hover:text-txt-2'
+                }`}>
+                {l}×
+              </button>
+            ))}
           </div>
           <input type="range" min={1} max={DRIFT_CONFIG.maxLeverage} step={1}
             value={leverage} onChange={e => setLeverage(+e.target.value)}
-            className="w-full" />
-          <div className="flex justify-between text-[9px] text-txt-3 mt-0.5">
-            <span>1x</span><span>5x</span><span>10x</span>
-          </div>
+            className="w-full accent-current h-1 opacity-40 hover:opacity-100 transition-opacity cursor-pointer"
+            style={{ accentColor: side === 'long' ? '#00c278' : '#ff575a' }}
+          />
         </div>
 
-        {/* Limit price */}
+        {/* ── Limit price ── */}
         {ordType === 'limit' && (
           <div>
-            <label className="text-[11px] text-txt-3 font-medium mb-1.5 block">Limit Price</label>
-            <div className="flex items-center rounded-lg px-3 h-10 bg-drift-surface border border-drift-border hover:border-drift-border-lt focus-within:border-accent/30 transition-all">
-              <input type="number" value={price} onChange={e => setPrice(e.target.value)}
-                placeholder={markPrice.toFixed(2)}
-                className="flex-1 text-xs bg-transparent text-txt-0" />
-              <span className="text-[10px] text-txt-3 ml-1 font-medium">USD</span>
-            </div>
+            <label className="text-[11px] text-txt-3 font-medium mb-1.5 block">Price</label>
+            <InputField
+              value={price}
+              onChange={setPrice}
+              placeholder={markPrice.toFixed(2)}
+              suffix="USD"
+            />
           </div>
         )}
 
-        {/* Size */}
+        {/* ── Size ── */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <label className="text-[11px] text-txt-3 font-medium">Size</label>
-            <span className="text-[10px] text-txt-3">
-              Max: <span className="text-txt-1 tabular-nums font-medium">{(maxSize / markPrice).toFixed(4)} {sym}</span>
-            </span>
-          </div>
-          <div className="flex items-center rounded-lg px-3 h-10 bg-drift-surface border border-drift-border hover:border-drift-border-lt focus-within:border-accent/30 transition-all">
-            <input type="number" value={size}
-              onChange={e => { setSize(e.target.value); setPct(0); }}
-              placeholder="0.00"
-              className="flex-1 text-xs bg-transparent text-txt-0" />
-            <span className="text-[10px] text-txt-3 ml-1 font-medium">{sym}</span>
-          </div>
-        </div>
-
-        {/* Notional display */}
-        <div className="flex items-center justify-between text-[11px] px-1">
-          <span className="text-txt-3">Notional</span>
-          <span className="text-txt-1 tabular-nums font-medium">${notional.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-        </div>
-
-        {/* Pct buttons */}
-        <div className="flex items-center gap-1.5">
-          {PCT.map(p => (
-            <button key={p} onClick={() => handlePct(p)}
-              className={`flex-1 py-1.5 rounded-lg text-[10px] font-semibold transition-all ${
-                pct === p
-                  ? 'bg-accent/15 text-accent border border-accent/30'
-                  : 'bg-drift-surface text-txt-3 border border-transparent hover:border-drift-border-lt'}`}>
-              {p}%
+            <button
+              onClick={() => handlePct(100)}
+              className="text-[10px] text-txt-3 hover:text-accent transition-colors cursor-pointer"
+            >
+              Max: <span className="text-txt-2 tabular-nums font-medium">{maxSize > 0 ? maxSize.toFixed(4) : '0'} {sym}</span>
             </button>
-          ))}
+          </div>
+          <InputField
+            value={size}
+            onChange={(v) => { setSize(v); setPct(0); }}
+            placeholder="0.00"
+            suffix={sym}
+          />
+          {/* Notional under input */}
+          {sizeNum > 0 && (
+            <div className="text-right mt-1 text-[10px] tabular-nums text-txt-3">
+              ≈ ${notional.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </div>
+          )}
         </div>
 
-        {/* Slider track */}
-        <div className="relative h-1.5 rounded-full bg-drift-surface overflow-hidden">
-          <div className="h-full rounded-full bg-gradient-to-r from-accent to-purple transition-all" style={{ width: `${pct}%` }} />
+        {/* ── % buttons + slider ── */}
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1">
+            {PCT.map(p => (
+              <button key={p} onClick={() => handlePct(p)}
+                className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                  pct === p
+                    ? `bg-${sideColor}/12 text-${sideColor} ring-1 ring-${sideColor}/20`
+                    : 'bg-drift-surface/60 text-txt-3 hover:bg-drift-surface hover:text-txt-2'
+                }`}>
+                {p}%
+              </button>
+            ))}
+          </div>
+          <div className="relative h-1 rounded-full bg-drift-surface overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-200 ${
+                side === 'long' ? 'bg-bull/60' : 'bg-bear/60'
+              }`}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
         </div>
 
-        {/* Toggles */}
-        <div className="space-y-2.5 py-1">
-          <Toggle label="Reduce Only" checked={reduceOnly} onChange={setReduceOnly} />
-          {ordType === 'limit' && <Toggle label="Post Only" checked={postOnly} onChange={setPostOnly} />}
-          <Toggle label="TP / SL" checked={showTpSl} onChange={setShowTpSl} />
+        {/* ── Toggles ── */}
+        <div className="flex items-center gap-3 py-0.5">
+          <MiniToggle label="Reduce Only" checked={reduceOnly} onChange={setReduceOnly} />
+          {ordType === 'limit' && <MiniToggle label="Post Only" checked={postOnly} onChange={setPostOnly} />}
+          <MiniToggle label="TP/SL" checked={showTpSl} onChange={setShowTpSl} />
         </div>
 
-        {/* TP/SL */}
+        {/* ── TP/SL ── */}
         {showTpSl && (
-          <div className="space-y-2 rounded-lg p-3 bg-drift-surface/50 border border-drift-border">
+          <div className="space-y-2 rounded-xl p-2.5 bg-drift-surface/30 border border-drift-border/60">
             <div>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[10px] font-semibold text-bull">Take Profit</span>
-                <span className="text-[10px] text-txt-3">
-                  Est. P&L: {tp ? <span className="text-bull">+${((side === 'long' ? parseFloat(tp) - markPrice : markPrice - parseFloat(tp)) * sizeNum).toFixed(2)}</span> : '—'}
-                </span>
+                {tp && sizeNum > 0 && (
+                  <span className="text-[10px] tabular-nums text-bull">
+                    +${((side === 'long' ? parseFloat(tp) - markPrice : markPrice - parseFloat(tp)) * sizeNum).toFixed(2)}
+                  </span>
+                )}
               </div>
-              <input type="number" value={tp} onChange={e => setTp(e.target.value)} placeholder="TP Price"
-                className="w-full h-8 px-2.5 rounded-lg text-[11px] bg-drift-bg border border-drift-border text-txt-0 focus:border-accent/30 transition-all" />
+              <InputField value={tp} onChange={setTp} placeholder="TP Price" suffix="USD" compact />
             </div>
             <div>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[10px] font-semibold text-bear">Stop Loss</span>
-                <span className="text-[10px] text-txt-3">
-                  Est. P&L: {sl ? <span className="text-bear">-${((side === 'long' ? markPrice - parseFloat(sl) : parseFloat(sl) - markPrice) * sizeNum).toFixed(2)}</span> : '—'}
-                </span>
+                {sl && sizeNum > 0 && (
+                  <span className="text-[10px] tabular-nums text-bear">
+                    -${((side === 'long' ? markPrice - parseFloat(sl) : parseFloat(sl) - markPrice) * sizeNum).toFixed(2)}
+                  </span>
+                )}
               </div>
-              <input type="number" value={sl} onChange={e => setSl(e.target.value)} placeholder="SL Price"
-                className="w-full h-8 px-2.5 rounded-lg text-[11px] bg-drift-bg border border-drift-border text-txt-0 focus:border-accent/30 transition-all" />
+              <InputField value={sl} onChange={setSl} placeholder="SL Price" suffix="USD" compact />
             </div>
           </div>
         )}
 
-        {/* Submit */}
+        {/* ── Submit ── */}
         {connected ? (
           <button onClick={handleSubmit} disabled={loading || !sizeNum}
-            className={`w-full py-3 rounded-lg text-xs font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed text-white shadow-lg ${
+            className={`w-full py-3 rounded-xl text-[13px] font-bold tracking-wide transition-all disabled:opacity-30 disabled:cursor-not-allowed text-white ${
               side === 'long'
-                ? 'bg-bull hover:brightness-110 shadow-bull/20'
-                : 'bg-bear hover:brightness-110 shadow-bear/20'
+                ? 'bg-gradient-to-r from-bull to-emerald-400 hover:shadow-lg hover:shadow-bull/25 active:scale-[0.98]'
+                : 'bg-gradient-to-r from-bear to-rose-400 hover:shadow-lg hover:shadow-bear/25 active:scale-[0.98]'
             }`}>
-            {loading ? 'Submitting…' : `${side === 'long' ? 'Long' : 'Short'} ${market.symbol}`}
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Submitting…
+              </span>
+            ) : (
+              `${side === 'long' ? 'Long' : 'Short'} ${market.symbol}`
+            )}
           </button>
         ) : (
-          <WalletMultiButton className="!w-full !justify-center" />
+          <WalletMultiButton className="!w-full !justify-center !rounded-xl" />
         )}
 
-        {/* Slippage */}
-        <div>
-          <span className="text-[11px] text-txt-2 block mb-1.5 font-medium">Slippage Tolerance</span>
-          <div className="flex gap-1.5">
+        {/* ── Slippage (collapsible) ── */}
+        <button
+          onClick={() => setShowSlippage(!showSlippage)}
+          className="flex items-center justify-between w-full text-[11px] text-txt-3 hover:text-txt-2 transition-colors py-0.5"
+        >
+          <span className="font-medium">Slippage Tolerance</span>
+          <span className="flex items-center gap-1 tabular-nums text-txt-2">
+            {slippage}%
+            <ChevronDown className={`w-3 h-3 transition-transform ${showSlippage ? 'rotate-180' : ''}`} />
+          </span>
+        </button>
+        {showSlippage && (
+          <div className="flex gap-1">
             {SLIP.map(s => (
               <button key={s} onClick={() => setSlippage(s)}
-                className={`px-3 py-1.5 rounded-lg text-[10px] font-semibold transition-all ${
+                className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
                   slippage === s
-                    ? 'bg-drift-surface text-txt-0 border border-drift-border-lt'
-                    : 'bg-drift-surface/30 text-txt-3 border border-transparent'}`}>
+                    ? 'bg-accent/10 text-accent ring-1 ring-accent/20'
+                    : 'bg-drift-surface/60 text-txt-3 hover:text-txt-2'
+                }`}>
                 {s}%
               </button>
             ))}
           </div>
-        </div>
+        )}
 
-        {/* Order details */}
-        <div className="space-y-2 rounded-lg p-3 bg-drift-surface/30 border border-drift-border">
-          <span className="text-[11px] font-semibold text-txt-1 block mb-1">Order Summary</span>
-          <Detail label="Mark Price" value={markPrice > 0 ? `$${markPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '—'} />
-          <Detail label="Margin Required" value={`$${marginReq.toFixed(2)}`} />
-          <Detail label="Est. Liq. Price" value={liqPrice > 0 ? `$${liqPrice.toFixed(2)}` : '—'} />
-          <Detail label="Funding Rate" value={`${(fundingRate * 100).toFixed(4)}%`}
-            valueClass={fundingRate >= 0 ? 'text-bull' : 'text-bear'} />
-          <Detail label="Fees" value={fee > 0 ? `$${fee.toFixed(4)}` : '—'} />
-          <Detail label="Max Position" value={`${maxSize.toFixed(4)} ${sym}`} />
-        </div>
-
-        {/* Account health */}
-        <div className="rounded-lg p-3 bg-drift-surface/30 border border-drift-border space-y-2">
-          <span className="text-[11px] font-semibold text-txt-1">Account</span>
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[10px] text-txt-3">Health</span>
-              <span className="text-[11px] font-bold tabular-nums text-bull">
-                {(accountState?.health ?? 100).toFixed(1)}%
-              </span>
-            </div>
-            <div className="h-2 rounded-full bg-drift-bg overflow-hidden">
-              <div className="h-full rounded-full transition-all"
-                style={{
-                  width: `${accountState?.health ?? 100}%`,
-                  background: 'linear-gradient(90deg, #F84960 0%, #FBBF24 50%, #31D0AA 100%)',
-                }} />
-            </div>
+        {/* ── Order Summary ── */}
+        <div className="rounded-xl bg-drift-surface/20 border border-drift-border/50 overflow-hidden">
+          <div className="px-3 py-2 border-b border-drift-border/50 flex items-center gap-1.5">
+            <Info className="w-3 h-3 text-txt-3" />
+            <span className="text-[11px] font-semibold text-txt-2">Order Summary</span>
           </div>
-          <Detail label="Collateral" value={accountState ? `$${accountState.totalCollateral.toFixed(2)}` : '—'} />
-          <Detail label="Free Collateral" value={accountState ? `$${accountState.freeCollateral.toFixed(2)}` : '—'} />
-          <Detail label="Leverage" value={accountState ? `${accountState.leverage.toFixed(2)}x` : '0x'} />
-          <Detail label="Unrealized P&L" value={accountState ? `$${accountState.unrealizedPnl.toFixed(2)}` : '—'}
-            valueClass={accountState && accountState.unrealizedPnl >= 0 ? 'text-bull' : 'text-bear'} />
+          <div className="px-3 py-2 space-y-1.5">
+            <SummaryRow label="Mark Price" value={markPrice > 0 ? `$${markPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '—'} />
+            <SummaryRow label="Margin Req." value={`$${marginReq.toFixed(2)}`} />
+            <SummaryRow label="Est. Liq. Price" value={liqPrice > 0 ? `$${liqPrice.toFixed(2)}` : '—'} highlight={liqPrice > 0} />
+            <SummaryRow label="Funding Rate" value={`${(fundingRate * 100).toFixed(4)}%`}
+              valueClass={fundingRate >= 0 ? 'text-bull' : 'text-bear'} />
+            <SummaryRow label="Fees (0.05%)" value={fee > 0 ? `$${fee.toFixed(4)}` : '—'} />
+          </div>
+        </div>
+
+        {/* ── Account snapshot ── */}
+        <div className="rounded-xl bg-drift-surface/20 border border-drift-border/50 overflow-hidden">
+          <div className="px-3 py-2 border-b border-drift-border/50">
+            <span className="text-[11px] font-semibold text-txt-2">Account</span>
+          </div>
+          <div className="px-3 py-2 space-y-1.5">
+            {/* Health bar */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-txt-3">Health</span>
+                <span className={`text-[11px] font-bold tabular-nums ${
+                  (accountState?.health ?? 100) > 50 ? 'text-bull' : (accountState?.health ?? 100) > 20 ? 'text-yellow' : 'text-bear'
+                }`}>
+                  {(accountState?.health ?? 100).toFixed(0)}%
+                </span>
+              </div>
+              <div className="h-1.5 rounded-full bg-drift-bg overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: `${accountState?.health ?? 100}%`,
+                    background: (accountState?.health ?? 100) > 50
+                      ? 'linear-gradient(90deg, #00c278, #31D0AA)'
+                      : (accountState?.health ?? 100) > 20
+                        ? 'linear-gradient(90deg, #efa411, #FBBF24)'
+                        : 'linear-gradient(90deg, #ff575a, #F84960)',
+                  }}
+                />
+              </div>
+            </div>
+            <SummaryRow label="Equity" value={accountState ? `$${accountState.totalCollateral.toFixed(2)}` : '—'} />
+            <SummaryRow label="Available" value={accountState ? `$${accountState.freeCollateral.toFixed(2)}` : '—'} />
+            <SummaryRow label="Leverage" value={accountState ? `${accountState.leverage.toFixed(2)}×` : '0×'} />
+            <SummaryRow
+              label="Unrealized P&L"
+              value={accountState ? `${accountState.unrealizedPnl >= 0 ? '+' : ''}$${accountState.unrealizedPnl.toFixed(2)}` : '—'}
+              valueClass={accountState && accountState.unrealizedPnl >= 0 ? 'text-bull' : 'text-bear'}
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -371,32 +429,42 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
 
 /* ── Sub-components ───────────────────────────── */
 
-const StepRow: React.FC<{ num: number; label: string; done: boolean; detail: string }> = ({ num, label, done, detail }) => (
-  <div className="flex items-center gap-2">
-    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
-      done ? 'bg-bull/20 text-bull' : 'bg-drift-input text-txt-3'}`}>
-      {done ? '✓' : num}
-    </div>
-    <div className="flex-1">
-      <span className={`text-2xs font-medium ${done ? 'text-txt-1' : 'text-txt-2'}`}>{label}</span>
-    </div>
-    <span className={`text-[10px] tabular-nums ${done ? 'text-bull' : 'text-txt-3'}`}>{detail}</span>
+const InputField: React.FC<{
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  suffix?: string;
+  compact?: boolean;
+}> = ({ value, onChange, placeholder, suffix, compact }) => (
+  <div className={`flex items-center rounded-xl bg-drift-surface/60 border border-drift-border/60 hover:border-drift-border-lt focus-within:border-accent/40 focus-within:ring-1 focus-within:ring-accent/10 transition-all ${compact ? 'px-2.5 h-8' : 'px-3 h-10'}`}>
+    <input
+      type="number"
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder}
+      className={`flex-1 bg-transparent text-txt-0 tabular-nums outline-none w-full ${compact ? 'text-[11px]' : 'text-xs'}`}
+    />
+    {suffix && <span className={`text-txt-3 ml-1.5 font-medium shrink-0 ${compact ? 'text-[9px]' : 'text-[10px]'}`}>{suffix}</span>}
   </div>
 );
 
-const Toggle: React.FC<{ label: string; checked: boolean; onChange: (v: boolean) => void }> = ({ label, checked, onChange }) => (
-  <div className="flex items-center justify-between">
-    <span className="text-[11px] text-txt-2">{label}</span>
-    <button onClick={() => onChange(!checked)}
-      className={`w-9 h-5 rounded-full relative transition-all ${checked ? 'bg-accent shadow-sm shadow-accent/30' : 'bg-drift-surface'}`}>
-      <div className={`absolute top-[3px] w-3.5 h-3.5 rounded-full bg-white transition-all shadow-sm ${checked ? 'left-[18px]' : 'left-[3px]'}`} />
-    </button>
-  </div>
+const MiniToggle: React.FC<{ label: string; checked: boolean; onChange: (v: boolean) => void }> = ({ label, checked, onChange }) => (
+  <button
+    onClick={() => onChange(!checked)}
+    className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-medium transition-all ${
+      checked
+        ? 'bg-accent/10 text-accent ring-1 ring-accent/20'
+        : 'text-txt-3 hover:text-txt-2 hover:bg-drift-surface/40'
+    }`}
+  >
+    <div className={`w-1.5 h-1.5 rounded-full transition-colors ${checked ? 'bg-accent' : 'bg-txt-3/50'}`} />
+    {label}
+  </button>
 );
 
-const Detail: React.FC<{ label: string; value: string; valueClass?: string }> = ({ label, value, valueClass }) => (
-  <div className="flex justify-between text-[11px]">
+const SummaryRow: React.FC<{ label: string; value: string; valueClass?: string; highlight?: boolean }> = ({ label, value, valueClass, highlight }) => (
+  <div className="flex justify-between items-center text-[10.5px]">
     <span className="text-txt-3">{label}</span>
-    <span className={`tabular-nums font-medium ${valueClass ?? 'text-txt-1'}`}>{value}</span>
+    <span className={`tabular-nums font-medium ${valueClass ?? (highlight ? 'text-yellow' : 'text-txt-1')}`}>{value}</span>
   </div>
 );

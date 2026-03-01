@@ -78,6 +78,12 @@ body::before {
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 999px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
 
+/* Ultra-thin scrollbar for side panels */
+.custom-scrollbar::-webkit-scrollbar { width: 3px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 999px; }
+.custom-scrollbar:hover::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); }
+
 /* ── Input resets ──────────────────────────────── */
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
@@ -97,14 +103,28 @@ input[type="range"] {
   -webkit-appearance: none;
   height: 4px;
   border-radius: 2px;
-  background: rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.06);
+  cursor: pointer;
 }
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  background: var(--accent);
+  background: currentColor;
+  border: 2px solid var(--bg-surface);
+  cursor: pointer;
+  box-shadow: 0 0 6px rgba(0,0,0,0.3);
+  transition: transform 0.15s ease;
+}
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: currentColor;
   border: 2px solid var(--bg-surface);
   cursor: pointer;
 }
