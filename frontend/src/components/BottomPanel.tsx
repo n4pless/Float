@@ -254,17 +254,23 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
                   icon={sb.symbol === 'USDC' ? '$' : undefined}
                 />
               ))}
-              {/* Unrealized PnL row */}
-              {positions.length > 0 && (
+              {/* Unrealized / Unsettled PnL row — show when there are open positions OR unsettled PnL */}
+              {(positions.length > 0 || (accountState?.unrealizedPnl ?? 0) !== 0) && (
                 <tr className="hover:bg-drift-surface/30 transition-colors border-b border-drift-border/50">
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-2">
                       <div className="w-5 h-5 rounded-md flex items-center justify-center text-[9px] text-white font-bold bg-yellow/40">⚡</div>
-                      <span className="font-semibold text-txt-1">Unrealized PnL</span>
+                      <span className="font-semibold text-txt-1">
+                        {positions.length > 0 ? 'Unrealized PnL' : 'Unsettled PnL'}
+                      </span>
                     </div>
                   </td>
                   <td className="px-3 py-2.5 text-right tabular-nums text-txt-3" colSpan={2}>
-                    <span className="text-[10px] text-txt-3">{positions.length} open position{positions.length > 1 ? 's' : ''}</span>
+                    <span className="text-[10px] text-txt-3">
+                      {positions.length > 0
+                        ? `${positions.length} open position${positions.length > 1 ? 's' : ''}`
+                        : 'No open positions — residual fees/funding'}
+                    </span>
                   </td>
                   <td className="px-3 py-2.5 text-right">
                     <button
