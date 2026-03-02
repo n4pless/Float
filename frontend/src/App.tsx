@@ -90,6 +90,7 @@ function TradingApp() {
         <UserManagement
           forceRefresh={forceRefresh}
           onBack={() => setCurrentPage('trade')}
+          trading={trading}
         />
       ) : (
         <>
@@ -170,20 +171,18 @@ function TradingApp() {
               </div>
             </div>
 
-            {/* Right: OrderBook + Trade Form (Hyperliquid-style stacked sidebar) */}
-            <div className="w-[320px] xl:w-[340px] shrink-0 flex flex-col bg-drift-bg overflow-hidden">
-              {/* OrderBook — compact, takes roughly top 45% */}
-              <div className="flex-[4] min-h-0 border-b border-drift-border overflow-hidden">
-                <OrderBook onPriceClick={handlePriceClick} />
-              </div>
-              {/* Trade Form — scrollable, takes bottom 55% */}
-              <div className="flex-[5] min-h-0 overflow-y-auto custom-scrollbar">
-                <TradeForm
-                  trading={trading}
-                  initialLimitPrice={limitPrice}
-                  onSwitchToAccount={() => setCurrentPage('user')}
-                />
-              </div>
+            {/* Middle: Order Book */}
+            <div className="w-[260px] xl:w-[280px] shrink-0 flex flex-col bg-drift-bg">
+              <OrderBook onPriceClick={handlePriceClick} />
+            </div>
+
+            {/* Right: Trade Form */}
+            <div className="w-[280px] xl:w-[300px] shrink-0 bg-drift-bg overflow-y-auto custom-scrollbar">
+              <TradeForm
+                trading={trading}
+                initialLimitPrice={limitPrice}
+                onSwitchToAccount={() => setCurrentPage('user')}
+              />
             </div>
           </div>
         </>

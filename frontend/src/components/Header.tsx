@@ -34,11 +34,12 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Left: Logo + Nav */}
       <div className="flex items-center gap-2 sm:gap-8 min-w-0">
         <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-          <svg className="w-6 h-6 sm:w-7 sm:h-7" viewBox="12 6 42 46" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M25 25 L52 10 L52 18 L25 33Z" stroke="currentColor" strokeWidth="0.7" strokeLinejoin="round" fill="currentColor" fillOpacity="0.06"/>
-            <path d="M25 25 L16 20 L16 44 L25 49Z" stroke="currentColor" strokeWidth="0.7" strokeLinejoin="round" fill="currentColor" fillOpacity="0.06"/>
-            <path d="M25 37 L43 27 L43 35 L25 45Z" stroke="currentColor" strokeWidth="0.7" strokeLinejoin="round" fill="currentColor" fillOpacity="0.06"/>
-          </svg>
+          {/* "V" logo mark */}
+          <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-gradient-to-br from-accent to-purple flex items-center justify-center shadow-lg shadow-accent/20">
+            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2 4L12 22L22 4" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
           <span className="font-semibold text-[14px] sm:text-[15px] text-txt-0 tracking-tight">Value</span>
         </div>
 

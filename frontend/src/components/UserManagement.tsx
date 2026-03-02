@@ -36,10 +36,16 @@ import {
   DialogDescription,
   DialogFooter,
 } from './ui/Dialog';
+import { AccountPanel } from './AccountPanel';
 
 interface Props {
   forceRefresh: () => Promise<void>;
   onBack: () => void;
+  trading?: {
+    createAccount: (depositAmount: number) => Promise<string>;
+    deposit: (amount: number) => Promise<string>;
+    withdraw: (amount: number) => Promise<string>;
+  };
 }
 
 /* ─────────────────────────────────────────────────── */
@@ -394,7 +400,7 @@ const Section: React.FC<{
 /*  Main UserManagement component                      */
 /* ─────────────────────────────────────────────────── */
 
-export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack }) => {
+export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack, trading }) => {
   const {
     connected,
     publicKey,
@@ -483,6 +489,15 @@ export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack }) => {
 
           {/* Connected Wallet */}
           <ConnectedWalletInfo publicKey={publicKey?.toBase58() || ''} />
+
+          {/* Account Panel — Faucet, Deposit/Withdraw */}
+          {trading && (
+            <Section icon={Wallet} title="Account & Balances" accent="text-accent">
+              <div className="max-h-[500px] overflow-y-auto">
+                <AccountPanel trading={trading} />
+              </div>
+            </Section>
+          )}
 
           {/* Create Account Form */}
           <CreateUserForm onSubmit={handleCreateAndDeposit} />
