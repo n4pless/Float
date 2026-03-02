@@ -56,8 +56,8 @@ export const OrderBook: React.FC<Props> = ({ onPriceClick }) => {
   const dec = 2;
 
   // Asks are sorted ascending (lowest first) — display reversed so lowest is at bottom near spread
-  const visAsks = mode === 'bids' ? [] : mode === 'both' ? asks.slice(0, 8).reverse() : asks.slice(0, 12).reverse();
-  const visBids = mode === 'asks' ? [] : mode === 'both' ? bids.slice(0, 8) : bids.slice(0, 12);
+  const visAsks = mode === 'bids' ? [] : mode === 'both' ? asks.slice(0, 15).reverse() : asks.slice(0, 20).reverse();
+  const visBids = mode === 'asks' ? [] : mode === 'both' ? bids.slice(0, 15) : bids.slice(0, 20);
 
   const fmt = (v: number) =>
     v.toLocaleString('en-US', { maximumFractionDigits: 0 });
@@ -156,7 +156,7 @@ const Row: React.FC<{
   return (
     <div
       className={`grid grid-cols-3 px-3 py-px text-[11px] relative cursor-pointer hover:bg-drift-surface/50 transition-colors ${mineHighlight}`}
-      style={{ height: 22 }}
+      style={{ height: 20 }}
       onClick={() => onClick?.(level.price)}
       title={level.isMine ? 'Your order' : undefined}
     >
