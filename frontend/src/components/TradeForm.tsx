@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { AlertCircle, ChevronDown, ShieldCheck, Lock, EyeOff, Sparkles, Info } from 'lucide-react';
+import { AlertCircle, ChevronDown, ShieldCheck, Lock, EyeOff, Sparkles, Info, Cpu, ArrowDown, Zap } from 'lucide-react';
 import { useDriftStore } from '../stores/useDriftStore';
 import DRIFT_CONFIG from '../config';
 
@@ -209,7 +209,7 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
               : 'text-txt-3 hover:text-txt-2 border-transparent'
           }`}>
           <ShieldCheck className="w-3 h-3" />
-          Privacy
+          Arcium
           <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-purple/15 text-purple leading-none">NEW</span>
         </button>
       </div>
@@ -543,22 +543,48 @@ const PrivacyTradePanel: React.FC<{
 
   return (
     <div className="p-3 space-y-2.5 flex-1 overflow-y-auto custom-scrollbar">
-      {/* Demo banner */}
+      {/* Arcium banner */}
       <div className="relative rounded-lg overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-purple/10 to-accent/5" />
+        <div className="absolute inset-0 bg-gradient-to-r from-purple/10 via-accent/5 to-purple/10" />
         <div className="relative flex items-center gap-2.5 px-3 py-2.5 border border-purple/20 rounded-lg">
           <div className="shrink-0 p-1.5 rounded-lg bg-purple/15">
-            <Sparkles className="w-3.5 h-3.5 text-purple" />
+            <ShieldCheck className="w-3.5 h-3.5 text-purple" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-[11px] font-bold text-purple flex items-center gap-1.5">
-              Privacy Transactions
+              Arcium Private Trades
               <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-yellow/15 text-yellow border border-yellow/20 leading-none">CONCEPT</span>
             </div>
             <p className="text-[10px] text-txt-3 mt-0.5 leading-relaxed">
-              Shield your positions from on-chain surveillance. Liquidation levels, entry prices, and position sizes are hidden from other traders.
+              Powered by <span className="text-purple font-semibold">Arcium's MPC network</span>. Orders are encrypted and matched in secure enclaves — observers see the settlement, never the intent.
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* Arcium MPC flow diagram */}
+      <div className="rounded-lg bg-drift-surface/30 border border-purple/10 p-2.5">
+        <div className="flex items-center gap-1.5 mb-2">
+          <Cpu className="w-3 h-3 text-purple/70" />
+          <span className="text-[9px] font-bold text-purple/80 uppercase tracking-wider">Arcium Trade Flow</span>
+        </div>
+        <div className="space-y-1">
+          {[
+            { step: 'Encrypted order submitted', icon: Lock },
+            { step: 'Arcium MPC nodes decrypt & match', icon: Cpu },
+            { step: 'Result sent to Float contract', icon: Zap },
+            { step: 'On-chain settlement (hidden intent)', icon: ShieldCheck },
+          ].map(({ step, icon: Icon }, i) => (
+            <div key={step}>
+              <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-drift-bg/40">
+                <div className="shrink-0 w-4 h-4 rounded-full bg-purple/15 flex items-center justify-center">
+                  <Icon className="w-2.5 h-2.5 text-purple" />
+                </div>
+                <span className="text-[9.5px] text-txt-2">{step}</span>
+              </div>
+              {i < 3 && <div className="flex justify-center py-0.5"><ArrowDown className="w-2.5 h-2.5 text-purple/30" /></div>}
+            </div>
+          ))}
         </div>
       </div>
 
@@ -583,15 +609,15 @@ const PrivacyTradePanel: React.FC<{
         })}
       </div>
 
-      {/* Privacy shields */}
+      {/* Arcium privacy shields */}
       <div className="rounded-lg bg-drift-surface/50 border border-drift-border p-2.5 space-y-2">
         <div className="flex items-center gap-2 mb-1">
           <ShieldCheck className="w-3.5 h-3.5 text-purple" />
-          <span className="text-[10px] font-bold text-txt-1 uppercase tracking-wider">Privacy Shields</span>
+          <span className="text-[10px] font-bold text-txt-1 uppercase tracking-wider">Arcium Shields</span>
         </div>
-        <PrivacyToggle label="Shield Mode" desc="Encrypt position data" checked={shieldEnabled} onChange={setShieldEnabled} icon={<ShieldCheck className="w-3 h-3" />} />
-        <PrivacyToggle label="Hide Liquidation" desc="Liq. price hidden on-chain" checked={hideLiq} onChange={setHideLiq} icon={<EyeOff className="w-3 h-3" />} />
-        <PrivacyToggle label="Hide Entry Price" desc="Entry not visible to others" checked={hideEntry} onChange={setHideEntry} icon={<Lock className="w-3 h-3" />} />
+        <PrivacyToggle label="MPC Encryption" desc="Order encrypted via Arcium MPC nodes" checked={shieldEnabled} onChange={setShieldEnabled} icon={<Cpu className="w-3 h-3" />} />
+        <PrivacyToggle label="Hide Liquidation" desc="Liq. price hidden from observers" checked={hideLiq} onChange={setHideLiq} icon={<EyeOff className="w-3 h-3" />} />
+        <PrivacyToggle label="Hide Entry Price" desc="Entry processed in secure enclave" checked={hideEntry} onChange={setHideEntry} icon={<Lock className="w-3 h-3" />} />
       </div>
 
       {/* Leverage */}
@@ -641,7 +667,7 @@ const PrivacyTradePanel: React.FC<{
       <div className="rounded-lg bg-drift-surface border border-drift-border overflow-hidden">
         <div className="px-3 py-1.5 border-b border-drift-border flex items-center gap-1.5">
           <Lock className="w-3 h-3 text-purple" />
-          <span className="text-[11px] font-medium text-txt-2">Privacy Order Preview</span>
+          <span className="text-[11px] font-medium text-txt-2">Arcium Order Preview</span>
         </div>
         <div className="px-3 py-2 space-y-1.5">
           <SummaryRow label="Direction" value={side === 'long' ? '🟢 Long' : '🔴 Short'} valueClass={side === 'long' ? 'text-bull' : 'text-bear'} />
@@ -667,8 +693,9 @@ const PrivacyTradePanel: React.FC<{
               <span className="tabular-nums font-medium text-txt-1">{markPrice > 0 ? `$${markPrice.toFixed(2)}` : '—'}</span>
             )}
           </div>
-          <SummaryRow label="Privacy Fee (0.08%)" value={fee > 0 ? `$${fee.toFixed(4)}` : '—'} />
-          <SummaryRow label="Shield Status" value={shieldEnabled ? '🛡️ Active' : 'Disabled'} valueClass={shieldEnabled ? 'text-purple' : 'text-txt-3'} />
+          <SummaryRow label="Arcium Fee (0.08%)" value={fee > 0 ? `$${fee.toFixed(4)}` : '—'} />
+          <SummaryRow label="MPC Status" value={shieldEnabled ? '🛡️ Encrypted' : 'Disabled'} valueClass={shieldEnabled ? 'text-purple' : 'text-txt-3'} />
+          <SummaryRow label="Enclave" value={shieldEnabled ? 'Secure' : 'Standard'} valueClass={shieldEnabled ? 'text-bull' : 'text-txt-3'} />
         </div>
       </div>
 
@@ -678,11 +705,12 @@ const PrivacyTradePanel: React.FC<{
           <EyeOff className="w-3 h-3 text-purple/70" />
           <span className="text-[10px] font-bold text-purple/80 uppercase tracking-wider">On-Chain Visibility</span>
         </div>
+        <VisRow label="Order Intent" visible={!shieldEnabled} />
         <VisRow label="Position Size" visible={!shieldEnabled} />
         <VisRow label="Liquidation Price" visible={!hideLiq} />
         <VisRow label="Entry Price" visible={!hideEntry} />
         <VisRow label="Direction (Long/Short)" visible={!shieldEnabled} />
-        <VisRow label="Collateral Amount" visible={true} />
+        <VisRow label="Settlement Result" visible={true} />
       </div>
 
       {/* Submit (disabled — demo only) */}
@@ -690,12 +718,12 @@ const PrivacyTradePanel: React.FC<{
         <div className="space-y-1.5">
           <button disabled
             className="w-full py-2.5 rounded-lg text-[12px] font-semibold bg-gradient-to-r from-purple/40 to-accent/30 text-white/50 cursor-not-allowed flex items-center justify-center gap-2 border border-purple/20">
-            <Lock className="w-3.5 h-3.5" />
-            Execute Private {side === 'long' ? 'Long' : 'Short'}
+            <ShieldCheck className="w-3.5 h-3.5" />
+            Submit to Arcium MPC
           </button>
           <div className="flex items-center justify-center gap-1.5 text-[10px] text-txt-3">
             <Info className="w-3 h-3 text-yellow/70" />
-            <span>Coming Soon — Privacy trades are not yet available</span>
+            <span>Coming Soon — Arcium integration in development</span>
           </div>
         </div>
       ) : (
