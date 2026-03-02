@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { AlertCircle, ChevronDown } from 'lucide-react';
+import { AlertCircle, ChevronDown, ShieldCheck, Lock, EyeOff, Sparkles, Info } from 'lucide-react';
 import { useDriftStore } from '../stores/useDriftStore';
 import DRIFT_CONFIG from '../config';
 
@@ -16,7 +16,7 @@ interface Props {
 }
 
 type Side = 'long' | 'short';
-type OrdType = 'market' | 'limit';
+type OrdType = 'market' | 'limit' | 'privacy';
 
 const PCT = [25, 50, 75, 100];
 const SLIP = [0.1, 0.5, 1.0];
@@ -47,6 +47,14 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
   const [showSlippage, setShowSlippage] = useState(false);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+
+  /* Privacy trade demo state */
+  const [privSide, setPrivSide] = useState<Side>('long');
+  const [privSize, setPrivSize] = useState('');
+  const [privLev, setPrivLev] = useState(5);
+  const [privShield, setPrivShield] = useState(true);
+  const [privHideLiq, setPrivHideLiq] = useState(true);
+  const [privHideEntry, setPrivHideEntry] = useState(false);
 
   React.useEffect(() => {
     if (initialLimitPrice != null) {
@@ -194,9 +202,33 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
             {t}
           </button>
         ))}
+        <button onClick={() => setOrdType('privacy')}
+          className={`px-3 py-2 text-[11px] font-medium transition-colors border-b-2 -mb-px flex items-center gap-1.5 ${
+            ordType === 'privacy'
+              ? 'text-purple border-purple'
+              : 'text-txt-3 hover:text-txt-2 border-transparent'
+          }`}>
+          <ShieldCheck className="w-3 h-3" />
+          Privacy
+          <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-purple/15 text-purple leading-none">NEW</span>
+        </button>
       </div>
 
-      <div className="p-3 space-y-2.5 flex-1">
+      {/* ── Privacy Trade Demo Panel ── */}
+      {ordType === 'privacy' && (
+        <PrivacyTradePanel
+          side={privSide} setSide={setPrivSide}
+          size={privSize} setSize={setPrivSize}
+          leverage={privLev} setLeverage={setPrivLev}
+          shieldEnabled={privShield} setShieldEnabled={setPrivShield}
+          hideLiq={privHideLiq} setHideLiq={setPrivHideLiq}
+          hideEntry={privHideEntry} setHideEntry={setPrivHideEntry}
+          markPrice={markPrice} sym={sym}
+          connected={connected}
+        />
+      )}
+
+      {ordType !== 'privacy' && <div className="p-3 space-y-2.5 flex-1">
         {/* Messages */}
         {msg && (
           <div className={`px-2.5 py-2 rounded text-[11px] flex items-start gap-2 leading-relaxed ${
@@ -435,7 +467,7 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
             />
           </div>
         </div>
-      </div>
+      </div>}
     </div>
   );
 };
@@ -479,5 +511,231 @@ const SummaryRow: React.FC<{ label: string; value: string; valueClass?: string; 
   <div className="flex justify-between items-center text-[10.5px]">
     <span className="text-txt-3">{label}</span>
     <span className={`tabular-nums font-medium ${valueClass ?? (highlight ? 'text-yellow' : 'text-txt-1')}`}>{value}</span>
+  </div>
+);
+
+/* ── Privacy Trade Demo Panel ─────────────────── */
+
+const PRIV_LEV = [2, 5, 10, 20, 50];
+const PRIV_SIZES = ['0.1', '0.5', '1.0', '5.0'];
+
+const PrivacyTradePanel: React.FC<{
+  side: Side; setSide: (s: Side) => void;
+  size: string; setSize: (v: string) => void;
+  leverage: number; setLeverage: (v: number) => void;
+  shieldEnabled: boolean; setShieldEnabled: (v: boolean) => void;
+  hideLiq: boolean; setHideLiq: (v: boolean) => void;
+  hideEntry: boolean; setHideEntry: (v: boolean) => void;
+  markPrice: number; sym: string;
+  connected: boolean;
+}> = ({
+  side, setSide, size, setSize, leverage, setLeverage,
+  shieldEnabled, setShieldEnabled, hideLiq, setHideLiq,
+  hideEntry, setHideEntry, markPrice, sym, connected,
+}) => {
+  const sizeNum = parseFloat(size) || 0;
+  const notional = sizeNum * markPrice;
+  const margin = notional > 0 ? notional / leverage : 0;
+  const fee = notional * 0.0008; // 0.08% privacy premium
+  const liqPrice = sizeNum > 0
+    ? side === 'long' ? markPrice * (1 - 1 / leverage * 0.9) : markPrice * (1 + 1 / leverage * 0.9)
+    : 0;
+
+  return (
+    <div className="p-3 space-y-2.5 flex-1 overflow-y-auto custom-scrollbar">
+      {/* Demo banner */}
+      <div className="relative rounded-lg overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-purple/10 to-accent/5" />
+        <div className="relative flex items-center gap-2.5 px-3 py-2.5 border border-purple/20 rounded-lg">
+          <div className="shrink-0 p-1.5 rounded-lg bg-purple/15">
+            <Sparkles className="w-3.5 h-3.5 text-purple" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[11px] font-bold text-purple flex items-center gap-1.5">
+              Privacy Transactions
+              <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-yellow/15 text-yellow border border-yellow/20 leading-none">CONCEPT</span>
+            </div>
+            <p className="text-[10px] text-txt-3 mt-0.5 leading-relaxed">
+              Shield your positions from on-chain surveillance. Liquidation levels, entry prices, and position sizes are hidden from other traders.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Long / Short */}
+      <div className="flex gap-1.5">
+        {(['long', 'short'] as Side[]).map(s => {
+          const active = side === s;
+          const isBuy = s === 'long';
+          return (
+            <button key={s} onClick={() => setSide(s)}
+              className={`flex-1 py-2 rounded-lg text-[11px] font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                active
+                  ? isBuy
+                    ? 'bg-bull/15 text-bull border border-bull/30 shadow-sm shadow-bull/10'
+                    : 'bg-bear/15 text-bear border border-bear/30 shadow-sm shadow-bear/10'
+                  : 'bg-drift-surface/50 text-txt-3 border border-drift-border hover:text-txt-2 hover:border-drift-border-lt'
+              }`}>
+              <Lock className="w-3 h-3" />
+              {isBuy ? 'Private Long' : 'Private Short'}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Privacy shields */}
+      <div className="rounded-lg bg-drift-surface/50 border border-drift-border p-2.5 space-y-2">
+        <div className="flex items-center gap-2 mb-1">
+          <ShieldCheck className="w-3.5 h-3.5 text-purple" />
+          <span className="text-[10px] font-bold text-txt-1 uppercase tracking-wider">Privacy Shields</span>
+        </div>
+        <PrivacyToggle label="Shield Mode" desc="Encrypt position data" checked={shieldEnabled} onChange={setShieldEnabled} icon={<ShieldCheck className="w-3 h-3" />} />
+        <PrivacyToggle label="Hide Liquidation" desc="Liq. price hidden on-chain" checked={hideLiq} onChange={setHideLiq} icon={<EyeOff className="w-3 h-3" />} />
+        <PrivacyToggle label="Hide Entry Price" desc="Entry not visible to others" checked={hideEntry} onChange={setHideEntry} icon={<Lock className="w-3 h-3" />} />
+      </div>
+
+      {/* Leverage */}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] text-txt-3">Leverage</span>
+          <span className="text-[11px] font-semibold tabular-nums text-txt-0">{leverage}×</span>
+        </div>
+        <div className="flex items-center gap-1">
+          {PRIV_LEV.map(l => (
+            <button key={l} onClick={() => setLeverage(l)}
+              className={`flex-1 py-1 rounded text-[10px] font-semibold transition-colors ${
+                leverage === l
+                  ? 'bg-purple/20 text-purple border border-purple/30'
+                  : 'bg-drift-surface text-txt-3 hover:text-txt-2 border border-transparent'
+              }`}>
+              {l}×
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Size */}
+      <div>
+        <label className="text-[11px] text-txt-3 font-medium mb-1.5 block">Size</label>
+        <InputField value={size} onChange={setSize} placeholder="0.00" suffix={sym} />
+        {sizeNum > 0 && (
+          <div className="text-right mt-1 text-[10px] tabular-nums text-txt-3">
+            ≈ ${notional.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+        )}
+      </div>
+      <div className="flex items-center gap-1">
+        {PRIV_SIZES.map(s => (
+          <button key={s} onClick={() => setSize(s)}
+            className={`flex-1 py-1 rounded text-[10px] font-semibold transition-colors ${
+              size === s
+                ? 'bg-drift-active text-txt-0'
+                : 'bg-drift-surface text-txt-3 hover:text-txt-2'
+            }`}>
+            {s} {sym}
+          </button>
+        ))}
+      </div>
+
+      {/* Order summary */}
+      <div className="rounded-lg bg-drift-surface border border-drift-border overflow-hidden">
+        <div className="px-3 py-1.5 border-b border-drift-border flex items-center gap-1.5">
+          <Lock className="w-3 h-3 text-purple" />
+          <span className="text-[11px] font-medium text-txt-2">Privacy Order Preview</span>
+        </div>
+        <div className="px-3 py-2 space-y-1.5">
+          <SummaryRow label="Direction" value={side === 'long' ? '🟢 Long' : '🔴 Short'} valueClass={side === 'long' ? 'text-bull' : 'text-bear'} />
+          <SummaryRow label="Mark Price" value={markPrice > 0 ? `$${markPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '—'} />
+          <SummaryRow label="Margin Req." value={margin > 0 ? `$${margin.toFixed(2)}` : '—'} />
+          <div className="flex justify-between items-center text-[10.5px]">
+            <span className="text-txt-3">Est. Liq. Price</span>
+            {hideLiq ? (
+              <span className="flex items-center gap-1 text-purple text-[10px] font-medium">
+                <EyeOff className="w-3 h-3" /> Shielded
+              </span>
+            ) : (
+              <span className="tabular-nums font-medium text-yellow">{liqPrice > 0 ? `$${liqPrice.toFixed(2)}` : '—'}</span>
+            )}
+          </div>
+          <div className="flex justify-between items-center text-[10.5px]">
+            <span className="text-txt-3">Entry Price</span>
+            {hideEntry ? (
+              <span className="flex items-center gap-1 text-purple text-[10px] font-medium">
+                <EyeOff className="w-3 h-3" /> Shielded
+              </span>
+            ) : (
+              <span className="tabular-nums font-medium text-txt-1">{markPrice > 0 ? `$${markPrice.toFixed(2)}` : '—'}</span>
+            )}
+          </div>
+          <SummaryRow label="Privacy Fee (0.08%)" value={fee > 0 ? `$${fee.toFixed(4)}` : '—'} />
+          <SummaryRow label="Shield Status" value={shieldEnabled ? '🛡️ Active' : 'Disabled'} valueClass={shieldEnabled ? 'text-purple' : 'text-txt-3'} />
+        </div>
+      </div>
+
+      {/* On-chain visibility preview */}
+      <div className="rounded-lg bg-drift-bg/60 border border-purple/10 p-2.5 space-y-1.5">
+        <div className="flex items-center gap-1.5 mb-1">
+          <EyeOff className="w-3 h-3 text-purple/70" />
+          <span className="text-[10px] font-bold text-purple/80 uppercase tracking-wider">On-Chain Visibility</span>
+        </div>
+        <VisRow label="Position Size" visible={!shieldEnabled} />
+        <VisRow label="Liquidation Price" visible={!hideLiq} />
+        <VisRow label="Entry Price" visible={!hideEntry} />
+        <VisRow label="Direction (Long/Short)" visible={!shieldEnabled} />
+        <VisRow label="Collateral Amount" visible={true} />
+      </div>
+
+      {/* Submit (disabled — demo only) */}
+      {connected ? (
+        <div className="space-y-1.5">
+          <button disabled
+            className="w-full py-2.5 rounded-lg text-[12px] font-semibold bg-gradient-to-r from-purple/40 to-accent/30 text-white/50 cursor-not-allowed flex items-center justify-center gap-2 border border-purple/20">
+            <Lock className="w-3.5 h-3.5" />
+            Execute Private {side === 'long' ? 'Long' : 'Short'}
+          </button>
+          <div className="flex items-center justify-center gap-1.5 text-[10px] text-txt-3">
+            <Info className="w-3 h-3 text-yellow/70" />
+            <span>Coming Soon — Privacy trades are not yet available</span>
+          </div>
+        </div>
+      ) : (
+        <WalletMultiButton className="!w-full !justify-center !rounded" />
+      )}
+    </div>
+  );
+};
+
+const PrivacyToggle: React.FC<{
+  label: string; desc: string; checked: boolean; onChange: (v: boolean) => void; icon: React.ReactNode;
+}> = ({ label, desc, checked, onChange, icon }) => (
+  <button onClick={() => onChange(!checked)}
+    className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all text-left ${
+      checked
+        ? 'bg-purple/8 border border-purple/20'
+        : 'bg-drift-bg/30 border border-drift-border/50 hover:border-drift-border'
+    }`}>
+    <div className={`shrink-0 p-1 rounded-md transition-colors ${checked ? 'bg-purple/20 text-purple' : 'bg-drift-surface text-txt-3'}`}>
+      {icon}
+    </div>
+    <div className="flex-1 min-w-0">
+      <div className={`text-[10px] font-semibold ${checked ? 'text-purple' : 'text-txt-2'}`}>{label}</div>
+      <div className="text-[9px] text-txt-3 leading-tight">{desc}</div>
+    </div>
+    <div className={`w-7 h-4 rounded-full relative transition-colors ${checked ? 'bg-purple' : 'bg-drift-surface'}`}>
+      <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow-sm transition-all ${checked ? 'left-3.5' : 'left-0.5'}`} />
+    </div>
+  </button>
+);
+
+const VisRow: React.FC<{ label: string; visible: boolean }> = ({ label, visible }) => (
+  <div className="flex justify-between items-center text-[10px]">
+    <span className="text-txt-3">{label}</span>
+    {visible ? (
+      <span className="text-bear/70 font-medium">Visible</span>
+    ) : (
+      <span className="text-purple font-medium flex items-center gap-1">
+        <Lock className="w-2.5 h-2.5" /> Hidden
+      </span>
+    )}
   </div>
 );
