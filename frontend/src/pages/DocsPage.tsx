@@ -1421,9 +1421,10 @@ function KeeperRewards() {
 
 interface DocsPageProps {
   onBack?: () => void;
+  backLabel?: string;
 }
 
-export const DocsPage: React.FC<DocsPageProps> = ({ onBack }) => {
+export const DocsPage: React.FC<DocsPageProps> = ({ onBack, backLabel }) => {
   const [activeSection, setActiveSection] = useState<SectionId>('home');
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
     'Getting Started': true,
@@ -1524,7 +1525,7 @@ export const DocsPage: React.FC<DocsPageProps> = ({ onBack }) => {
           text-txt-2 hover:text-txt-0 bg-drift-surface/50 hover:bg-drift-surface rounded-lg transition-all border border-drift-border/30 hover:border-drift-border/60"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
-        Back to Trading
+        {backLabel || 'Back to Trading'}
       </button>
     </div>
   ) : null;

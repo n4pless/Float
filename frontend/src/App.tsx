@@ -16,8 +16,7 @@ import { useReadOnlyDrift } from './hooks/useReadOnlyDrift';
 import { useTradeSubscriber } from './hooks/useTradeSubscriber';
 import { Header, type Page } from './components/Header';
 import { MarketBar } from './components/MarketBar';
-import { DocsPage } from './pages/DocsPage';
-import { FeaturesPage } from './pages/FeaturesPage';
+import { InfoPage } from './pages/InfoPage';
 import { InsuranceFundPage } from './pages/InsuranceFundPage';
 import { LivePositionsPage } from './pages/LivePositionsPage';
 import { PriceChart } from './components/PriceChart';
@@ -78,10 +77,8 @@ function TradingApp() {
         onSwitchAccount={handleSwitchAccount}
       />
 
-      {currentPage === 'features' ? (
-        <FeaturesPage onBack={() => setCurrentPage('trade')} />
-      ) : currentPage === 'docs' ? (
-        <DocsPage onBack={() => setCurrentPage('trade')} />
+      {currentPage === 'learn' ? (
+        <InfoPage onBack={() => setCurrentPage('trade')} />
       ) : currentPage === 'insurance' ? (
         <InsuranceFundPage onBack={() => setCurrentPage('trade')} />
       ) : currentPage === 'positions' ? (

@@ -747,7 +747,7 @@ const sectionContent: Record<SectionId, React.ReactNode> = {
    MAIN COMPONENT
    ═══════════════════════════════════════════════════ */
 
-export const FeaturesPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
+export const FeaturesPage: React.FC<{ onBack?: () => void; backLabel?: string }> = ({ onBack, backLabel }) => {
   const [activeSection, setActiveSection] = useState<SectionId>('overview');
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(SIDEBAR.map((g) => [g.title, true])),
@@ -814,7 +814,7 @@ export const FeaturesPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
           className="flex items-center gap-2 text-[12px] text-txt-2 hover:text-txt-0 transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          Back to Trading
+          {backLabel || 'Back to Trading'}
         </button>
       )}
     </div>
