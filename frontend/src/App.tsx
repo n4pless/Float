@@ -19,6 +19,7 @@ import { MarketBar } from './components/MarketBar';
 import { DocsPage } from './pages/DocsPage';
 import { FeaturesPage } from './pages/FeaturesPage';
 import { InsuranceFundPage } from './pages/InsuranceFundPage';
+import { LivePositionsPage } from './pages/LivePositionsPage';
 import { PriceChart } from './components/PriceChart';
 import { OrderBook } from './components/OrderBook';
 import { RecentTrades } from './components/RecentTrades';
@@ -89,6 +90,8 @@ function TradingApp() {
         <DocsPage onBack={() => setCurrentPage('trade')} />
       ) : currentPage === 'insurance' ? (
         <InsuranceFundPage onBack={() => setCurrentPage('trade')} />
+      ) : currentPage === 'positions' ? (
+        <LivePositionsPage onBack={() => setCurrentPage('trade')} />
       ) : currentPage === 'user' ? (
         <UserManagement
           forceRefresh={forceRefresh}
