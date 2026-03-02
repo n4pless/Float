@@ -20,7 +20,7 @@ import {
   selectOraclePrice,
 } from '../stores/useDriftStore';
 import { BOT_WALLETS } from '../sdk/drift-client-wrapper';
-import { BASE_PRECISION, PRICE_PRECISION } from '@drift-labs/sdk';
+import { BASE_PRECISION, PRICE_PRECISION, getTokenAmount, SpotBalanceType, QUOTE_PRECISION } from '@drift-labs/sdk';
 
 /* ─── Props ─── */
 interface LivePositionsPageProps {
@@ -92,6 +92,12 @@ export const LivePositionsPage: React.FC<LivePositionsPageProps> = ({ onBack }) 
       const basePrecision = 1_000_000_000; // 1e9
       const quotePrecision = 1_000_000;    // 1e6
 
+      // Get the USDC spot market for proper balance conversion
+      let usdcSpotMarket: any = null;
+      try {
+        usdcSpotMarket = client.getDriftClient().getSpotMarketAccount(0);
+      } catch { /* fallback to raw */ }
+
       const rows: PositionRow[] = [];
 
       for (const ua of cached) {
@@ -100,19 +106,45 @@ export const LivePositionsPage: React.FC<LivePositionsPageProps> = ({ onBack }) 
         const label = BOT_WALLETS[authority] || shortAddr(authority);
         const isBot = !!BOT_WALLETS[authority];
 
-        // Parse collateral
+        // Parse collateral using SDK's getTokenAmount for accurate interest-adjusted values
         let totalCollateral = 0;
-        let freeCollateral = 0;
         try {
           const spotPositions = acct.spotPositions ?? [];
           for (const sp of spotPositions) {
-            if (sp.marketIndex === 0) {
-              const scaled = sp.scaledBalance;
-              const num = scaled
-                ? (typeof scaled.toNumber === 'function' ? scaled.toNumber() : Number(scaled))
-                : 0;
-              totalCollateral = num / quotePrecision;
-              break;
+            if (sp.scaledBalance && !sp.scaledBalance.isZero()) {
+              const mktIdx = sp.marketIndex;
+              let spotMarket: any = null;
+              try { spotMarket = client.getDriftClient().getSpotMarketAccount(mktIdx); } catch {}
+
+              if (spotMarket) {
+                const balType = sp.balanceType && ('borrow' in sp.balanceType)
+                  ? SpotBalanceType.BORROW
+                  : SpotBalanceType.DEPOSIT;
+                const tokenAmountBN = getTokenAmount(sp.scaledBalance, spotMarket, balType);
+                const tokenAmt = tokenAmountBN.toNumber() / Math.pow(10, spotMarket.decimals);
+
+                // Convert non-USDC assets to USD using oracle
+                let usdValue = tokenAmt;
+                if (mktIdx !== 0) {
+                  try {
+                    const oracle = client.getDriftClient().getOracleDataForSpotMarket(mktIdx);
+                    const px = oracle ? oracle.price.toNumber() / PRICE_PRECISION.toNumber() : 0;
+                    usdValue = tokenAmt * px;
+                  } catch { usdValue = 0; }
+                }
+
+                if (balType === SpotBalanceType.BORROW) {
+                  totalCollateral -= usdValue;
+                } else {
+                  totalCollateral += usdValue;
+                }
+              } else {
+                // Fallback: raw scaledBalance / QUOTE_PRECISION for USDC only
+                if (mktIdx === 0) {
+                  const num = sp.scaledBalance.toNumber() / quotePrecision;
+                  totalCollateral += num;
+                }
+              }
             }
           }
         } catch { /* fallback */ }
