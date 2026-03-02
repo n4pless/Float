@@ -1857,33 +1857,51 @@ export class DriftTradingClient {
 
   /**
    * Request to unstake from insurance fund (starts cooldown).
-   * Uses the user's actual share count from their stake account so that
-   * protocol-owned shares don't dilute the conversion.
+   *
+   * The on-chain instruction expects a RAW TOKEN AMOUNT (USDC lamports),
+   * not shares.  It internally converts:
+   *   n_shares = amount * total_shares / vault_balance
+   *
+   * For a full unstake we compute the exact token value of all the user's
+   * shares from fresh on-chain data so rounding is minimal.
    */
   async requestUnstakeInsuranceFund(usdcAmount: number, marketIndex = 0): Promise<string> {
     const spotMarket = this.driftClient.getSpotMarketAccount(marketIndex);
     if (!spotMarket) throw new Error('Spot market not found');
 
-    // Get user's real stake account for accurate share count
+    // Fetch user's real stake for full-unstake detection
     const userStake = await this.getUserIfStake(marketIndex);
     if (!userStake.isInitialized) throw new Error('No insurance fund stake account found');
 
-    const userSharesBN = new BN(userStake.ifShares);
-    const totalStakeValue = userStake.stakeValue; // USDC value of all user shares
+    let amountBN: BN;
 
-    let sharesBN: BN;
-    if (totalStakeValue <= 0 || usdcAmount >= totalStakeValue * 0.999) {
-      // Full unstake — use all user shares to avoid rounding/dilution issues
-      sharesBN = userSharesBN;
+    if (userStake.stakeValue > 0 && usdcAmount >= userStake.stakeValue * 0.999) {
+      // Full unstake — compute exact token value of ALL user shares using
+      // a fresh vault balance read so the on-chain division lands on the
+      // correct share count.
+      const userSharesBN = new BN(userStake.ifShares);
+      const ifVaultBal = await this.connection.getTokenAccountBalance(spotMarket.insuranceFund.vault);
+      const vaultBalanceBN = new BN(ifVaultBal.value.amount);
+      amountBN = unstakeSharesToAmount(
+        userSharesBN,
+        spotMarket.insuranceFund.totalShares,
+        vaultBalanceBN
+      );
+      console.log('[drift] requestUnstake FULL — shares:', userSharesBN.toString(),
+        'totalShares:', spotMarket.insuranceFund.totalShares.toString(),
+        'vault:', vaultBalanceBN.toString(),
+        'tokenAmount:', amountBN.toString());
     } else {
-      // Partial unstake — take proportional fraction of user's own shares
-      const fractionBps = Math.floor((usdcAmount / totalStakeValue) * 10000);
-      sharesBN = userSharesBN.mul(new BN(fractionBps)).div(new BN(10000));
+      // Partial unstake — pass the USDC amount in raw lamports; the
+      // on-chain program will convert to the appropriate share count.
+      amountBN = new BN(Math.round(usdcAmount * QUOTE_PRECISION.toNumber()));
+      console.log('[drift] requestUnstake PARTIAL — usdcAmount:', usdcAmount,
+        'lamports:', amountBN.toString());
     }
 
     const txSig = await this.driftClient.requestRemoveInsuranceFundStake(
       marketIndex,
-      sharesBN
+      amountBN
     );
 
     return typeof txSig === 'string' ? txSig : String(txSig);
