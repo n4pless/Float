@@ -60,7 +60,7 @@ export const OrderBook: React.FC<Props> = ({ onPriceClick }) => {
   const visBids = mode === 'asks' ? [] : mode === 'both' ? bids.slice(0, 8) : bids.slice(0, 12);
 
   const fmt = (v: number) =>
-    v >= 1e6 ? `${(v / 1e6).toFixed(1)}M` : v >= 1e3 ? `${(v / 1e3).toFixed(1)}K` : v.toFixed(0);
+    v.toLocaleString('en-US', { maximumFractionDigits: 0 });
   const fmtSize = (v: number) => v >= 100 ? v.toFixed(0) : v >= 1 ? v.toFixed(2) : v.toFixed(4);
 
   return (
