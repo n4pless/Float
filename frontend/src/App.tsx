@@ -171,9 +171,14 @@ function TradingApp() {
               </div>
             </div>
 
-            {/* Middle: Order Book */}
-            <div className="w-[260px] xl:w-[280px] shrink-0 flex flex-col bg-drift-bg">
-              <OrderBook onPriceClick={handlePriceClick} />
+            {/* Middle: Order Book + Recent Trades */}
+            <div className="w-[260px] xl:w-[280px] shrink-0 flex flex-col min-h-0 bg-drift-bg overflow-hidden">
+              <div className="flex-[3] min-h-0 overflow-hidden">
+                <OrderBook onPriceClick={handlePriceClick} />
+              </div>
+              <div className="flex-[2] min-h-0 border-t border-drift-border overflow-hidden">
+                <RecentTrades />
+              </div>
             </div>
 
             {/* Right: Trade Form */}

@@ -151,7 +151,16 @@ const initialState = {
   usdcBalance: null,
   accountSpotBalances: [],
 
-  recentTrades: [],
+  recentTrades: (() => {
+    try {
+      const saved = localStorage.getItem('value_recent_trades');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed.slice(0, 100);
+      }
+    } catch {}
+    return [];
+  })(),
   priceHistory: [],
   botPositions: [],
   ammStats: null,
@@ -196,9 +205,11 @@ export const useDriftStore = create<DriftStoreState>((set, get) => ({
 
   /* ── Live feed ── */
   addRecentTrade: (t) =>
-    set((s) => ({
-      recentTrades: [t, ...s.recentTrades].slice(0, 100),
-    })),
+    set((s) => {
+      const updated = [t, ...s.recentTrades].slice(0, 100);
+      try { localStorage.setItem('value_recent_trades', JSON.stringify(updated)); } catch {}
+      return { recentTrades: updated };
+    }),
   addPriceSnapshot: (s) =>
     set((state) => ({
       priceHistory: [...state.priceHistory, s].slice(-500),
