@@ -1,5 +1,4 @@
 import React from 'react';
-import { Clock, BarChart3 } from 'lucide-react';
 import { useDriftStore, selectRecentTrades, selectOraclePrice } from '../stores/useDriftStore';
 
 export const RecentTrades: React.FC = () => {
@@ -10,19 +9,16 @@ export const RecentTrades: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-3 py-2.5 shrink-0 border-b border-drift-border">
-        <div className="flex items-center gap-2">
-          <Clock className="w-3.5 h-3.5 text-txt-3" />
-          <span className="text-[12px] font-semibold text-txt-0">Recent Trades</span>
-        </div>
+      <div className="flex items-center justify-between px-3 py-2 shrink-0 border-b border-drift-border">
+        <span className="text-[11px] font-medium text-txt-0">Trades</span>
         {trades.length > 0 && (
-          <span className="text-[10px] text-txt-3 bg-drift-surface px-2 py-0.5 rounded-md font-medium">
+          <span className="text-[10px] text-txt-3 tabular-nums">
             {trades.length}
           </span>
         )}
       </div>
 
-      <div className="grid grid-cols-4 px-3 py-1.5 text-[10px] text-txt-3 font-medium bg-drift-surface/30">
+      <div className="grid grid-cols-4 px-3 py-1 text-[10px] text-txt-3 font-medium">
         <span>Price</span>
         <span className="text-right">Size</span>
         <span className="text-right">Fee</span>
@@ -36,9 +32,8 @@ export const RecentTrades: React.FC = () => {
               <span className="text-[11px] animate-pulse">Connecting…</span>
             ) : (
               <>
-                <BarChart3 className="w-5 h-5 text-txt-3/50" />
                 <span className="text-[11px]">No recent trades</span>
-                <span className="text-[10px] text-txt-3/50">Trades will appear when orders are filled</span>
+                <span className="text-[10px] text-txt-3/50">Trades appear when orders are filled</span>
               </>
             )}
           </div>
@@ -53,8 +48,8 @@ export const RecentTrades: React.FC = () => {
             return (
               <div
                 key={`${t.ts}-${i}`}
-                className="grid grid-cols-4 px-3 py-px text-[11px] hover:bg-drift-surface/50 transition-colors cursor-default"
-                style={{ height: 20 }}
+                className="grid grid-cols-4 px-3 py-px text-[11px] hover:bg-drift-surface transition-colors cursor-default"
+                style={{ height: 19 }}
               >
                 <span className={`tabular-nums font-medium ${t.side === 'buy' ? 'text-bull' : 'text-bear'}`}>
                   {t.price.toFixed(dec)}

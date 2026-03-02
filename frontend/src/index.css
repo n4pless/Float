@@ -2,27 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── CSS Variables (Backpack-inspired theme) ── */
+/* ── CSS Variables (Backpack Exchange theme) ── */
 :root {
-  --bg-base:       #0e0f14;
-  --bg-surface:    #14151b;
-  --bg-elevated:   #202127;
-  --bg-hover:      #202127;
-  --bg-active:     #2a2b33;
-  --border-subtle:  rgba(255,255,255,0.06);
-  --border-default: rgba(255,255,255,0.10);
-  --border-strong:  rgba(255,255,255,0.15);
-  --text-primary:   #f4f4f6;
-  --text-secondary: #969faf;
-  --text-tertiary:  #75798a;
-  --text-muted:     #5d606f;
-  --accent:         #4c94ff;
-  --accent-hover:   #6aa8ff;
-  --accent-dim:     rgba(76,148,255,0.06);
-  --success:        #00c278;
-  --success-dim:    rgba(0,194,120,0.08);
-  --danger:         #ff575a;
-  --danger-dim:     rgba(255,87,90,0.08);
+  --bg-base:       #0e0e11;
+  --bg-surface:    #141418;
+  --bg-elevated:   #1c1c24;
+  --bg-hover:      #1c1c24;
+  --bg-active:     #24242e;
+  --border-subtle:  rgba(255,255,255,0.04);
+  --border-default: rgba(255,255,255,0.06);
+  --border-strong:  rgba(255,255,255,0.10);
+  --text-primary:   #f5f5f7;
+  --text-secondary: #8a8f98;
+  --text-tertiary:  #6c7080;
+  --text-muted:     #4e5261;
+  --accent:         #5c8ae6;
+  --accent-hover:   #6a96ee;
+  --accent-dim:     rgba(92,138,230,0.06);
+  --success:        #24b47e;
+  --success-dim:    rgba(36,180,126,0.08);
+  --danger:         #f84960;
+  --danger-dim:     rgba(248,73,96,0.08);
   --warning:        #efa411;
   --warning-dim:    rgba(239,164,17,0.08);
 }
@@ -38,9 +38,10 @@ html, body, #root {
   background: var(--bg-base);
   color: var(--text-primary);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* ── Mobile: allow vertical scroll on root ─────── */
@@ -51,25 +52,20 @@ html, body, #root {
   }
 }
 
-/* ── Subtle gradient overlay (omni style) ──────── */
+/* ── Subtle gradient overlay ───────────────────── */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(120,119,198,0.024) 0%, transparent 50%),
-    radial-gradient(ellipse 50% 40% at 80% 0%, rgba(100,100,120,0.016) 0%, transparent 40%),
-    var(--bg-base);
+  background: var(--bg-base);
 }
 
 /* ── Glass effect (header) ─────────────────────── */
 .glass {
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  backdrop-filter: blur(20px) saturate(180%);
-  background: rgba(14, 15, 20, 0.85);
-  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-default);
 }
 
 /* ── Scrollbar ─────────────────────────────────── */
@@ -129,27 +125,27 @@ input[type="range"]::-moz-range-thumb {
   cursor: pointer;
 }
 
-/* ── Wallet adapter overrides (omni style) ─────── */
+/* ── Wallet adapter overrides (Backpack style) ── */
 .wallet-adapter-button {
   background-color: var(--bg-elevated) !important;
   border: 1px solid var(--border-default) !important;
   color: var(--text-primary) !important;
-  border-radius: 10px !important;
+  border-radius: 6px !important;
   font-size: 11px !important;
-  height: 34px !important;
+  height: 32px !important;
   padding: 0 12px !important;
   font-weight: 500 !important;
-  line-height: 34px !important;
-  transition: all 0.15s ease !important;
+  line-height: 32px !important;
+  transition: all 0.1s ease !important;
   box-shadow: none !important;
 }
 @media (max-width: 639px) {
   .wallet-adapter-button {
-    height: 30px !important;
+    height: 28px !important;
     padding: 0 8px !important;
     font-size: 10px !important;
-    line-height: 30px !important;
-    border-radius: 8px !important;
+    line-height: 28px !important;
+    border-radius: 6px !important;
   }
   .wallet-adapter-button-start-icon {
     width: 14px !important;
@@ -163,7 +159,7 @@ input[type="range"]::-moz-range-thumb {
   letter-spacing: 0.01em !important;
 }
 .wallet-adapter-button:not([disabled]):hover {
-  background-color: var(--bg-hover) !important;
+  background-color: var(--bg-active) !important;
   border-color: var(--border-strong) !important;
   opacity: 1 !important;
   transform: none !important;
@@ -176,7 +172,7 @@ input[type="range"]::-moz-range-thumb {
 .wallet-adapter-modal-wrapper {
   background-color: var(--bg-surface) !important;
   border: 1px solid var(--border-default) !important;
-  border-radius: 16px !important;
+  border-radius: 12px !important;
 }
 .wallet-adapter-modal-button-close {
   background-color: var(--bg-elevated) !important;

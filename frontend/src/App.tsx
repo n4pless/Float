@@ -94,7 +94,7 @@ function TradingApp() {
           <MarketBar />
 
           {/* ── Mobile bottom tab bar (lg:hidden) ── */}
-          <div className="flex lg:hidden items-center shrink-0 border-b border-drift-border bg-drift-panel/50">
+          <div className="flex lg:hidden items-center shrink-0 border-b border-drift-border bg-drift-panel">
             {([
               { key: 'chart' as MobileView, label: 'Chart', icon: BarChart2 },
               { key: 'book' as MobileView, label: 'Book', icon: BookOpen },
@@ -105,11 +105,10 @@ function TradingApp() {
               const active = mobileView === t.key;
               return (
                 <button key={t.key} onClick={() => setMobileView(t.key)}
-                  className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-all relative ${
-                    active ? 'text-txt-0' : 'text-txt-3'}`}>
+                  className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors relative border-b-2 -mb-px ${
+                    active ? 'text-txt-0 border-txt-0' : 'text-txt-3 border-transparent'}`}>
                   <Icon className="w-4 h-4" />
                   {t.label}
-                  {active && <div className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-accent" />}
                   {t.key === 'account' && !isUserInitialized && client && (
                     <span className="absolute top-1 right-1/4 w-1.5 h-1.5 rounded-full bg-bear animate-pulse" />
                   )}

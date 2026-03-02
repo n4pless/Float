@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Layers, ClipboardList, Wallet, Clock, History, X, Wifi, Bot, Activity, ArrowDownToLine } from 'lucide-react';
+import { X, Activity, ArrowDownToLine, Layers, ClipboardList, Wallet, Clock, History, Bot, Wifi } from 'lucide-react';
 import { SolanaLogo } from './icons/SolanaLogo';
 import { useDriftStore, selectRecentTrades, selectBotPositions, selectAmmStats } from '../stores/useDriftStore';
 import DRIFT_CONFIG from '../config';
@@ -13,15 +13,6 @@ interface Props {
 }
 
 type Tab = 'positions' | 'orders' | 'balances' | 'bots' | 'orderHistory' | 'tradeHistory';
-
-const TAB_ICONS: Record<Tab, any> = {
-  positions: Layers,
-  orders: ClipboardList,
-  balances: Wallet,
-  bots: Bot,
-  orderHistory: Clock,
-  tradeHistory: History,
-};
 
 export const BottomPanel: React.FC<Props> = ({ trading }) => {
   const { connected } = useWallet();
@@ -80,26 +71,17 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
   return (
     <div className="flex flex-col h-full">
       {/* Tabs */}
-      <div className="flex items-center shrink-0 px-1 sm:px-2 border-b border-drift-border overflow-x-auto">
-        {tabs.map(t => {
-          const Icon = TAB_ICONS[t.key];
-          return (
+      <div className="flex items-center shrink-0 px-1 border-b border-drift-border overflow-x-auto">
+        {tabs.map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
-              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2.5 text-[10px] sm:text-[11px] font-medium relative transition-all whitespace-nowrap ${
-                tab === t.key ? 'text-txt-0' : 'text-txt-3 hover:text-txt-2'}`}>
-              <Icon className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden sm:inline">{t.label}</span>
-              <span className="sm:hidden">{t.label.replace('Trade History','Trades').replace('Order History','History')}</span>
+              className={`px-3 py-2 text-[11px] font-medium relative transition-colors whitespace-nowrap border-b-2 -mb-px ${
+                tab === t.key ? 'text-txt-0 border-txt-0' : 'text-txt-3 hover:text-txt-2 border-transparent'}`}>
+              {t.label}
               {(t.count ?? 0) > 0 && (
-                <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-semibold ${
-                  tab === t.key ? 'bg-accent/15 text-accent' : 'bg-drift-surface text-txt-2'}`}>
-                  {t.count}
-                </span>
+                <span className="text-[9px] ml-1.5 tabular-nums text-txt-3">{t.count}</span>
               )}
-              {tab === t.key && <div className="absolute bottom-0 left-2 right-2 h-[2px] rounded-full bg-accent" />}
             </button>
-          );
-        })}
+        ))}
       </div>
 
       {/* Content */}

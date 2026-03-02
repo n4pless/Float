@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { TrendingUp, Settings, ExternalLink, User, BookOpen, Droplets, Sparkles, Shield, Activity } from 'lucide-react';
+import { Settings, ExternalLink, Droplets } from 'lucide-react';
 import { UserAccountSelector } from './UserAccountSelector';
 
 export type Page = 'trade' | 'user' | 'learn' | 'insurance' | 'positions';
@@ -12,12 +12,12 @@ interface HeaderProps {
   onSwitchAccount?: (subAccountId: number) => void;
 }
 
-const NAV = [
-  { id: 'trade' as const, label: 'Trade', icon: TrendingUp },
-  { id: 'insurance' as const, label: 'Insurance', icon: Shield },
-  { id: 'user' as const, label: 'User', icon: User },
-  { id: 'learn' as const, label: 'Learn', icon: BookOpen },
-  { id: 'positions' as const, label: 'Positions', icon: Activity },
+const NAV: { id: Page; label: string }[] = [
+  { id: 'trade', label: 'Trade' },
+  { id: 'insurance', label: 'Insurance' },
+  { id: 'user', label: 'Account' },
+  { id: 'learn', label: 'Learn' },
+  { id: 'positions', label: 'Positions' },
 ];
 
 export const Header: React.FC<HeaderProps> = ({
@@ -29,83 +29,80 @@ export const Header: React.FC<HeaderProps> = ({
   const [showSettings, setShowSettings] = useState(false);
 
   return (
-    <header className="h-12 sm:h-14 flex items-center justify-between px-2 sm:px-6 shrink-0 glass border-b border-drift-border">
+    <header className="h-11 flex items-center justify-between px-4 shrink-0 bg-drift-panel border-b border-drift-border">
       {/* Left: Logo + Nav */}
-      <div className="flex items-center gap-2 sm:gap-8 min-w-0">
-        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-          {/* "V" logo mark */}
-          <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-gradient-to-br from-accent to-purple flex items-center justify-center shadow-lg shadow-accent/20">
-            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M2 4L12 22L22 4" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+      <div className="flex items-center gap-6 min-w-0">
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="w-5 h-5 rounded bg-gradient-to-br from-accent to-purple flex items-center justify-center">
+            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2 4L12 22L22 4" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
-          <span className="font-semibold text-[14px] sm:text-[15px] text-txt-0 tracking-tight">Value</span>
+          <span className="font-semibold text-[13px] text-txt-0 tracking-tight hidden sm:inline">Value</span>
         </div>
 
-        <nav className="hidden sm:flex items-center gap-0.5">
+        <nav className="hidden sm:flex items-center gap-0">
           {NAV.map(n => (
             <button key={n.id}
               onClick={() => onNavigate?.(n.id)}
-              className={`px-3.5 py-1.5 text-[13px] font-medium rounded-lg transition-all duration-150 ${
+              className={`relative px-3 py-3 text-[12px] font-medium transition-colors ${
                 currentPage === n.id
-                  ? 'bg-drift-surface text-txt-0'
-                  : 'text-txt-2 hover:text-txt-1 hover:bg-[rgba(255,255,255,0.04)]'
+                  ? 'text-txt-0'
+                  : 'text-txt-2 hover:text-txt-1'
               }`}>
               {n.label}
+              {currentPage === n.id && (
+                <div className="absolute bottom-0 left-3 right-3 h-[2px] bg-txt-0 rounded-full" />
+              )}
             </button>
           ))}
         </nav>
       </div>
 
-      {/* Right: Network + Settings + Wallet */}
-      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-        {/* Network badge — hidden on tiny screens */}
-        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-drift-surface border border-drift-border">
-          <div className="w-1.5 h-1.5 rounded-full bg-bull animate-pulse" />
-          <span className="text-[11px] text-txt-1 font-medium">Devnet</span>
+      {/* Right: Network + Faucet + Settings + Wallet */}
+      <div className="flex items-center gap-2 shrink-0">
+        <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded bg-drift-surface border border-drift-border">
+          <div className="w-1.5 h-1.5 rounded-full bg-bull" />
+          <span className="text-[10px] text-txt-2 font-medium">Devnet</span>
         </div>
 
-        {/* Faucet link */}
         <a
           href="https://faucet.solana.com/"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-accent/10 border border-accent/20 text-accent hover:bg-accent/15 transition-all duration-150"
+          className="flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-medium text-accent bg-accent/8 hover:bg-accent/12 transition-colors"
         >
-          <Droplets className="w-3.5 h-3.5" />
-          <span className="text-[11px] font-semibold hidden sm:inline">Faucet</span>
+          <Droplets className="w-3 h-3" />
+          <span className="hidden sm:inline">Faucet</span>
         </a>
 
-        {/* Settings — hidden on mobile */}
         <div className="relative hidden sm:block">
           <button onClick={() => setShowSettings(!showSettings)}
             onBlur={() => setTimeout(() => setShowSettings(false), 150)}
-            className="p-2 rounded-lg hover:bg-drift-surface transition-all duration-150 text-txt-2 hover:text-txt-0">
-            <Settings className="w-4 h-4" />
+            className="p-1.5 rounded hover:bg-drift-surface transition-colors text-txt-2 hover:text-txt-1">
+            <Settings className="w-3.5 h-3.5" />
           </button>
           {showSettings && (
-            <div className="absolute right-0 top-full mt-1.5 w-52 py-1.5 rounded-xl shadow-2xl bg-drift-surface border border-drift-border-lt z-50">
-              <div className="px-3 py-2 text-[11px] text-txt-3 font-semibold uppercase tracking-widest">Settings</div>
-              <button className="w-full text-left px-3 py-2.5 text-[12px] text-txt-1 hover:bg-drift-input transition-colors duration-150 flex items-center gap-2">
-                <ExternalLink className="w-3.5 h-3.5 text-txt-3" />
+            <div className="absolute right-0 top-full mt-1 w-48 py-1 rounded-md bg-drift-surface border border-drift-border z-50">
+              <div className="px-3 py-1.5 text-[10px] text-txt-3 font-semibold uppercase tracking-wider">Settings</div>
+              <button className="w-full text-left px-3 py-2 text-[11px] text-txt-1 hover:bg-drift-active transition-colors flex items-center gap-2">
+                <ExternalLink className="w-3 h-3 text-txt-3" />
                 RPC Endpoint
               </button>
-              <button className="w-full text-left px-3 py-2.5 text-[12px] text-txt-1 hover:bg-drift-input transition-colors duration-150 flex items-center gap-2">
-                <Settings className="w-3.5 h-3.5 text-txt-3" />
+              <button className="w-full text-left px-3 py-2 text-[11px] text-txt-1 hover:bg-drift-active transition-colors flex items-center gap-2">
+                <Settings className="w-3 h-3 text-txt-3" />
                 Priority Fees
               </button>
             </div>
           )}
         </div>
 
-        {/* User Account Selector — hidden on mobile */}
         {onSwitchAccount && (
           <div className="hidden sm:block">
             <UserAccountSelector onSwitchAccount={onSwitchAccount} />
           </div>
         )}
 
-        {/* Wallet connect / address button */}
         <WalletMultiButton />
       </div>
     </header>

@@ -135,8 +135,8 @@ export const PriceChart: React.FC = () => {
       },
       crosshair: {
         mode: CrosshairMode.Normal,
-        vertLine: { color: 'rgba(150,159,175,0.2)', width: 1, style: 3, labelBackgroundColor: '#202127' },
-        horzLine: { color: 'rgba(150,159,175,0.2)', width: 1, style: 3, labelBackgroundColor: '#202127' },
+        vertLine: { color: 'rgba(150,159,175,0.2)', width: 1, style: 3, labelBackgroundColor: '#1c1c24' },
+        horzLine: { color: 'rgba(150,159,175,0.2)', width: 1, style: 3, labelBackgroundColor: '#1c1c24' },
       },
       rightPriceScale: {
         borderColor: 'rgba(255,255,255,0.10)',
@@ -187,12 +187,12 @@ export const PriceChart: React.FC = () => {
 
     if (chartMode === 'candle') {
       const candleSeries = chart.addSeries(CandlestickSeries, {
-        upColor: '#00c278',
-        downColor: '#ff575a',
-        borderUpColor: '#00c278',
-        borderDownColor: '#ff575a',
-        wickUpColor: '#00c278',
-        wickDownColor: '#ff575a',
+        upColor: '#24b47e',
+        downColor: '#f84960',
+        borderUpColor: '#24b47e',
+        borderDownColor: '#f84960',
+        wickUpColor: '#24b47e',
+        wickDownColor: '#f84960',
       });
 
       const candleData: CandlestickData[] = candles.map(c => ({
@@ -216,7 +216,7 @@ export const PriceChart: React.FC = () => {
       const volData = candles.map(c => ({
         time: c.time as Time,
         value: c.volume,
-        color: c.close >= c.open ? 'rgba(0,194,120,0.15)' : 'rgba(255,87,90,0.15)',
+        color: c.close >= c.open ? 'rgba(36,180,126,0.15)' : 'rgba(248,73,96,0.15)',
       }));
       volumeSeries.setData(volData);
       volumeSeriesRef.current = volumeSeries;
@@ -267,31 +267,33 @@ export const PriceChart: React.FC = () => {
   const change = last ? ((last.close - last.open) / last.open * 100) : 0;
 
   return (
-    <div className="flex flex-col h-full bg-drift-bg rounded-xl border border-drift-border overflow-hidden">
+    <div className="flex flex-col h-full bg-drift-bg border border-drift-border overflow-hidden">
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 py-2 shrink-0 border-b border-drift-border bg-drift-panel/50">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between px-3 py-1.5 shrink-0 border-b border-drift-border">
+        <div className="flex items-center gap-2">
           {/* Timeframe buttons */}
-          <div className="flex items-center gap-0.5 bg-drift-surface rounded-lg p-0.5">
+          <div className="flex items-center gap-0.5">
             {TF.map(t => (
               <button key={t} onClick={() => setTf(t)}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all duration-150
-                  ${tf === t ? 'bg-drift-input text-txt-0 shadow-sm' : 'text-txt-3 hover:text-txt-1'}`}
+                className={`px-2 py-1 rounded text-[11px] font-medium transition-colors
+                  ${tf === t ? 'bg-drift-active text-txt-0' : 'text-txt-3 hover:text-txt-1'}`}
               >{t}</button>
             ))}
           </div>
 
+          <div className="w-px h-3.5 bg-drift-border" />
+
           {/* Chart mode toggle */}
-          <div className="flex items-center gap-0.5 bg-drift-surface rounded-lg p-0.5">
+          <div className="flex items-center gap-0.5">
             <button onClick={() => setChartMode('candle')}
-              className={`px-2 py-1 rounded-md text-[11px] font-medium transition-all duration-150
-                ${chartMode === 'candle' ? 'bg-drift-input text-txt-0' : 'text-txt-3 hover:text-txt-1'}`}
+              className={`px-1.5 py-1 rounded text-[11px] font-medium transition-colors
+                ${chartMode === 'candle' ? 'bg-drift-active text-txt-0' : 'text-txt-3 hover:text-txt-1'}`}
             >
               <BarChart2 className="w-3.5 h-3.5" />
             </button>
             <button onClick={() => setChartMode('line')}
-              className={`px-2 py-1 rounded-md text-[11px] font-medium transition-all duration-150
-                ${chartMode === 'line' ? 'bg-drift-input text-txt-0' : 'text-txt-3 hover:text-txt-1'}`}
+              className={`px-1.5 py-1 rounded text-[11px] font-medium transition-colors
+                ${chartMode === 'line' ? 'bg-drift-active text-txt-0' : 'text-txt-3 hover:text-txt-1'}`}
             >
               <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <path d="M2 12L6 6L10 9L14 3" strokeLinecap="round" strokeLinejoin="round" />
@@ -299,7 +301,7 @@ export const PriceChart: React.FC = () => {
             </button>
           </div>
 
-          <div className="w-px h-4 bg-drift-border" />
+          <div className="w-px h-3.5 bg-drift-border" />
 
           <span className="text-[11px] text-txt-2">
             SOL-PERP <span className="text-txt-3 ml-1">Oracle</span>

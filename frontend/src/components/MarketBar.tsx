@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, TrendingUp, TrendingDown, Activity, DollarSign, BarChart3 } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { SolanaLogo } from './icons/SolanaLogo';
 import DRIFT_CONFIG from '../config';
 import { useDriftStore } from '../stores/useDriftStore';
@@ -21,36 +21,34 @@ export const MarketBar: React.FC = () => {
   const fundingPct = fundingRate * 100;
 
   return (
-    <div className="h-12 sm:h-14 flex items-center gap-3 sm:gap-5 px-2 sm:px-4 shrink-0 bg-drift-panel/50 border-b border-drift-border select-none overflow-x-auto">
+    <div className="h-11 flex items-center gap-4 px-3 shrink-0 bg-drift-panel border-b border-drift-border select-none overflow-x-auto">
       {/* Market picker */}
       <div className="relative">
         <button
           onClick={() => setOpen(!open)}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
-          className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-drift-surface transition-all group"
+          className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-drift-surface transition-colors"
         >
-          <div className="w-7 h-7 rounded-lg bg-black/40 flex items-center justify-center shadow-lg shadow-accent/10">
-            <SolanaLogo size={18} />
+          <div className="w-5 h-5 rounded bg-black/40 flex items-center justify-center">
+            <SolanaLogo size={14} />
           </div>
-          <div className="flex flex-col items-start">
-            <span className="font-bold text-[14px] text-txt-0 leading-tight">{market.symbol}</span>
-            <span className="text-[10px] text-txt-3">Perpetual</span>
-          </div>
-          <ChevronDown className={`w-4 h-4 text-txt-3 transition-transform ${open ? 'rotate-180' : ''}`} />
+          <span className="font-semibold text-[13px] text-txt-0">{market.symbol}</span>
+          <span className="text-[10px] text-txt-3 bg-drift-surface px-1 py-0.5 rounded font-medium">10x</span>
+          <ChevronDown className={`w-3.5 h-3.5 text-txt-3 transition-transform ${open ? 'rotate-180' : ''}`} />
         </button>
 
         {open && (
-          <div className="absolute top-full left-0 mt-2 z-50 min-w-[240px] py-2 rounded-xl shadow-2xl bg-drift-surface border border-drift-border-lt backdrop-blur-sm">
-            <div className="px-3 pb-2 text-[10px] text-txt-3 font-semibold uppercase tracking-wider">Markets</div>
+          <div className="absolute top-full left-0 mt-1 z-50 min-w-[200px] py-1 rounded-md bg-drift-surface border border-drift-border">
+            <div className="px-3 py-1.5 text-[10px] text-txt-3 font-medium uppercase tracking-wider">Markets</div>
             {Object.entries(DRIFT_CONFIG.markets).map(([idx, m]) => (
               <button
                 key={idx}
                 onClick={() => { setSelectedMarket(+idx); setOpen(false); }}
-                className={`w-full flex items-center justify-between px-3 py-2.5 text-xs hover:bg-drift-input transition-all rounded-lg mx-0 ${+idx === selectedMarket ? 'bg-drift-input' : ''}`}
+                className={`w-full flex items-center justify-between px-3 py-2 text-[11px] hover:bg-drift-active transition-colors ${+idx === selectedMarket ? 'bg-drift-active' : ''}`}
               >
-                <div className="flex items-center gap-2.5">
-                  <div className="w-6 h-6 rounded-lg bg-black/40 flex items-center justify-center">
-                    <SolanaLogo size={16} />
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-black/40 flex items-center justify-center">
+                    <SolanaLogo size={12} />
                   </div>
                   <span className="text-txt-0 font-medium">{m.symbol}</span>
                 </div>
@@ -63,47 +61,31 @@ export const MarketBar: React.FC = () => {
         )}
       </div>
 
-      <div className="w-px h-8 bg-drift-border-lt hidden sm:block" />
-
       {/* Price */}
-      <div className="flex items-center gap-2 shrink-0">
-        {up ? (
-          <TrendingUp className="w-4 h-4 text-bull" />
-        ) : (
-          <TrendingDown className="w-4 h-4 text-bear" />
-        )}
-        <span className={`text-lg sm:text-xl font-bold tabular-nums tracking-tight ${displayPrice > 0 ? (up ? 'text-bull' : 'text-bear') : 'text-txt-2'}`}>
-          {displayPrice > 0
-            ? `$${displayPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-            : '—'}
-        </span>
-        {!isSubscribed && (
-          <span className="text-[10px] text-txt-3 animate-pulse ml-1">connecting…</span>
-        )}
-      </div>
+      <span className={`text-[16px] font-semibold tabular-nums tracking-tight ${displayPrice > 0 ? (up ? 'text-bull' : 'text-bear') : 'text-txt-2'}`}>
+        {displayPrice > 0
+          ? displayPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+          : '—'}
+      </span>
 
-      {/* Stats — hidden on mobile, shown md+ */}
-      <div className="hidden md:flex items-center gap-6 ml-3">
-        <Stat icon={DollarSign} label="Oracle" value={displayPrice > 0 ? `$${displayPrice.toFixed(2)}` : '—'} />
-        <Stat
-          icon={Activity}
-          label="Funding Rate"
-          value={fundingRate !== 0 ? `${fundingPct >= 0 ? '+' : ''}${fundingPct.toFixed(4)}%` : '—'}
-          color={fundingPct < 0 ? 'text-bear' : fundingPct > 0 ? 'text-bull' : undefined}
-        />
-        <Stat icon={BarChart3} label="Open Interest" value={openInterest > 0 ? `${openInterest.toLocaleString(undefined, { maximumFractionDigits: 1 })} SOL` : '—'} />
-        <Stat icon={BarChart3} label="24h Volume" value="—" />
+      {!isSubscribed && (
+        <span className="text-[10px] text-txt-3 animate-pulse">connecting…</span>
+      )}
+
+      {/* Stats — Backpack style: label on top, value below */}
+      <div className="hidden md:flex items-center gap-5 ml-2">
+        <Stat label="24H Change" value={lastPriceChange !== 0 ? `${lastPriceChange >= 0 ? '+' : ''}${lastPriceChange.toFixed(2)}` : '—'} color={lastPriceChange >= 0 ? 'text-bull' : 'text-bear'} />
+        <Stat label="Funding Rate" value={fundingRate !== 0 ? `${fundingPct >= 0 ? '+' : ''}${fundingPct.toFixed(4)}%` : '—'} color={fundingPct < 0 ? 'text-bear' : fundingPct > 0 ? 'text-bull' : undefined} />
+        <Stat label="Open Interest" value={openInterest > 0 ? `${openInterest.toLocaleString(undefined, { maximumFractionDigits: 1 })} SOL` : '—'} />
+        <Stat label="24H Volume" value="—" />
       </div>
     </div>
   );
 };
 
-const Stat: React.FC<{ icon: any; label: string; value: string; color?: string }> = ({ icon: Icon, label, value, color }) => (
-  <div className="flex items-center gap-2">
-    <Icon className="w-3.5 h-3.5 text-txt-3" />
-    <div className="flex flex-col">
-      <span className="text-[10px] leading-tight text-txt-3">{label}</span>
-      <span className={`text-[12px] font-semibold tabular-nums ${color ?? 'text-txt-1'}`}>{value}</span>
-    </div>
+const Stat: React.FC<{ label: string; value: string; color?: string }> = ({ label, value, color }) => (
+  <div className="flex flex-col">
+    <span className="text-[10px] leading-tight text-txt-3">{label}</span>
+    <span className={`text-[11px] font-medium tabular-nums ${color ?? 'text-txt-1'}`}>{value}</span>
   </div>
 );

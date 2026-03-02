@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { AlertCircle, Shield, Zap, TrendingUp, TrendingDown, Info, ChevronDown } from 'lucide-react';
+import { AlertCircle, ChevronDown } from 'lucide-react';
 import { useDriftStore } from '../stores/useDriftStore';
 import DRIFT_CONFIG from '../config';
 
@@ -128,16 +128,14 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
   if (connected && client && !isUserInitialized) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-accent/20 to-purple/20 flex items-center justify-center mb-4 ring-1 ring-accent/10">
-          <AlertCircle className="w-7 h-7 text-accent" />
-        </div>
-        <h3 className="text-sm font-bold text-txt-0 mb-1.5">Account Setup Required</h3>
-        <p className="text-[11px] text-txt-3 mb-5 leading-relaxed max-w-[220px]">
+        <AlertCircle className="w-8 h-8 text-accent mb-3" />
+        <h3 className="text-[13px] font-semibold text-txt-0 mb-1">Account Setup Required</h3>
+        <p className="text-[11px] text-txt-3 mb-4 leading-relaxed max-w-[220px]">
           Create a Value trading account with USDC collateral to start trading.
         </p>
         {onSwitchToAccount && (
           <button onClick={onSwitchToAccount}
-            className="px-6 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-accent to-purple text-white transition-all hover:scale-[1.02] hover:shadow-xl shadow-lg shadow-accent/25 active:scale-[0.98]">
+            className="px-5 py-2 rounded text-[11px] font-semibold bg-accent text-white hover:brightness-110 transition-all">
             Set Up Account
           </button>
         )}
@@ -149,16 +147,14 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
   if (connected && client && isUserInitialized && (accountState?.totalCollateral ?? 0) === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-        <div className="w-14 h-14 rounded-2xl bg-bull/10 flex items-center justify-center mb-4 ring-1 ring-bull/10">
-          <Shield className="w-7 h-7 text-bull" />
-        </div>
-        <h3 className="text-sm font-bold text-txt-0 mb-1.5">Deposit Collateral</h3>
-        <p className="text-[11px] text-txt-3 mb-5 leading-relaxed max-w-[220px]">
+        <AlertCircle className="w-8 h-8 text-bull mb-3" />
+        <h3 className="text-[13px] font-semibold text-txt-0 mb-1">Deposit Collateral</h3>
+        <p className="text-[11px] text-txt-3 mb-4 leading-relaxed max-w-[220px]">
           Deposit USDC collateral to start trading perpetual futures.
         </p>
         {onSwitchToAccount && (
           <button onClick={onSwitchToAccount}
-            className="px-6 py-2.5 rounded-xl text-xs font-bold bg-bull text-white transition-all hover:scale-[1.02] hover:shadow-xl shadow-lg shadow-bull/25 active:scale-[0.98]">
+            className="px-5 py-2 rounded text-[11px] font-semibold bg-bull text-white hover:brightness-110 transition-all">
             Deposit USDC
           </button>
         )}
@@ -168,34 +164,32 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
 
   return (
     <div className="flex flex-col h-full overflow-y-auto custom-scrollbar">
-      {/* ── Side toggle ── */}
-      <div className="flex shrink-0 p-1.5 mx-2 mt-2 rounded-xl bg-drift-surface/60">
+      {/* ── Buy / Sell tabs (Backpack style) ── */}
+      <div className="flex shrink-0">
         {(['long', 'short'] as Side[]).map(s => {
           const active = side === s;
-          const Icon = s === 'long' ? TrendingUp : TrendingDown;
-          const color = s === 'long' ? 'bull' : 'bear';
+          const isBuy = s === 'long';
           return (
             <button key={s} onClick={() => setSide(s)}
-              className={`flex-1 py-2.5 text-[11px] font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-2.5 text-[12px] font-semibold transition-colors ${
                 active
-                  ? `bg-${color}/15 text-${color} shadow-sm ring-1 ring-${color}/20`
-                  : 'text-txt-3 hover:text-txt-2 hover:bg-drift-surface/40'
+                  ? isBuy ? 'bg-bull/15 text-bull border-b-2 border-bull' : 'bg-bear/15 text-bear border-b-2 border-bear'
+                  : 'text-txt-3 hover:text-txt-2 border-b-2 border-transparent'
               }`}>
-              <Icon className="w-3.5 h-3.5" />
-              {s === 'long' ? 'Long' : 'Short'}
+              {isBuy ? 'Buy / Long' : 'Sell / Short'}
             </button>
           );
         })}
       </div>
 
-      {/* ── Order type pill ── */}
-      <div className="flex items-center gap-0 mx-3 mt-3 shrink-0 bg-drift-surface/40 rounded-lg p-0.5">
+      {/* ── Order type tabs ── */}
+      <div className="flex items-center gap-0 shrink-0 border-b border-drift-border">
         {(['market', 'limit'] as OrdType[]).map(t => (
           <button key={t} onClick={() => setOrdType(t)}
-            className={`flex-1 px-3 py-1.5 text-[11px] font-semibold capitalize rounded-md transition-all ${
+            className={`px-4 py-2 text-[11px] font-medium capitalize transition-colors border-b-2 -mb-px ${
               ordType === t
-                ? 'text-txt-0 bg-drift-bg shadow-sm'
-                : 'text-txt-3 hover:text-txt-2'
+                ? 'text-txt-0 border-txt-0'
+                : 'text-txt-3 hover:text-txt-2 border-transparent'
             }`}>
             {t}
           </button>
@@ -205,31 +199,31 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
       <div className="p-3 space-y-2.5 flex-1">
         {/* Messages */}
         {msg && (
-          <div className={`px-3 py-2 rounded-xl text-[11px] flex items-start gap-2 leading-relaxed ${
+          <div className={`px-2.5 py-2 rounded text-[11px] flex items-start gap-2 leading-relaxed ${
             msg.type === 'ok'
-              ? 'bg-bull/8 text-bull border border-bull/15'
-              : 'bg-bear/8 text-bear border border-bear/15'
+              ? 'bg-bull/8 text-bull'
+              : 'bg-bear/8 text-bear'
           }`}>
-            {msg.type === 'ok' ? <Zap className="w-3.5 h-3.5 shrink-0 mt-0.5" /> : <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />}
+            <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
             <span>{msg.text}</span>
           </div>
         )}
 
         {/* ── Leverage ── */}
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] text-txt-3 font-medium">Leverage</span>
-            <span className={`text-[12px] font-bold tabular-nums text-${sideColor} bg-${sideColor}/10 px-2 py-0.5 rounded-md`}>
+            <span className="text-[11px] text-txt-3">Leverage</span>
+            <span className="text-[11px] font-semibold tabular-nums text-txt-0">
               {leverage}×
             </span>
           </div>
           <div className="flex items-center gap-1">
             {LEV_PRESETS.map(l => (
               <button key={l} onClick={() => setLeverage(l)}
-                className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                className={`flex-1 py-1 rounded text-[10px] font-semibold transition-colors ${
                   leverage === l
-                    ? `bg-${sideColor}/12 text-${sideColor} ring-1 ring-${sideColor}/20`
-                    : 'bg-drift-surface/60 text-txt-3 hover:bg-drift-surface hover:text-txt-2'
+                    ? 'bg-drift-active text-txt-0'
+                    : 'bg-drift-surface text-txt-3 hover:text-txt-2'
                 }`}>
                 {l}×
               </button>
@@ -237,8 +231,8 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
           </div>
           <input type="range" min={1} max={DRIFT_CONFIG.maxLeverage} step={1}
             value={leverage} onChange={e => setLeverage(+e.target.value)}
-            className="w-full accent-current h-1 opacity-40 hover:opacity-100 transition-opacity cursor-pointer"
-            style={{ accentColor: side === 'long' ? '#00c278' : '#ff575a' }}
+            className="w-full accent-current h-1 cursor-pointer"
+            style={{ accentColor: side === 'long' ? '#24b47e' : '#f84960' }}
           />
         </div>
 
@@ -285,10 +279,10 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
           <div className="flex items-center gap-1">
             {PCT.map(p => (
               <button key={p} onClick={() => handlePct(p)}
-                className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                className={`flex-1 py-1 rounded text-[10px] font-semibold transition-colors ${
                   pct === p
-                    ? `bg-${sideColor}/12 text-${sideColor} ring-1 ring-${sideColor}/20`
-                    : 'bg-drift-surface/60 text-txt-3 hover:bg-drift-surface hover:text-txt-2'
+                    ? 'bg-drift-active text-txt-0'
+                    : 'bg-drift-surface text-txt-3 hover:text-txt-2'
                 }`}>
                 {p}%
               </button>
@@ -313,7 +307,7 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
 
         {/* ── TP/SL ── */}
         {showTpSl && (
-          <div className="space-y-2 rounded-xl p-2.5 bg-drift-surface/30 border border-drift-border/60">
+          <div className="space-y-2 rounded p-2.5 bg-drift-surface border border-drift-border">
             <div>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[10px] font-semibold text-bull">Take Profit</span>
@@ -342,10 +336,10 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
         {/* ── Submit ── */}
         {connected ? (
           <button onClick={handleSubmit} disabled={loading || !sizeNum}
-            className={`w-full py-3 rounded-xl text-[13px] font-bold tracking-wide transition-all disabled:opacity-30 disabled:cursor-not-allowed text-white ${
+            className={`w-full py-2.5 rounded text-[12px] font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-white ${
               side === 'long'
-                ? 'bg-gradient-to-r from-bull to-emerald-400 hover:shadow-lg hover:shadow-bull/25 active:scale-[0.98]'
-                : 'bg-gradient-to-r from-bear to-rose-400 hover:shadow-lg hover:shadow-bear/25 active:scale-[0.98]'
+                ? 'bg-bull hover:brightness-110'
+                : 'bg-bear hover:brightness-110'
             }`}>
             {loading ? (
               <span className="flex items-center justify-center gap-2">
@@ -353,11 +347,11 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
                 Submitting…
               </span>
             ) : (
-              `${side === 'long' ? 'Long' : 'Short'} ${market.symbol}`
+              `${side === 'long' ? 'Buy / Long' : 'Sell / Short'} ${market.symbol}`
             )}
           </button>
         ) : (
-          <WalletMultiButton className="!w-full !justify-center !rounded-xl" />
+          <WalletMultiButton className="!w-full !justify-center !rounded" />
         )}
 
         {/* ── Slippage (collapsible) ── */}
@@ -375,10 +369,10 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
           <div className="flex gap-1">
             {SLIP.map(s => (
               <button key={s} onClick={() => setSlippage(s)}
-                className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                className={`flex-1 py-1 rounded text-[10px] font-semibold transition-colors ${
                   slippage === s
-                    ? 'bg-accent/10 text-accent ring-1 ring-accent/20'
-                    : 'bg-drift-surface/60 text-txt-3 hover:text-txt-2'
+                    ? 'bg-drift-active text-accent'
+                    : 'bg-drift-surface text-txt-3 hover:text-txt-2'
                 }`}>
                 {s}%
               </button>
@@ -387,10 +381,9 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
         )}
 
         {/* ── Order Summary ── */}
-        <div className="rounded-xl bg-drift-surface/20 border border-drift-border/50 overflow-hidden">
-          <div className="px-3 py-2 border-b border-drift-border/50 flex items-center gap-1.5">
-            <Info className="w-3 h-3 text-txt-3" />
-            <span className="text-[11px] font-semibold text-txt-2">Order Summary</span>
+        <div className="rounded bg-drift-surface border border-drift-border overflow-hidden">
+          <div className="px-3 py-1.5 border-b border-drift-border">
+            <span className="text-[11px] font-medium text-txt-2">Order Summary</span>
           </div>
           <div className="px-3 py-2 space-y-1.5">
             <SummaryRow label="Mark Price" value={markPrice > 0 ? `$${markPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '—'} />
@@ -403,9 +396,9 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
         </div>
 
         {/* ── Account snapshot ── */}
-        <div className="rounded-xl bg-drift-surface/20 border border-drift-border/50 overflow-hidden">
-          <div className="px-3 py-2 border-b border-drift-border/50">
-            <span className="text-[11px] font-semibold text-txt-2">Account</span>
+        <div className="rounded bg-drift-surface border border-drift-border overflow-hidden">
+          <div className="px-3 py-1.5 border-b border-drift-border">
+            <span className="text-[11px] font-medium text-txt-2">Account</span>
           </div>
           <div className="px-3 py-2 space-y-1.5">
             {/* Health bar */}
@@ -424,10 +417,10 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
                   style={{
                     width: `${accountState?.health ?? 100}%`,
                     background: (accountState?.health ?? 100) > 50
-                      ? 'linear-gradient(90deg, #00c278, #31D0AA)'
+                      ? '#24b47e'
                       : (accountState?.health ?? 100) > 20
-                        ? 'linear-gradient(90deg, #efa411, #FBBF24)'
-                        : 'linear-gradient(90deg, #ff575a, #F84960)',
+                        ? '#efa411'
+                        : '#f84960',
                   }}
                 />
               </div>
@@ -456,25 +449,25 @@ const InputField: React.FC<{
   suffix?: string;
   compact?: boolean;
 }> = ({ value, onChange, placeholder, suffix, compact }) => (
-  <div className={`flex items-center rounded-xl bg-drift-surface/60 border border-drift-border/60 hover:border-drift-border-lt focus-within:border-accent/40 focus-within:ring-1 focus-within:ring-accent/10 transition-all ${compact ? 'px-2.5 h-8' : 'px-3 h-10'}`}>
+  <div className={`flex items-center rounded bg-drift-surface border border-drift-border hover:border-drift-border-lt focus-within:border-txt-3/40 transition-colors ${compact ? 'px-2.5 h-7' : 'px-3 h-8'}`}>
     <input
       type="number"
       value={value}
       onChange={e => onChange(e.target.value)}
       placeholder={placeholder}
-      className={`flex-1 bg-transparent text-txt-0 tabular-nums outline-none w-full ${compact ? 'text-[11px]' : 'text-xs'}`}
+      className={`flex-1 bg-transparent text-txt-0 tabular-nums outline-none w-full ${compact ? 'text-[11px]' : 'text-[11px]'}`}
     />
-    {suffix && <span className={`text-txt-3 ml-1.5 font-medium shrink-0 ${compact ? 'text-[9px]' : 'text-[10px]'}`}>{suffix}</span>}
+    {suffix && <span className={`text-txt-3 ml-1.5 font-medium shrink-0 text-[10px]`}>{suffix}</span>}
   </div>
 );
 
 const MiniToggle: React.FC<{ label: string; checked: boolean; onChange: (v: boolean) => void }> = ({ label, checked, onChange }) => (
   <button
     onClick={() => onChange(!checked)}
-    className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-medium transition-all ${
+    className={`flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-medium transition-colors ${
       checked
-        ? 'bg-accent/10 text-accent ring-1 ring-accent/20'
-        : 'text-txt-3 hover:text-txt-2 hover:bg-drift-surface/40'
+        ? 'bg-drift-active text-accent'
+        : 'text-txt-3 hover:text-txt-2'
     }`}
   >
     <div className={`w-1.5 h-1.5 rounded-full transition-colors ${checked ? 'bg-accent' : 'bg-txt-3/50'}`} />

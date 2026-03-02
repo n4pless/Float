@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BookOpen, ArrowUpDown } from 'lucide-react';
 import { useDriftStore } from '../stores/useDriftStore';
 import type { L2Orderbook, OrderbookLevel } from '../sdk/drift-client-wrapper';
 
@@ -66,31 +65,25 @@ export const OrderBook: React.FC<Props> = ({ onPriceClick }) => {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2.5 shrink-0 border-b border-drift-border">
-        <div className="flex items-center gap-2">
-          <BookOpen className="w-3.5 h-3.5 text-txt-3" />
-          <span className="text-[12px] font-semibold text-txt-0">Order Book</span>
-          <span className="text-[9px] text-txt-3 bg-drift-surface/60 px-1.5 py-0.5 rounded font-mono">
-            DLOB
-          </span>
-        </div>
-        <div className="flex items-center gap-1">
+      <div className="flex items-center justify-between px-3 py-2 shrink-0 border-b border-drift-border">
+        <span className="text-[11px] font-medium text-txt-0">Book</span>
+        <div className="flex items-center gap-0.5">
           {(['both','bids','asks'] as const).map(m => (
             <button key={m} onClick={() => setMode(m)}
-              className={`w-5 h-4 flex items-center justify-center rounded transition-all ${mode === m ? 'bg-drift-surface' : 'hover:bg-drift-surface/50'}`} title={m}>
-              {m === 'both' && <svg width="10" height="10"><rect y="0" width="10" height="4" fill="#F84960" rx="1" opacity=".8"/><rect y="6" width="10" height="4" fill="#31D0AA" rx="1" opacity=".8"/></svg>}
-              {m === 'bids' && <svg width="10" height="10"><rect width="10" height="10" fill="#31D0AA" rx="1" opacity=".8"/></svg>}
-              {m === 'asks' && <svg width="10" height="10"><rect width="10" height="10" fill="#F84960" rx="1" opacity=".8"/></svg>}
+              className={`w-5 h-4 flex items-center justify-center rounded-sm transition-colors ${mode === m ? 'bg-drift-active' : 'hover:bg-drift-surface'}`} title={m}>
+              {m === 'both' && <svg width="10" height="10"><rect y="0" width="10" height="4" fill="#f84960" rx="1" opacity=".7"/><rect y="6" width="10" height="4" fill="#24b47e" rx="1" opacity=".7"/></svg>}
+              {m === 'bids' && <svg width="10" height="10"><rect width="10" height="10" fill="#24b47e" rx="1" opacity=".7"/></svg>}
+              {m === 'asks' && <svg width="10" height="10"><rect width="10" height="10" fill="#f84960" rx="1" opacity=".7"/></svg>}
             </button>
           ))}
         </div>
       </div>
 
       {/* Column headers */}
-      <div className="grid grid-cols-3 px-3 py-1.5 text-[10px] text-txt-3 font-medium bg-drift-surface/30">
+      <div className="grid grid-cols-3 px-3 py-1 text-[10px] text-txt-3 font-medium">
         <span>Price</span>
         <span className="text-right">Size</span>
-        <span className="text-right">Total (USD)</span>
+        <span className="text-right">Total</span>
       </div>
 
       {/* Asks */}
@@ -112,16 +105,13 @@ export const OrderBook: React.FC<Props> = ({ onPriceClick }) => {
       </div>
 
       {/* Spread / Mark Price */}
-      <div className="px-3 py-2 flex items-center justify-between shrink-0 border-y border-drift-border bg-drift-surface/20">
-        <div className="flex items-center gap-2">
-          <ArrowUpDown className="w-3 h-3 text-txt-3" />
-          <span className={`text-[14px] font-bold tabular-nums ${oraclePrice > 0 ? (lastPriceChange >= 0 ? 'text-bull' : 'text-bear') : 'text-txt-2'}`}>
-            {oraclePrice > 0 ? `$${oraclePrice.toFixed(dec)}` : '—'}
-          </span>
-        </div>
+      <div className="px-3 py-1.5 flex items-center justify-between shrink-0 border-y border-drift-border">
+        <span className={`text-[13px] font-semibold tabular-nums ${oraclePrice > 0 ? (lastPriceChange >= 0 ? 'text-bull' : 'text-bear') : 'text-txt-2'}`}>
+          {oraclePrice > 0 ? oraclePrice.toFixed(dec) : '—'}
+        </span>
         {spread > 0 && (
           <span className="text-[10px] tabular-nums text-txt-3">
-            Spread: ${spread.toFixed(dec)} ({spreadPct.toFixed(3)}%)
+            {spread.toFixed(dec)} ({spreadPct.toFixed(3)}%)
           </span>
         )}
       </div>
@@ -151,12 +141,12 @@ const Row: React.FC<{
   side: 'ask' | 'bid'; onClick?: (p: number) => void;
 }> = ({ level, maxTotal, dec, fmt, fmtSize, side, onClick }) => {
   const color = side === 'ask' ? 'text-bear' : 'text-bull';
-  const barColor = side === 'ask' ? 'rgba(248,73,96,.08)' : 'rgba(49,208,170,.08)';
-  const mineHighlight = level.isMine ? 'ring-1 ring-inset ring-accent/30 bg-accent/5' : '';
+  const barColor = side === 'ask' ? 'rgba(248,73,96,.06)' : 'rgba(36,180,126,.06)';
+  const mineHighlight = level.isMine ? 'bg-accent/5' : '';
   return (
     <div
-      className={`grid grid-cols-3 px-3 py-px text-[11px] relative cursor-pointer hover:bg-drift-surface/50 transition-colors ${mineHighlight}`}
-      style={{ height: 20 }}
+      className={`grid grid-cols-3 px-3 py-px text-[11px] relative cursor-pointer hover:bg-drift-surface transition-colors ${mineHighlight}`}
+      style={{ height: 19 }}
       onClick={() => onClick?.(level.price)}
       title={level.isMine ? 'Your order' : undefined}
     >
