@@ -1,4 +1,4 @@
-# Float Exchange — Progress Report
+# Value Exchange — Progress Report
 
 **Last updated:** February 27, 2026  
 **Network:** Solana Devnet  
@@ -22,11 +22,11 @@
 
 | Service | PM2 Name | Status | Notes |
 |---------|----------|--------|-------|
-| Oracle Updater | `float-oracle` | ✅ Running | Pushes live Binance SOL price every ~10s (6,300+ updates). Occasional "already processed" tx errors (harmless — devnet dedup). `peg=skip-thr` means peg updates are throttled when price hasn't moved enough. |
-| Order Filler | `float-filler` | ✅ Running | Polling every 6s. 0 fillable orders (no trades placed yet). Healthy. |
-| Liquidator | `float-liquidator` | ⚠️ Running with errors | Checking 8 users every 5s, 0 liquidatable. **Error:** `Attempt to debit an account but found no record of a prior credit` — the liquidator's keeper wallet needs devnet SOL to pay rent for user account initialization. |
-| DLOB Server | `float-dlob` | ⚠️ Degraded | Switched to Helius devnet RPC (`devnet.helius-rpc.com`). Previously had timeouts to `api.devnet.solana.com:443`. Restart PM2 to pick up new endpoint. |
-| Frontend | `float-frontend` | ✅ Running | Vite dev server on port 5174 (`http://95.217.193.241:5174`). No errors. |
+| Oracle Updater | `value-oracle` | ✅ Running | Pushes live Binance SOL price every ~10s (6,300+ updates). Occasional "already processed" tx errors (harmless — devnet dedup). `peg=skip-thr` means peg updates are throttled when price hasn't moved enough. |
+| Order Filler | `value-filler` | ✅ Running | Polling every 6s. 0 fillable orders (no trades placed yet). Healthy. |
+| Liquidator | `value-liquidator` | ⚠️ Running with errors | Checking 8 users every 5s, 0 liquidatable. **Error:** `Attempt to debit an account but found no record of a prior credit` — the liquidator's keeper wallet needs devnet SOL to pay rent for user account initialization. |
+| DLOB Server | `value-dlob` | ⚠️ Degraded | Switched to Helius devnet RPC (`devnet.helius-rpc.com`). Previously had timeouts to `api.devnet.solana.com:443`. Restart PM2 to pick up new endpoint. |
+| Frontend | `value-frontend` | ✅ Running | Vite dev server on port 5174 (`http://95.217.193.241:5174`). No errors. |
 | Redis | (system service) | ✅ Running | PONG confirmed. Used by DLOB server for order caching. |
 
 ## Frontend UI
@@ -112,7 +112,7 @@ Users (Phantom Wallet)
     │
     ▼
 ┌─────────────────────────────┐
-│  float-frontend (Vite)      │  :5174
+│  value-frontend (Vite)      │  :5174
 │  React + Drift SDK          │
 │  Wallet Adapter + Zustand   │
 └──────────────┬──────────────┘
@@ -120,7 +120,7 @@ Users (Phantom Wallet)
     ┌──────────┼──────────────────┐
     ▼          ▼                  ▼
 ┌─────────┐ ┌──────────┐ ┌──────────────┐
-│ Devnet  │ │ float-   │ │ float-dlob   │ :6969
+│ Devnet  │ │ value-   │ │ value-dlob   │ :6969
 │ RPC     │ │ oracle   │ │ (order book  │
 │         │ │ (Binance │ │  + Redis)    │
 │         │ │  → chain)│ └──────────────┘
@@ -139,7 +139,7 @@ Users (Phantom Wallet)
      ▲          ▲
      │          │
 ┌─────────┐ ┌──────────────┐
-│ float-  │ │ float-       │
+│ value-  │ │ value-       │
 │ filler  │ │ liquidator   │
 └─────────┘ └──────────────┘
 ```

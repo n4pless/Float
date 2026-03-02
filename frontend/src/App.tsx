@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import {
   ConnectionProvider,
   WalletProvider,
@@ -50,16 +50,10 @@ function TradingApp() {
 
   const [currentPage, setCurrentPage] = useState<Page>('trade');
   const [limitPrice, setLimitPrice] = useState<number | undefined>(undefined);
-  const [sideTab, setSideTab] = useState<'trade' | 'account'>('trade');
 
   // Mobile view tab: which panel to show on small screens
   type MobileView = 'chart' | 'book' | 'trade' | 'account';
   const [mobileView, setMobileView] = useState<MobileView>('chart');
-
-  // Auto-switch to account tab when wallet connects but account isn't ready
-  useEffect(() => {
-    if (client && !isUserInitialized) setSideTab('account');
-  }, [client, isUserInitialized]);
 
   const handlePriceClick = (price: number) => setLimitPrice(price);
 
@@ -176,63 +170,19 @@ function TradingApp() {
               </div>
             </div>
 
-            {/* Middle: Order Book + Recent Trades */}
-            <div className="w-[280px] xl:w-[300px] flex flex-col shrink-0">
-              <div className="flex-1 min-h-0 bg-drift-bg">
+            {/* Right: OrderBook + Trade Form (Hyperliquid-style stacked sidebar) */}
+            <div className="w-[320px] xl:w-[340px] shrink-0 flex flex-col bg-drift-bg overflow-hidden">
+              {/* OrderBook — compact, takes roughly top 45% */}
+              <div className="flex-[4] min-h-0 border-b border-drift-border overflow-hidden">
                 <OrderBook onPriceClick={handlePriceClick} />
               </div>
-              <div className="flex-1 min-h-0 bg-drift-bg border-t border-drift-border">
-                <RecentTrades />
-              </div>
-            </div>
-
-            {/* Right: Trade / Account tabs */}
-            <div className="w-[300px] xl:w-[320px] shrink-0 flex flex-col bg-drift-bg border-l border-drift-border/30">
-              {/* Tab bar */}
-              <div className="flex shrink-0 bg-drift-surface/20">
-                <button
-                  onClick={() => setSideTab('trade')}
-                  className={`flex-1 py-2.5 text-[11px] font-bold tracking-wide transition-all relative ${
-                    sideTab === 'trade'
-                      ? 'text-txt-0'
-                      : 'text-txt-3 hover:text-txt-2 hover:bg-drift-surface/30'
-                  }`}
-                >
-                  Trade
-                  {sideTab === 'trade' && (
-                    <div className="absolute bottom-0 left-4 right-4 h-[2px] rounded-full bg-accent" />
-                  )}
-                </button>
-                <button
-                  onClick={() => setSideTab('account')}
-                  className={`flex-1 py-2.5 text-[11px] font-bold tracking-wide transition-all relative ${
-                    sideTab === 'account'
-                      ? 'text-txt-0'
-                      : 'text-txt-3 hover:text-txt-2 hover:bg-drift-surface/30'
-                  }`}
-                >
-                  Account
-                  {sideTab === 'account' && (
-                    <div className="absolute bottom-0 left-4 right-4 h-[2px] rounded-full bg-accent" />
-                  )}
-                  {!isUserInitialized && client && (
-                    <span className="absolute top-1.5 right-3 w-2 h-2 rounded-full bg-bear animate-pulse" />
-                  )}
-                </button>
-              </div>
-              <div className="h-px bg-drift-border/40" />
-
-              {/* Tab content */}
-              <div className="flex-1 min-h-0">
-                {sideTab === 'trade' ? (
-                  <TradeForm
-                    trading={trading}
-                    initialLimitPrice={limitPrice}
-                    onSwitchToAccount={() => setSideTab('account')}
-                  />
-                ) : (
-                  <AccountPanel trading={trading} />
-                )}
+              {/* Trade Form — scrollable, takes bottom 55% */}
+              <div className="flex-[5] min-h-0 overflow-y-auto custom-scrollbar">
+                <TradeForm
+                  trading={trading}
+                  initialLimitPrice={limitPrice}
+                  onSwitchToAccount={() => setCurrentPage('user')}
+                />
               </div>
             </div>
           </div>

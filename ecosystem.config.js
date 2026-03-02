@@ -3,7 +3,7 @@ module.exports = {
     // Frontend is now served by nginx (static dist/ build).
     // This faucet server handles /api/* requests proxied by nginx.
     {
-      name: 'float-faucet',
+      name: 'value-faucet',
       script: '/home/gorcore/Drift-Clone/frontend/server.mjs',
       cwd: '/home/gorcore/Drift-Clone/frontend',
       autorestart: true,
@@ -16,7 +16,7 @@ module.exports = {
       },
     },
     {
-      name: 'float-dlob',
+      name: 'value-dlob',
       script: '/home/gorcore/Drift-Clone/dlob-server/lib/index.js',
       cwd: '/home/gorcore/Drift-Clone/dlob-server',
       autorestart: true,
@@ -41,7 +41,7 @@ module.exports = {
       },
     },
     {
-      name: 'float-oracle',
+      name: 'value-oracle',
       script: '/home/gorcore/Drift-Clone/scripts/oracle-updater.mjs',
       cwd: '/home/gorcore/Drift-Clone',
       args: '--loop --interval 10000',
@@ -50,10 +50,10 @@ module.exports = {
       restart_delay: 5000,
     },
     {
-      name: 'float-filler',
+      name: 'value-filler',
       script: '/home/gorcore/Drift-Clone/keeper-bots-v2/lib/index.js',
       cwd: '/home/gorcore/Drift-Clone/keeper-bots-v2',
-      args: '--config-file=float-filler.config.yaml',
+      args: '--config-file=value-filler.config.yaml',
       autorestart: true,
       max_restarts: 10,
       restart_delay: 5000,
@@ -63,10 +63,10 @@ module.exports = {
       },
     },
     {
-      name: 'float-liquidator',
+      name: 'value-liquidator',
       script: '/home/gorcore/Drift-Clone/keeper-bots-v2/lib/index.js',
       cwd: '/home/gorcore/Drift-Clone/keeper-bots-v2',
-      args: '--config-file=float-liquidator.config.yaml',
+      args: '--config-file=value-liquidator.config.yaml',
       autorestart: true,
       max_restarts: 10,
       restart_delay: 5000,
@@ -76,10 +76,10 @@ module.exports = {
       },
     },
     {
-      name: 'float-maker',
+      name: 'value-maker',
       script: '/home/gorcore/Drift-Clone/keeper-bots-v2/lib/index.js',
       cwd: '/home/gorcore/Drift-Clone/keeper-bots-v2',
-      args: '--config-file=float-maker.config.yaml',
+      args: '--config-file=value-maker.config.yaml',
       autorestart: true,
       max_restarts: 10,
       restart_delay: 5000,

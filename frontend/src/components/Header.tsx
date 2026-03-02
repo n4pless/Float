@@ -39,7 +39,7 @@ export const Header: React.FC<HeaderProps> = ({
             <path d="M25 25 L16 20 L16 44 L25 49Z" stroke="currentColor" strokeWidth="0.7" strokeLinejoin="round" fill="currentColor" fillOpacity="0.06"/>
             <path d="M25 37 L43 27 L43 35 L25 45Z" stroke="currentColor" strokeWidth="0.7" strokeLinejoin="round" fill="currentColor" fillOpacity="0.06"/>
           </svg>
-          <span className="font-semibold text-[14px] sm:text-[15px] text-txt-0 tracking-tight">Float</span>
+          <span className="font-semibold text-[14px] sm:text-[15px] text-txt-0 tracking-tight">Value</span>
         </div>
 
         <nav className="hidden sm:flex items-center gap-0.5">

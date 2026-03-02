@@ -53,7 +53,7 @@ const SIDEBAR: SidebarGroup[] = [
   {
     title: 'Introduction',
     icon: Sparkles,
-    items: [{ id: 'overview', label: 'Why Float Is Different' }],
+    items: [{ id: 'overview', label: 'Why Value Is Different' }],
   },
   {
     title: 'Core Features',
@@ -186,13 +186,13 @@ function OverviewSection() {
             </span>
           </div>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-txt-0 tracking-tight leading-[1.1] mb-4">
-            What Makes Float<br />
+            What Makes Value<br />
             <span className="bg-gradient-to-r from-accent via-blue-400 to-accent bg-clip-text text-transparent">
               Different From Everything Else
             </span>
           </h1>
           <p className="text-[15px] sm:text-base text-txt-2 leading-relaxed max-w-2xl mb-6">
-            Float isn't just another perps DEX. We're building the exchange that should already exist —
+            Value isn't just another perps DEX. We're building the exchange that should already exist —
             combining a token launchpad, open market making, optional privacy, and direct
             revenue sharing that pays participants from every trade fee.
           </p>
@@ -250,7 +250,7 @@ function GraduationPerpsSection() {
 
       <H2>The Solution</H2>
       <P>
-        Float introduces <strong className="text-txt-0">Graduation Perps</strong> — a pipeline where
+        Value introduces <strong className="text-txt-0">Graduation Perps</strong> — a pipeline where
         tokens that hit critical mass on our launchpad automatically graduate into a full perpetual
         futures market.
       </P>
@@ -260,7 +260,7 @@ function GraduationPerpsSection() {
         <FlowStep
           step={1}
           title="Launch Phase"
-          desc="A project launches their token on Float's integrated launchpad — bonding curve, fair launch, or seed round."
+          desc="A project launches their token on Value's integrated launchpad — bonding curve, fair launch, or seed round."
         />
         <FlowStep
           step={2}
@@ -270,7 +270,7 @@ function GraduationPerpsSection() {
         <FlowStep
           step={3}
           title="Perp Market Creation"
-          desc="Float deploys a new perpetual market with a Prelaunch Oracle seeded from the spot price, initial AMM liquidity from protocol reserves, and conservative margin requirements that relax as the market matures."
+          desc="Value deploys a new perpetual market with a Prelaunch Oracle seeded from the spot price, initial AMM liquidity from protocol reserves, and conservative margin requirements that relax as the market matures."
         />
         <FlowStep
           step={4}
@@ -295,7 +295,7 @@ function GraduationPerpsSection() {
         <FeatureCard
           icon={Globe}
           title="For the Ecosystem"
-          desc="Capital efficiency goes up. Price discovery improves. Float becomes the destination for every new Solana token."
+          desc="Capital efficiency goes up. Price discovery improves. Value becomes the destination for every new Solana token."
         />
       </div>
 
@@ -326,7 +326,7 @@ function OpenMarketMakingSection() {
 
       <H2>The Solution</H2>
       <P>
-        Float opens up market making to anyone through our <strong className="text-txt-0">Keeper Bot system</strong>.
+        Value opens up market making to anyone through our <strong className="text-txt-0">Keeper Bot system</strong>.
         Three specialized bots power the exchange, and anyone can run them to earn fees:
       </P>
 
@@ -393,7 +393,7 @@ function ArciumPrivacySection() {
 
       <H2>The Solution</H2>
       <P>
-        Float integrates <strong className="text-txt-0">Arcium's confidential computing network</strong> as
+        Value integrates <strong className="text-txt-0">Arcium's confidential computing network</strong> as
         an optional privacy layer for perpetual trades. When enabled, your order details are shielded
         from the public mempool while settlement remains fully on-chain.
       </P>
@@ -402,7 +402,7 @@ function ArciumPrivacySection() {
       <div className="my-6 p-5 rounded-xl border border-drift-border/40 bg-drift-surface/10">
         <FlowStep step={1} title="Submit Encrypted Order" desc="Trader submits an order with price, size, and direction encrypted. No public mempool exposure." />
         <FlowStep step={2} title="Secure Enclave Matching" desc="Arcium's MPC (Multi-Party Computation) nodes decrypt and match the order inside a secure enclave — no single node sees the full data." />
-        <FlowStep step={3} title="On-chain Settlement" desc="The matched trade result is sent to the Float smart contract. Settlement hits Solana as normal." />
+        <FlowStep step={3} title="On-chain Settlement" desc="The matched trade result is sent to the Value smart contract. Settlement hits Solana as normal." />
         <FlowStep step={4} title="Public Sees Result Only" desc="Observers see 'Position changed' — but not the order price, size, or direction that led to it." last />
       </div>
 
@@ -452,13 +452,13 @@ function RevenueSharingSection() {
 
       <H2>The Solution</H2>
       <P>
-        Float distributes exchange revenue directly to participants via smart contract.
+        Value distributes exchange revenue directly to participants via smart contract.
         No token to buy, no governance theater — the revenue generated from every trade
         is split and distributed on-chain, automatically.
       </P>
 
       <H2>Fee Split Model</H2>
-      <P>Every trade on Float generates fees. Those fees are split three ways:</P>
+      <P>Every trade on Value generates fees. Those fees are split three ways:</P>
       <div className="my-6 p-5 rounded-xl border border-drift-border/40 bg-drift-surface/10">
         <div className="text-[11px] text-txt-3 uppercase tracking-wider font-semibold mb-4">Example: $10 Trade Fee</div>
         <SplitRow label="Participants & Holders" pct="50%" color="bg-bull" desc="$5.00 — Distributed pro-rata to all participants automatically" />
@@ -468,7 +468,7 @@ function RevenueSharingSection() {
 
       <H3>How It Works</H3>
       <div className="my-6">
-        <FlowStep step={1} title="Fee Collection" desc="Every trade's fee is collected by the Float program on-chain." />
+        <FlowStep step={1} title="Fee Collection" desc="Every trade's fee is collected by the Value program on-chain." />
         <FlowStep step={2} title="Automatic Split" desc="The smart contract splits fees into three buckets in real-time — no manual intervention, no multisig needed." />
         <FlowStep step={3} title="Holder Distribution" desc="The 50% holder share accrues in a reward pool, claimable anytime." />
         <FlowStep step={4} title="Claim or Compound" desc="Participants can claim their share at any time, or let it compound in the pool." last />
@@ -533,12 +533,12 @@ function RevenueSharingSection() {
 
 function ComparisonSection() {
   const features = [
-    { feature: 'Graduation Perps (Launch → Perp)', float: true, drift: false, jupiter: false, hyper: false, dydx: false },
-    { feature: 'Open Keeper Market Making', float: true, drift: 'partial', jupiter: false, hyper: false, dydx: false },
-    { feature: 'Optional Private Trades (Arcium)', float: true, drift: false, jupiter: false, hyper: false, dydx: false },
-    { feature: 'Revenue-Sharing Equity Token', float: true, drift: false, jupiter: false, hyper: false, dydx: false },
-    { feature: 'On-chain Fee Distribution', float: true, drift: false, jupiter: false, hyper: false, dydx: false },
-    { feature: 'Permissionless Perp Listings', float: true, drift: false, jupiter: false, hyper: false, dydx: false },
+    { feature: 'Graduation Perps (Launch → Perp)', value: true, drift: false, jupiter: false, hyper: false, dydx: false },
+    { feature: 'Open Keeper Market Making', value: true, drift: 'partial', jupiter: false, hyper: false, dydx: false },
+    { feature: 'Optional Private Trades (Arcium)', value: true, drift: false, jupiter: false, hyper: false, dydx: false },
+    { feature: 'Revenue-Sharing Equity Token', value: true, drift: false, jupiter: false, hyper: false, dydx: false },
+    { feature: 'On-chain Fee Distribution', value: true, drift: false, jupiter: false, hyper: false, dydx: false },
+    { feature: 'Permissionless Perp Listings', value: true, drift: false, jupiter: false, hyper: false, dydx: false },
   ];
 
   const check = (val: boolean | string) => {
@@ -550,13 +550,13 @@ function ComparisonSection() {
   return (
     <div>
       <H1>Feature Comparison</H1>
-      <P>How Float stacks up against the biggest names in perps trading.</P>
+      <P>How Value stacks up against the biggest names in perps trading.</P>
       <div className="my-6 overflow-x-auto rounded-xl border border-drift-border/50 shadow-sm shadow-black/10">
         <table className="w-full text-[12px]">
           <thead>
             <tr className="bg-drift-surface/60 text-txt-2">
               <th className="text-left px-4 py-3 font-semibold text-[11px] uppercase tracking-wider min-w-[200px]">Feature</th>
-              <th className="text-center px-3 py-3 font-bold text-[11px] uppercase tracking-wider text-accent">Float</th>
+              <th className="text-center px-3 py-3 font-bold text-[11px] uppercase tracking-wider text-accent">Value</th>
               <th className="text-center px-3 py-3 font-semibold text-[11px] uppercase tracking-wider">Drift</th>
               <th className="text-center px-3 py-3 font-semibold text-[11px] uppercase tracking-wider">Jupiter</th>
               <th className="text-center px-3 py-3 font-semibold text-[11px] uppercase tracking-wider">Hyperliquid</th>
@@ -567,7 +567,7 @@ function ComparisonSection() {
             {features.map((row, i) => (
               <tr key={i} className={`border-t border-drift-border/30 hover:bg-drift-surface/20 transition-colors ${i % 2 === 0 ? '' : 'bg-drift-surface/[0.06]'}`}>
                 <td className="px-4 py-3 text-txt-1 font-medium">{row.feature}</td>
-                <td className="px-3 py-3 text-center">{check(row.float)}</td>
+                <td className="px-3 py-3 text-center">{check(row.value)}</td>
                 <td className="px-3 py-3 text-center">{check(row.drift)}</td>
                 <td className="px-3 py-3 text-center">{check(row.jupiter)}</td>
                 <td className="px-3 py-3 text-center">{check(row.hyper)}</td>

@@ -1,4 +1,4 @@
-# Float Exchange
+# Value Exchange
 
 A perpetual futures exchange built on Solana, forked from [Drift Protocol](https://github.com/drift-labs/protocol-v2).
 
@@ -12,16 +12,16 @@ A perpetual futures exchange built on Solana, forked from [Drift Protocol](https
 Frontend (React + Vite)          :5174
     │
     ├── Drift SDK (wallet + trading)
-    ├── Order Book ← float-dlob   :6969
-    └── Price Feed ← float-oracle (Binance)
+    ├── Order Book ← value-dlob   :6969
+    └── Price Feed ← value-oracle (Binance)
     │
     ▼
 Drift Protocol (Devnet)
     ├── USDC Spot Market (index 0)
     └── SOL-PERP Market  (index 0)
     ▲
-    ├── float-filler     (order execution)
-    └── float-liquidator (risk management)
+    ├── value-filler     (order execution)
+    └── value-liquidator (risk management)
 ```
 
 ## Stack
@@ -71,8 +71,8 @@ Drift Protocol (Devnet)
 
 ```bash
 pm2 list                          # All services
-pm2 logs float-oracle --lines 20  # Oracle feed
-pm2 logs float-filler --lines 20  # Order filler
+pm2 logs value-oracle --lines 20  # Oracle feed
+pm2 logs value-filler --lines 20  # Order filler
 pm2 restart all                   # Restart everything
 ```
 

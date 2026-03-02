@@ -1,5 +1,5 @@
 /**
- * Float Exchange — Standalone Faucet API Server
+ * Value Exchange — Standalone Faucet API Server
  *
  * Lightweight Express server that provides two endpoints:
  *   POST /api/airdrop-sol  — devnet SOL airdrop (max 2 SOL)
@@ -50,7 +50,7 @@ const claimCounts = new Map(); // walletPubkey → number of claims
 
 // Health check
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', service: 'float-faucet', uptime: process.uptime() });
+  res.json({ status: 'ok', service: 'value-faucet', uptime: process.uptime() });
 });
 
 // POST /api/airdrop-sol — request devnet SOL airdrop
