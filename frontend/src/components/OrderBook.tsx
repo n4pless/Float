@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useDriftStore } from '../stores/useDriftStore';
 import type { L2Orderbook, OrderbookLevel } from '../sdk/drift-client-wrapper';
+
+const ROW_H = 19; // px per row
 
 interface Props {
   onPriceClick?: (price: number) => void;
@@ -9,12 +11,33 @@ interface Props {
 export const OrderBook: React.FC<Props> = ({ onPriceClick }) => {
   const [mode, setMode] = useState<'both' | 'bids' | 'asks'>('both');
   const [l2, setL2] = useState<L2Orderbook>({ asks: [], bids: [], slot: 0 });
+  const [visibleRows, setVisibleRows] = useState(12);
 
+  const containerRef = useRef<HTMLDivElement>(null);
   const client = useDriftStore((s) => s.client);
   const oraclePrice = useDriftStore((s) => s.oraclePrice);
   const selectedMarket = useDriftStore((s) => s.selectedMarket);
   const lastPriceChange = useDriftStore((s) => s.lastPriceChange);
   const isSubscribed = useDriftStore((s) => s.isSubscribed);
+
+  // Measure container and compute how many rows fit per side
+  const measure = useCallback(() => {
+    if (!containerRef.current) return;
+    const h = containerRef.current.clientHeight;
+    // Subtract header(~30) + col headers(~22) + spread(~30) = ~82px overhead
+    const available = h - 82;
+    const perSide = mode === 'both'
+      ? Math.max(4, Math.floor(available / 2 / ROW_H))
+      : Math.max(6, Math.floor(available / ROW_H));
+    setVisibleRows(perSide);
+  }, [mode]);
+
+  useEffect(() => {
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (containerRef.current) ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, [measure]);
 
   // Poll real open limit orders and aggregate into L2 price levels.
   // Shows only actual resting orders placed by users — not vAMM implied liquidity.
@@ -55,15 +78,15 @@ export const OrderBook: React.FC<Props> = ({ onPriceClick }) => {
   const dec = 2;
 
   // Asks are sorted ascending (lowest first) — display reversed so lowest is at bottom near spread
-  const visAsks = mode === 'bids' ? [] : mode === 'both' ? asks.slice(0, 15).reverse() : asks.slice(0, 20).reverse();
-  const visBids = mode === 'asks' ? [] : mode === 'both' ? bids.slice(0, 15) : bids.slice(0, 20);
+  const visAsks = mode === 'bids' ? [] : asks.slice(0, visibleRows).reverse();
+  const visBids = mode === 'asks' ? [] : bids.slice(0, visibleRows);
 
   const fmt = (v: number) =>
     v.toLocaleString('en-US', { maximumFractionDigits: 0 });
   const fmtSize = (v: number) => v >= 100 ? v.toFixed(0) : v >= 1 ? v.toFixed(2) : v.toFixed(4);
 
   return (
-    <div className="flex flex-col h-full">
+    <div ref={containerRef} className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 shrink-0 border-b border-drift-border">
         <span className="text-[11px] font-medium text-txt-0">Book</span>
