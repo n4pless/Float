@@ -447,7 +447,7 @@ export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack }) => {
 
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+        <div className="w-full px-4 sm:px-6 py-8 space-y-6">
           {/* Page header */}
           <div className="mb-2">
             <div className="flex items-center gap-3 mb-2">

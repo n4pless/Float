@@ -336,7 +336,7 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack }) 
         </button>
       </div>
 
-      <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 py-5 space-y-5">
+      <div className="w-full px-4 sm:px-6 py-5 space-y-5">
         {/* ══════ Hero ══════ */}
         <div className="relative rounded-2xl overflow-hidden border border-accent/15">
           {/* Animated gradient BG */}
