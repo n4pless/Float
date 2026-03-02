@@ -412,7 +412,7 @@ export class DriftTradingClient {
     if (this._allUserAccountsRefreshTimer) return;
     this._allUserAccountsRefreshTimer = setInterval(() => {
       this._refreshAllUserAccounts();
-    }, 8000); // refresh every 8 seconds
+    }, 30000); // refresh every 30 seconds (reduce RPC load from getProgramAccounts)
   }
 
   get isSubscribed() { return this._subscribed; }
@@ -1405,8 +1405,13 @@ export class DriftTradingClient {
         return oracle.price;
       }
     } catch { /* fall through */ }
-    // Fallback: use a sensible default so the order still has a price
-    return new BN(100).mul(PRICE_PRECISION);
+    // Fallback: use the store's cached oracle price if available
+    const storePrice = useDriftStore.getState().oraclePrice;
+    if (storePrice > 0) {
+      return new BN(Math.round(storePrice * PRICE_PRECISION.toNumber()));
+    }
+    // Last resort: throw so callers don't silently use a wrong price
+    throw new Error('Oracle price unavailable — cannot determine market price');
   }
 
   async openPosition(
@@ -1416,6 +1421,7 @@ export class DriftTradingClient {
     leverage: number,
     orderType: 'market' | 'limit' = 'market',
     limitPrice?: number,
+    slippageBps?: number,
   ): Promise<string> {
     if (!this._userInitialized) {
       throw new Error('No Float account. Please set up your account first.');
@@ -1529,19 +1535,19 @@ export class DriftTradingClient {
     // gets price improvement despite the generous limit.
     const oraclePriceBN = this._getOraclePriceBN(marketIndex);
     const oracleNum = oraclePriceBN.toNumber();
-    const slippageBps = 500; // 5% slippage tolerance
+    const effectiveSlippageBps = slippageBps ?? 100; // default 1% if not specified
 
     let worstCasePrice: BN;
 
     if (direction === 'long') {
-      // Buyer: willing to pay up to oracle * 1.05
-      worstCasePrice = new BN(Math.ceil(oracleNum * (1 + slippageBps / 10000)));
+      // Buyer: willing to pay up to oracle * (1 + slippage%)
+      worstCasePrice = new BN(Math.ceil(oracleNum * (1 + effectiveSlippageBps / 10000)));
     } else {
-      // Seller: willing to sell down to oracle * 0.95
-      worstCasePrice = new BN(Math.floor(oracleNum * (1 - slippageBps / 10000)));
+      // Seller: willing to sell down to oracle * (1 - slippage%)
+      worstCasePrice = new BN(Math.floor(oracleNum * (1 - effectiveSlippageBps / 10000)));
     }
 
-    console.log(`[drift] oracle=${oracleNum}, worstCase=${worstCasePrice.toString()}, makers=${makerInfo.length}`);
+    console.log(`[drift] oracle=${oracleNum}, worstCase=${worstCasePrice.toString()}, slippage=${effectiveSlippageBps}bps, makers=${makerInfo.length}`);
 
     try {
       const txSig = await this.driftClient.placeAndTakePerpOrder(
@@ -1589,7 +1595,7 @@ export class DriftTradingClient {
     return this.openPosition(marketIndex, 'short', sizeBase, leverage, 'market');
   }
 
-  async closePosition(marketIndex: number): Promise<string> {
+  async closePosition(marketIndex: number, slippageBps?: number): Promise<string> {
     try {
       const user = this.driftClient.getUser();
       const pos = user.getPerpPosition(marketIndex);
@@ -1608,14 +1614,14 @@ export class DriftTradingClient {
       const makerInfo = this._getMakerInfoForOrder(marketIndex, closeDir);
       const oraclePriceBN = this._getOraclePriceBN(marketIndex);
       const oracleNum = oraclePriceBN.toNumber();
-      const slippageBps = 500; // 5 %
+      const effectiveSlippageBps = slippageBps ?? 100; // default 1% if not specified
 
       let worstCasePrice: BN;
 
       if (closeDir === PositionDirection.LONG) {
-        worstCasePrice = new BN(Math.ceil(oracleNum * (1 + slippageBps / 10000)));
+        worstCasePrice = new BN(Math.ceil(oracleNum * (1 + effectiveSlippageBps / 10000)));
       } else {
-        worstCasePrice = new BN(Math.floor(oracleNum * (1 - slippageBps / 10000)));
+        worstCasePrice = new BN(Math.floor(oracleNum * (1 - effectiveSlippageBps / 10000)));
       }
 
       console.log(`[drift] closing position: dir=${closeDir === PositionDirection.LONG ? 'LONG' : 'SHORT'}, size=${pos.baseAssetAmount.abs().toString()}, oracle=${oracleNum}, worstCase=${worstCasePrice.toString()}`);

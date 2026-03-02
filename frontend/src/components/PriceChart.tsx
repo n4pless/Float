@@ -75,8 +75,10 @@ async function fetchCandles(tf: string, limit = 300): Promise<Candle[]> {
 }
 
 /**
- * PriceChart — Real SOL/USDT candle chart using Binance public data +
- * live oracle price from the Drift protocol.
+ * PriceChart — SOL/USD chart using external reference candles for history
+ * + live Float oracle price overlay from the on-chain Drift protocol.
+ * Historical candles sourced from Binance/CryptoCompare as reference data.
+ * The live price (green/red close) always reflects Float's oracle.
  */
 export const PriceChart: React.FC = () => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -300,7 +302,7 @@ export const PriceChart: React.FC = () => {
           <div className="w-px h-4 bg-drift-border" />
 
           <span className="text-[11px] text-txt-2">
-            SOL/USD
+            SOL-PERP <span className="text-txt-3 ml-1">Oracle</span>
           </span>
 
           {loading && <RefreshCw className="w-3 h-3 text-txt-3 animate-spin" />}
@@ -338,7 +340,7 @@ export const PriceChart: React.FC = () => {
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-drift-bg/90">
             <div className="text-center">
               <RefreshCw className="w-6 h-6 text-txt-3 mx-auto mb-2 animate-spin" />
-              <span className="text-xs text-txt-2">Loading SOL/USD chart…</span>
+              <span className="text-xs text-txt-2">Loading SOL-PERP chart…</span>
             </div>
           </div>
         )}

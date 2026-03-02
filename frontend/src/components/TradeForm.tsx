@@ -100,6 +100,7 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
         leverage,
         orderType: ordType,
         limitPrice: ordType === 'limit' ? parseFloat(price) : undefined,
+        slippageBps: Math.round(slippage * 100), // convert 0.5% → 50 bps
       });
       const feeStr = fee > 0 ? ` · Fee: $${fee.toFixed(4)}` : '';
       const action = ordType === 'limit' ? 'Limit order placed' : `Market ${side.toUpperCase()} filled`;

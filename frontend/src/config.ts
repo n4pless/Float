@@ -2,13 +2,17 @@
  * Drift Exchange Configuration
  */
 
+const heliusKey = import.meta.env.VITE_HELIUS_API_KEY ?? '';
+const rpcUrl = import.meta.env.VITE_RPC_URL
+  || (heliusKey ? `https://devnet.helius-rpc.com/?api-key=${heliusKey}` : 'https://api.devnet.solana.com');
+
 export const DRIFT_CONFIG = {
   // Network
-  rpc: 'https://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966',
-  network: 'devnet',
+  rpc: rpcUrl,
+  network: import.meta.env.VITE_NETWORK || 'devnet',
   
   // Program IDs
-  driftProgram: 'EvKyHhYjCgpu335GdKZtfRsfu4VoUyjHn3kF3wgA5eXE',
+  driftProgram: import.meta.env.VITE_DRIFT_PROGRAM_ID || 'EvKyHhYjCgpu335GdKZtfRsfu4VoUyjHn3kF3wgA5eXE',
   
   // Tokens  (USDC mint will be updated by init-drift-devnet.mjs)
   usdc: {

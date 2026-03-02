@@ -24,6 +24,7 @@ interface TradeParams {
   orderType: OrderType;
   limitPrice?: number;
   reduceOnly?: boolean;
+  slippageBps?: number;
 }
 
 function txLink(txSig: string) {
@@ -60,6 +61,7 @@ export function useTrading(forceRefresh: () => Promise<void>) {
           params.leverage,
           params.orderType,
           params.limitPrice,
+          params.slippageBps,
         );
 
         toast.success(`${sideLabel} ${typeLabel} Order Placed`, {
