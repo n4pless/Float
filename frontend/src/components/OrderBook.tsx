@@ -76,24 +76,19 @@ export const OrderBook: React.FC<Props> = ({ onPriceClick }) => {
   // Poll orderbook: primary = DLOB server, fallback = on-chain GPA
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
-    if (!isSubscribed) {
-      setL2({ asks: [], bids: [], slot: 0 });
-      return;
-    }
-
     let cancelled = false;
 
     const poll = async () => {
       if (cancelled) return;
       try {
-        // Primary: DLOB server (fast, always has data if maker is posting)
+        // Primary: DLOB server (works without wallet connection)
         const dlob = await fetchDlobL2(selectedMarket);
         if (!cancelled && dlob && (dlob.asks.length > 0 || dlob.bids.length > 0)) {
           setL2(dlob);
           return;
         }
-        // Fallback: client-side GPA aggregation
-        if (!cancelled && client) {
+        // Fallback: client-side GPA aggregation (needs subscription)
+        if (!cancelled && client && isSubscribed) {
           const book = client.getOrdersL2(selectedMarket);
           setL2(book);
         }
@@ -159,13 +154,9 @@ export const OrderBook: React.FC<Props> = ({ onPriceClick }) => {
 
       {/* Asks */}
       <div className="overflow-hidden flex flex-col justify-end shrink-0" style={{ height: visibleRows * ROW_H }}>
-        {!isSubscribed ? (
+        {!hasData ? (
           <div className="flex items-center justify-center h-full">
             <span className="text-[11px] text-txt-3 animate-pulse">Loading orderbook…</span>
-          </div>
-        ) : !hasData ? (
-          <div className="flex items-center justify-center h-full">
-            <span className="text-[11px] text-txt-3">No resting sell orders</span>
           </div>
         ) : (
           visAsks.map((l, i) => (
