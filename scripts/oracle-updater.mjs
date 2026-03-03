@@ -30,7 +30,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 
 // ─── Configuration ──────────────────────────────────────────────────────────────
-const RPC_URL = process.env.RPC_URL || 'https://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966';
+const RPC_URL = process.env.RPC_URL || 'https://api.devnet.solana.com';
 const PROGRAM_ID = new PublicKey(
   process.env.DRIFT_PROGRAM_ID || 'EvKyHhYjCgpu335GdKZtfRsfu4VoUyjHn3kF3wgA5eXE'
 );

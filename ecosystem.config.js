@@ -48,6 +48,9 @@ module.exports = {
       autorestart: true,
       max_restarts: 10,
       restart_delay: 5000,
+      env: {
+        RPC_URL: 'https://api.devnet.solana.com',
+      },
     },
     {
       name: 'value-filler',
@@ -59,6 +62,7 @@ module.exports = {
       restart_delay: 5000,
       env: {
         KEEPER_PRIVATE_KEY: '/home/gorcore/Drift-Clone/keys/filler-keypair.json',
+        HEALTH_CHECK_PORT: '8888',
         DRIFT_PROGRAM_ID: 'EvKyHhYjCgpu335GdKZtfRsfu4VoUyjHn3kF3wgA5eXE',
       },
     },
@@ -72,6 +76,7 @@ module.exports = {
       restart_delay: 5000,
       env: {
         KEEPER_PRIVATE_KEY: '/home/gorcore/Drift-Clone/keys/liquidator-keypair.json',
+        HEALTH_CHECK_PORT: '8890',
         DRIFT_PROGRAM_ID: 'EvKyHhYjCgpu335GdKZtfRsfu4VoUyjHn3kF3wgA5eXE',
       },
     },
