@@ -3,6 +3,40 @@ import { useDriftStore } from '../stores/useDriftStore';
 import type { L2Orderbook, OrderbookLevel } from '../sdk/drift-client-wrapper';
 
 const ROW_H = 19; // px per row
+const PRICE_PRECISION = 1_000_000;   // 1e6
+const BASE_PRECISION  = 1_000_000_000; // 1e9
+
+/** Fetch L2 from the DLOB server (proxied via /dlob/) */
+async function fetchDlobL2(marketIndex: number): Promise<L2Orderbook | null> {
+  try {
+    const resp = await fetch(
+      `/dlob/l2?marketIndex=${marketIndex}&marketType=perp&depth=20&includeVamm=false`,
+    );
+    if (!resp.ok) return null;
+    const data = await resp.json();
+
+    const convert = (
+      levels: { price: string; size: string }[],
+    ): OrderbookLevel[] => {
+      let cumUsd = 0;
+      return levels.map((l) => {
+        const price = Number(l.price) / PRICE_PRECISION;
+        const size = Number(l.size) / BASE_PRECISION;
+        const sizeUsd = price * size;
+        cumUsd += sizeUsd;
+        return { price, size, sizeUsd, total: cumUsd, isMine: false };
+      });
+    };
+
+    return {
+      asks: convert(data.asks ?? []),
+      bids: convert(data.bids ?? []),
+      slot: data.slot ?? 0,
+    };
+  } catch {
+    return null;
+  }
+}
 
 interface Props {
   onPriceClick?: (price: number) => void;
@@ -39,25 +73,39 @@ export const OrderBook: React.FC<Props> = ({ onPriceClick }) => {
     return () => ro.disconnect();
   }, [measure]);
 
-  // Poll real open limit orders and aggregate into L2 price levels.
-  // Shows only actual resting orders placed by users — not vAMM implied liquidity.
+  // Poll orderbook: primary = DLOB server, fallback = on-chain GPA
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
-    if (!client || !isSubscribed) {
+    if (!isSubscribed) {
       setL2({ asks: [], bids: [], slot: 0 });
       return;
     }
 
-    const poll = () => {
+    let cancelled = false;
+
+    const poll = async () => {
+      if (cancelled) return;
       try {
-        const book = client.getOrdersL2(selectedMarket);
-        setL2(book);
-      } catch {}
+        // Primary: DLOB server (fast, always has data if maker is posting)
+        const dlob = await fetchDlobL2(selectedMarket);
+        if (!cancelled && dlob && (dlob.asks.length > 0 || dlob.bids.length > 0)) {
+          setL2(dlob);
+          return;
+        }
+        // Fallback: client-side GPA aggregation
+        if (!cancelled && client) {
+          const book = client.getOrdersL2(selectedMarket);
+          setL2(book);
+        }
+      } catch { /* swallow */ }
     };
 
     poll();
-    intervalRef.current = setInterval(poll, 1000);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+    intervalRef.current = setInterval(poll, 2000);
+    return () => {
+      cancelled = true;
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, [client, isSubscribed, selectedMarket]);
 
   const asks = l2.asks;
