@@ -85,6 +85,12 @@ export const OrderBook: React.FC<Props> = ({ onPriceClick }) => {
         const dlob = await fetchDlobL2(selectedMarket);
         if (!cancelled && dlob && (dlob.asks.length > 0 || dlob.bids.length > 0)) {
           setL2(dlob);
+          // Push midpoint price to store when SDK isn't providing it
+          const storePrice = useDriftStore.getState().oraclePrice;
+          if (storePrice === 0 && dlob.bids.length > 0 && dlob.asks.length > 0) {
+            const mid = (dlob.bids[0].price + dlob.asks[0].price) / 2;
+            useDriftStore.getState().updateMarketData({ oraclePrice: mid });
+          }
           return;
         }
         // Fallback: client-side GPA aggregation (needs subscription)
@@ -116,7 +122,9 @@ export const OrderBook: React.FC<Props> = ({ onPriceClick }) => {
   const bestAsk = asks.length > 0 ? asks[0].price : 0;
   const bestBid = bids.length > 0 ? bids[0].price : 0;
   const spread = bestAsk > 0 && bestBid > 0 ? bestAsk - bestBid : 0;
-  const spreadPct = oraclePrice > 0 ? (spread / oraclePrice) * 100 : 0;
+  const midPrice = bestAsk > 0 && bestBid > 0 ? (bestAsk + bestBid) / 2 : 0;
+  const displayMid = oraclePrice > 0 ? oraclePrice : midPrice;
+  const spreadPct = displayMid > 0 ? (spread / displayMid) * 100 : 0;
 
   const dec = 2;
 
@@ -168,8 +176,8 @@ export const OrderBook: React.FC<Props> = ({ onPriceClick }) => {
 
       {/* Spread / Mark Price */}
       <div className="px-3 py-1.5 flex items-center justify-between shrink-0 border-y border-drift-border">
-        <span className={`text-[13px] font-semibold tabular-nums ${oraclePrice > 0 ? (lastPriceChange >= 0 ? 'text-bull' : 'text-bear') : 'text-txt-2'}`}>
-          {oraclePrice > 0 ? oraclePrice.toFixed(dec) : '—'}
+        <span className={`text-[13px] font-semibold tabular-nums ${displayMid > 0 ? (lastPriceChange >= 0 ? 'text-bull' : 'text-bear') : 'text-txt-2'}`}>
+          {displayMid > 0 ? displayMid.toFixed(dec) : '—'}
         </span>
         {spread > 0 && (
           <span className="text-[10px] tabular-nums text-txt-3">

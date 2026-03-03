@@ -68,7 +68,7 @@ export const MarketBar: React.FC = () => {
           : '—'}
       </span>
 
-      {!isSubscribed && (
+      {!isSubscribed && oraclePrice === 0 && (
         <span className="text-[10px] text-txt-3 animate-pulse">connecting…</span>
       )}
 
