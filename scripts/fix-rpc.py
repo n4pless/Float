@@ -1,0 +1,23 @@
+#!/usr/bin/env python3
+"""Switch all Helius RPC URLs to public devnet in ecosystem.config.js and frontend .env"""
+import os
+
+BASE = os.path.expanduser('~/Drift-Clone')
+OLD_HTTP = 'https://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966'
+OLD_WSS  = 'wss://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966'
+NEW_HTTP = 'https://api.devnet.solana.com'
+NEW_WSS  = 'wss://api.devnet.solana.com'
+
+for rel in ['ecosystem.config.js', 'frontend/.env']:
+    path = os.path.join(BASE, rel)
+    if not os.path.exists(path):
+        print(f'SKIP {rel} (not found)')
+        continue
+    with open(path, 'r') as f:
+        text = f.read()
+    text = text.replace(OLD_HTTP, NEW_HTTP).replace(OLD_WSS, NEW_WSS)
+    with open(path, 'w') as f:
+        f.write(text)
+    print(f'FIXED {rel}')
+
+print('Done')

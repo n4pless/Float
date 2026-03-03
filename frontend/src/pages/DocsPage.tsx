@@ -26,7 +26,6 @@ import {
   FileText,
   Settings,
   Terminal,
-  Activity,
   BarChart3,
   Lock,
   Gauge,
@@ -37,7 +36,6 @@ import {
   Bot,
   Coins,
   Award,
-  ExternalLink,
 } from 'lucide-react';
 
 /* ─── Section IDs ─── */
@@ -106,25 +104,18 @@ function CodeBlock({ code, lang = 'bash' }: { code: string; lang?: string }) {
     setTimeout(() => setCopied(false), 2000);
   };
   return (
-    <div className="relative group my-5 rounded-xl border border-drift-border/60 bg-[#0a0a0c] overflow-hidden shadow-lg shadow-black/20">
-      <div className="flex items-center justify-between px-4 py-2.5 bg-gradient-to-r from-drift-surface/60 to-drift-surface/30 border-b border-drift-border/40">
-        <div className="flex items-center gap-2">
-          <div className="flex gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full bg-bear/40" />
-            <div className="w-2.5 h-2.5 rounded-full bg-yellow/40" />
-            <div className="w-2.5 h-2.5 rounded-full bg-bull/40" />
-          </div>
-          <span className="text-2xs font-mono text-txt-3 ml-1">{lang}</span>
-        </div>
+    <div className="relative group my-4 rounded border border-drift-border bg-[#0a0a0c] overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-drift-border bg-drift-panel">
+        <span className="text-[10px] font-mono text-txt-3">{lang}</span>
         <button
           onClick={handleCopy}
-          className="flex items-center gap-1.5 text-2xs text-txt-3 hover:text-txt-0 transition-colors px-2 py-1 rounded-md hover:bg-white/5"
+          className="flex items-center gap-1.5 text-[10px] text-txt-3 hover:text-txt-0 transition-colors px-2 py-0.5 rounded hover:bg-drift-surface"
         >
           {copied ? <Check className="w-3 h-3 text-bull" /> : <Copy className="w-3 h-3" />}
-          {copied ? 'Copied!' : 'Copy'}
+          {copied ? 'Copied' : 'Copy'}
         </button>
       </div>
-      <pre className="p-4 overflow-x-auto text-[12.5px] font-mono leading-[1.7] text-txt-1/90">
+      <pre className="p-3 overflow-x-auto text-[12px] font-mono leading-[1.7] text-txt-1">
         <code>{code}</code>
       </pre>
     </div>
@@ -135,8 +126,8 @@ function CodeBlock({ code, lang = 'bash' }: { code: string; lang?: string }) {
 function H1({ children }: { children: React.ReactNode }) {
   return (
     <div className="mb-4">
-      <h1 className="text-2xl sm:text-3xl font-bold text-txt-0 tracking-tight">{children}</h1>
-      <div className="mt-3 h-px bg-gradient-to-r from-accent/30 via-drift-border to-transparent" />
+      <h1 className="text-xl sm:text-2xl font-bold text-txt-0 tracking-tight">{children}</h1>
+      <div className="mt-2 h-px bg-drift-border" />
     </div>
   );
 }
@@ -163,10 +154,10 @@ function Callout({
   };
   const s = accent[type];
   return (
-    <div className={`my-5 rounded-lg border border-drift-border/30 border-l-[3px] ${s.border} ${s.bg} overflow-hidden`}>
-      <div className="px-4 py-3.5">
-        <div className={`text-[11px] font-bold uppercase tracking-wider mb-1.5 ${s.text}`}>{s.icon} {type}</div>
-        <div className="text-[13px] leading-[1.7] text-txt-1/85">{children}</div>
+    <div className={`my-4 rounded border border-drift-border border-l-[3px] ${s.border} ${s.bg} overflow-hidden`}>
+      <div className="px-3 py-3">
+        <div className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${s.text}`}>{s.icon} {type}</div>
+        <div className="text-[12px] leading-[1.7] text-txt-1">{children}</div>
       </div>
     </div>
   );
@@ -178,23 +169,23 @@ function ConfigTable({
   rows: { field: string; type: string; desc: string; def?: string }[];
 }) {
   return (
-    <div className="my-5 overflow-x-auto rounded-xl border border-drift-border/50 shadow-sm shadow-black/10">
-      <table className="w-full text-[12px]">
+    <div className="my-4 overflow-x-auto rounded border border-drift-border">
+      <table className="w-full text-[11px]">
         <thead>
-          <tr className="bg-drift-surface/60 text-txt-2">
-            <th className="text-left px-4 py-2.5 font-semibold text-[11px] uppercase tracking-wider">Field</th>
-            <th className="text-left px-4 py-2.5 font-semibold text-[11px] uppercase tracking-wider">Type</th>
-            <th className="text-left px-4 py-2.5 font-semibold text-[11px] uppercase tracking-wider">Description</th>
-            <th className="text-left px-4 py-2.5 font-semibold text-[11px] uppercase tracking-wider">Default</th>
+          <tr className="bg-drift-panel text-txt-2">
+            <th className="text-left px-3 py-2 font-medium text-[10px] uppercase tracking-wider">Field</th>
+            <th className="text-left px-3 py-2 font-medium text-[10px] uppercase tracking-wider">Type</th>
+            <th className="text-left px-3 py-2 font-medium text-[10px] uppercase tracking-wider">Description</th>
+            <th className="text-left px-3 py-2 font-medium text-[10px] uppercase tracking-wider">Default</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((r, i) => (
-            <tr key={i} className={`border-t border-drift-border/30 hover:bg-drift-surface/20 transition-colors ${i % 2 === 0 ? 'bg-transparent' : 'bg-drift-surface/[0.06]'}`}>
-              <td className="px-4 py-2.5 font-mono text-accent text-[11.5px]">{r.field}</td>
-              <td className="px-4 py-2.5 text-txt-3 font-mono text-[11px]">{r.type}</td>
-              <td className="px-4 py-2.5 text-txt-1">{r.desc}</td>
-              <td className="px-4 py-2.5 text-txt-2 font-mono text-[11px]">{r.def || '—'}</td>
+            <tr key={i} className="border-t border-drift-border hover:bg-drift-surface/20 transition-colors">
+              <td className="px-3 py-2 font-mono text-accent text-[11px]">{r.field}</td>
+              <td className="px-3 py-2 text-txt-3 font-mono text-[10px]">{r.type}</td>
+              <td className="px-3 py-2 text-txt-1">{r.desc}</td>
+              <td className="px-3 py-2 text-txt-2 font-mono text-[10px]">{r.def || '—'}</td>
             </tr>
           ))}
         </tbody>
@@ -284,24 +275,18 @@ function RoadmapPhase({
 }
 
 /* ─── Stat card ─── */
-function StatCard({ label, value, sub, icon: Icon }: { label: string; value: string; sub?: string; icon: React.FC<{ className?: string }> }) {
+function StatCard({ label, value, sub }: { label: string; value: string; sub?: string; icon: React.FC<{ className?: string }> }) {
   return (
-    <div className="group p-3.5 rounded-xl border border-drift-border/40 bg-drift-surface/10 hover:bg-drift-surface/20 transition-colors flex items-center gap-3">
-      <div className="w-8 h-8 rounded-lg bg-accent/[0.06] flex items-center justify-center shrink-0">
-        <Icon className="w-4 h-4 text-accent" />
-      </div>
-      <div className="min-w-0">
-        <div className="text-[10px] text-txt-3 uppercase tracking-wider font-medium">{label}</div>
-        <div className="text-base font-bold text-txt-0 leading-snug">{value}</div>
-        {sub && <div className="text-[10px] text-txt-3 mt-px">{sub}</div>}
-      </div>
+    <div className="px-3 py-2.5 rounded border border-drift-border">
+      <div className="text-[10px] text-txt-3 uppercase tracking-wider font-medium">{label}</div>
+      <div className="text-[14px] font-bold text-txt-0 leading-snug">{value}</div>
+      {sub && <div className="text-[10px] text-txt-3 mt-px">{sub}</div>}
     </div>
   );
 }
 
 /* ─── Feature card ─── */
 function FeatureCard({
-  icon: Icon,
   title,
   desc,
 }: {
@@ -310,12 +295,9 @@ function FeatureCard({
   desc: string;
 }) {
   return (
-    <div className="group p-4 rounded-xl border border-drift-border/40 bg-drift-surface/10 hover:bg-drift-surface/20 transition-colors">
-      <div className="w-9 h-9 rounded-lg bg-accent/[0.06] flex items-center justify-center mb-3">
-        <Icon className="w-4.5 h-4.5 text-accent" />
-      </div>
-      <h3 className="text-[13px] font-semibold text-txt-0 mb-1">{title}</h3>
-      <p className="text-[12.5px] text-txt-2 leading-relaxed">{desc}</p>
+    <div className="px-4 py-3 rounded border border-drift-border">
+      <h3 className="text-[12px] font-semibold text-txt-0 mb-1">{title}</h3>
+      <p className="text-[11px] text-txt-2 leading-relaxed">{desc}</p>
     </div>
   );
 }
@@ -328,36 +310,22 @@ function HomeSection() {
   return (
     <div>
       {/* ── Hero ── */}
-      <div className="relative mb-8 -mx-5 sm:-mx-10 -mt-8 sm:-mt-14 px-5 sm:px-10 pt-10 sm:pt-14 pb-8 overflow-hidden">
-        {/* gradient backdrop */}
-        <div className="absolute inset-0 bg-gradient-to-b from-accent/[0.03] via-transparent to-transparent pointer-events-none" />
-        <div className="absolute top-0 right-0 w-[400px] h-[400px] rounded-full bg-accent/[0.02] blur-[120px] pointer-events-none" />
-        <div className="relative">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-bull/10 text-bull border border-bull/20">
-              <Activity className="w-3 h-3" />
-              Live on Devnet
-            </span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-txt-0 tracking-tight leading-[1.1] mb-4">
-            The Decentralized<br />
-            <span className="bg-gradient-to-r from-txt-0 via-txt-1 to-txt-2 bg-clip-text text-transparent">Perpetual Futures</span> Exchange
-          </h1>
-          <p className="text-[15px] sm:text-base text-txt-2 leading-relaxed max-w-2xl mb-6">
-            Value is a fully on-chain perpetual futures DEX built on Solana.
-            Sub-second execution, decentralized order matching, and community-powered liquidity —
-            no custodians, no middlemen.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <a href="http://95.217.193.241:5174" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-txt-0 text-drift-bg text-[13px] font-semibold hover:bg-txt-1 transition-colors">
-              Launch App
-              <ArrowRight className="w-3.5 h-3.5" />
-            </a>
-            <a href="#keeper-overview" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-drift-border text-[13px] font-medium text-txt-1 hover:text-txt-0 hover:bg-drift-surface/50 transition-colors">
-              <Bot className="w-3.5 h-3.5" />
-              Run a Keeper Bot
-            </a>
-          </div>
+      <div className="mb-8">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-bull bg-bull/8 border border-bull/15 px-2 py-0.5 rounded">Live on Devnet</span>
+        </div>
+        <h1 className="text-xl sm:text-2xl font-bold text-txt-0 tracking-tight leading-snug mb-2">
+          The Decentralized Perpetual Futures Exchange
+        </h1>
+        <p className="text-[13px] text-txt-2 leading-relaxed max-w-2xl mb-4">
+          Value is a fully on-chain perpetual futures DEX built on Solana.
+          Sub-second execution, decentralized order matching, and community-powered liquidity.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <a href="http://95.217.193.241:5174" className="inline-flex items-center gap-2 px-3 py-1.5 rounded bg-accent text-white text-[12px] font-semibold hover:brightness-110 transition-colors">
+            Launch App
+            <ArrowRight className="w-3. h-3.5" />
+          </a>
         </div>
       </div>
 
