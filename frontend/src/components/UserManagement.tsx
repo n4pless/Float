@@ -192,7 +192,7 @@ export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack, trading 
   /* ========= Not connected ========= */
   if (!connected) {
     return (
-      <div className="h-screen flex flex-col bg-drift-bg">
+      <div className="flex-1 min-h-0 flex flex-col bg-drift-bg">
         <PageHeader onBack={onBack} />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center space-y-4 max-w-xs">
@@ -209,7 +209,7 @@ export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack, trading 
 
   /* ========= Connected ========= */
   return (
-    <div className="h-screen flex flex-col bg-drift-bg">
+    <div className="flex-1 min-h-0 flex flex-col bg-drift-bg">
       <PageHeader onBack={onBack} pubkey={shortPubkey} />
 
       {/* -- Status toast -- */}

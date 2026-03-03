@@ -7,7 +7,7 @@ import {
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import { PhantomWalletAdapter } from '@solana/wallet-adapter-wallets';
 import { Toaster } from 'sonner';
-import { BarChart2, BookOpen, ArrowRightLeft, Wallet as WalletIcon } from 'lucide-react';
+import { BarChart2, BookOpen, ArrowRightLeft, Wallet as WalletIcon, Shield, TrendingUp, List } from 'lucide-react';
 import DRIFT_CONFIG from './config';
 import { useDriftStore } from './stores/useDriftStore';
 import { useSetupDrift } from './hooks/useSetupDrift';
@@ -93,13 +93,13 @@ function TradingApp() {
         <>
           <MarketBar />
 
-          {/* ── Mobile bottom tab bar (lg:hidden) ── */}
+          {/* ── Mobile trade sub-tabs (lg:hidden) ── */}
           <div className="flex lg:hidden items-center shrink-0 border-b border-drift-border bg-drift-panel">
             {([
-              { key: 'chart' as MobileView, label: 'Chart', icon: BarChart2 },
-              { key: 'book' as MobileView, label: 'Book', icon: BookOpen },
+              { key: 'chart' as MobileView, label: 'Chart', icon: TrendingUp },
+              { key: 'book' as MobileView, label: 'Book', icon: List },
               { key: 'trade' as MobileView, label: 'Trade', icon: ArrowRightLeft },
-              { key: 'account' as MobileView, label: 'Account', icon: WalletIcon },
+              { key: 'account' as MobileView, label: 'Balance', icon: WalletIcon },
             ]).map(t => {
               const Icon = t.icon;
               const active = mobileView === t.key;
@@ -188,6 +188,32 @@ function TradingApp() {
           </div>
         </>
       )}
+
+      {/* ── Mobile bottom page nav ── */}
+      <nav className="sm:hidden shrink-0 flex items-center border-t border-drift-border bg-drift-panel">
+        {([
+          { page: 'trade' as Page, label: 'Trade', icon: ArrowRightLeft },
+          { page: 'positions' as Page, label: 'Positions', icon: BarChart2 },
+          { page: 'insurance' as Page, label: 'Insurance', icon: Shield },
+          { page: 'user' as Page, label: 'Account', icon: WalletIcon },
+          { page: 'learn' as Page, label: 'Learn', icon: BookOpen },
+        ]).map(t => {
+          const Icon = t.icon;
+          const active = currentPage === t.page;
+          return (
+            <button
+              key={t.page}
+              onClick={() => setCurrentPage(t.page)}
+              className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors ${
+                active ? 'text-accent' : 'text-txt-3'
+              }`}
+            >
+              <Icon className="w-[18px] h-[18px]" />
+              <span>{t.label}</span>
+            </button>
+          );
+        })}
+      </nav>
 
       {/* Sonner toast notifications — matches drift-ui-template */}
       <Toaster position="bottom-right" theme="dark" richColors />
