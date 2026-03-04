@@ -111,7 +111,15 @@ export const MarketBar: React.FC = () => {
   );
 };
 
-/** Format volume to human-readable (e.g. 1.2B, 345M, 12.5K) */\nfunction formatVolume(v: number): string {\n  if (v >= 1e9) return `${(v / 1e9).toFixed(2)}B`;\n  if (v >= 1e6) return `${(v / 1e6).toFixed(2)}M`;\n  if (v >= 1e3) return `${(v / 1e3).toFixed(1)}K`;\n  return v.toFixed(0);\n}\n\nconst Stat: React.FC<{ label: string; value: string; color?: string }> = ({ label, value, color }) => (
+/** Format volume to human-readable (e.g. 1.2B, 345M, 12.5K) */
+function formatVolume(v: number): string {
+  if (v >= 1e9) return `${(v / 1e9).toFixed(2)}B`;
+  if (v >= 1e6) return `${(v / 1e6).toFixed(2)}M`;
+  if (v >= 1e3) return `${(v / 1e3).toFixed(1)}K`;
+  return v.toFixed(0);
+}
+
+const Stat: React.FC<{ label: string; value: string; color?: string }> = ({ label, value, color }) => (
   <div className="flex flex-col">
     <span className="text-[11px] leading-tight text-txt-1 uppercase tracking-[0.5px]">{label}</span>
     <span className={`text-[13px] font-medium tabular-nums font-mono ${color ?? 'text-txt-0'}`}>{value}</span>
