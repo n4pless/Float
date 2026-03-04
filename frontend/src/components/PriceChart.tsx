@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { createChart, ColorType, CrosshairMode, IChartApi, ISeriesApi, CandlestickData, Time, LineData, CandlestickSeries, HistogramSeries, LineSeries, CreatePriceLineOptions } from 'lightweight-charts';
-import { useDriftStore, selectOraclePrice } from '../stores/useDriftStore';
+import { useDriftStore, selectOraclePrice, selectSelectedMarket } from '../stores/useDriftStore';
+import DRIFT_CONFIG from '../config';
 import { BarChart2, RefreshCw } from 'lucide-react';
 
 const TF = ['1m', '5m', '15m', '1h', '4h', '1D'] as const;
@@ -27,9 +28,9 @@ interface Candle {
   volume: number;
 }
 
-async function fetchFromBinance(tf: string, limit: number): Promise<Candle[]> {
+async function fetchFromBinance(tf: string, limit: number, binanceSymbol = 'SOLUSDT'): Promise<Candle[]> {
   const interval = TF_TO_BINANCE[tf] || '1m';
-  const url = `https://api.binance.com/api/v3/klines?symbol=SOLUSDT&interval=${interval}&limit=${limit}`;
+  const url = `https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=${interval}&limit=${limit}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Binance API error: ${res.status}`);
   const data = await res.json();
@@ -43,9 +44,9 @@ async function fetchFromBinance(tf: string, limit: number): Promise<Candle[]> {
   }));
 }
 
-async function fetchFromCryptoCompare(tf: string, limit: number): Promise<Candle[]> {
+async function fetchFromCryptoCompare(tf: string, limit: number, ccSymbol = 'SOL'): Promise<Candle[]> {
   const cc = TF_TO_CC[tf] || { endpoint: 'histominute', aggregate: 1 };
-  const url = `https://min-api.cryptocompare.com/data/v2/${cc.endpoint}?fsym=SOL&tsym=USD&limit=${limit}&aggregate=${cc.aggregate}`;
+  const url = `https://min-api.cryptocompare.com/data/v2/${cc.endpoint}?fsym=${ccSymbol}&tsym=USD&limit=${limit}&aggregate=${cc.aggregate}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`CryptoCompare API error: ${res.status}`);
   const json = await res.json();
@@ -63,15 +64,16 @@ async function fetchFromCryptoCompare(tf: string, limit: number): Promise<Candle
 }
 
 /**
- * Fetch SOL/USD candle data — tries Binance first, falls back to CryptoCompare.
+ * Fetch candle data — tries Binance first, falls back to CryptoCompare.
+ * Symbols are configurable per market.
  */
-async function fetchCandles(tf: string, limit = 300): Promise<Candle[]> {
+async function fetchCandles(tf: string, limit = 300, binanceSymbol = 'SOLUSDT', ccSymbol = 'SOL'): Promise<Candle[]> {
   try {
-    return await fetchFromBinance(tf, limit);
+    return await fetchFromBinance(tf, limit, binanceSymbol);
   } catch (e) {
     console.warn('[chart] Binance unavailable, falling back to CryptoCompare:', e);
   }
-  return await fetchFromCryptoCompare(tf, limit);
+  return await fetchFromCryptoCompare(tf, limit, ccSymbol);
 }
 
 /**
@@ -93,15 +95,21 @@ export const PriceChart: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const currentPrice = useDriftStore(selectOraclePrice);
+  const selectedMarket = useDriftStore(selectSelectedMarket);
   const positions = useDriftStore((s) => s.positions);
   const candlesRef = useRef<Candle[]>([]);
 
-  // Fetch candles when timeframe changes
+  // Resolve market config for chart symbol routing
+  const marketCfg = DRIFT_CONFIG.markets[selectedMarket] ?? DRIFT_CONFIG.markets[0];
+  const binanceSymbol = marketCfg.binanceSymbol ?? 'SOLUSDT';
+  const ccSymbol = marketCfg.ccSymbol ?? 'SOL';
+
+  // Fetch candles when timeframe or market changes
   const loadCandles = useCallback(async (timeframe: string) => {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchCandles(timeframe);
+      const data = await fetchCandles(timeframe, 300, binanceSymbol, ccSymbol);
       setCandles(data);
       candlesRef.current = data;
     } catch (err: any) {
@@ -110,7 +118,7 @@ export const PriceChart: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [binanceSymbol, ccSymbol]);
 
   useEffect(() => {
     loadCandles(tf);
@@ -277,8 +285,8 @@ export const PriceChart: React.FC = () => {
     entryLineRef.current = null;
     liqLineRef.current = null;
 
-    // Find position for selectedMarket (index 0 = SOL-PERP)
-    const pos = positions.find(p => p.marketIndex === 0);
+    // Find position for selectedMarket
+    const pos = positions.find(p => p.marketIndex === selectedMarket);
     if (!pos || pos.baseAssetAmount === 0) return;
 
     // Entry price line
@@ -348,7 +356,7 @@ export const PriceChart: React.FC = () => {
           <div className="w-px h-3.5 bg-drift-border" />
 
           <span className="text-[11px] text-txt-2">
-            SOL-PERP <span className="text-txt-3 ml-1">Oracle</span>
+            {marketCfg.symbol} <span className="text-txt-3 ml-1">Oracle</span>
           </span>
 
           {loading && <RefreshCw className="w-3 h-3 text-txt-3 animate-spin" />}
@@ -386,7 +394,7 @@ export const PriceChart: React.FC = () => {
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-drift-bg/90">
             <div className="text-center">
               <RefreshCw className="w-6 h-6 text-txt-3 mx-auto mb-2 animate-spin" />
-              <span className="text-xs text-txt-2">Loading SOL-PERP chart…</span>
+              <span className="text-xs text-txt-2">Loading {marketCfg.symbol} chart…</span>
             </div>
           </div>
         )}

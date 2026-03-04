@@ -1,8 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { SolanaLogo } from './icons/SolanaLogo';
+import { AssetIcon } from './icons/AssetIcon';
 import DRIFT_CONFIG from '../config';
 import { useDriftStore } from '../stores/useDriftStore';
+
+/** Fetch 24h ticker stats from Binance */
+async function fetch24hStats(binanceSymbol: string): Promise<{ volume: number; priceChange: number; priceChangePct: number }> {
+  const url = `https://api.binance.com/api/v3/ticker/24hr?symbol=${binanceSymbol}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Binance 24hr error ${res.status}`);
+  const d = await res.json();
+  return {
+    volume: parseFloat(d.quoteVolume),          // USD volume
+    priceChange: parseFloat(d.priceChange),
+    priceChangePct: parseFloat(d.priceChangePercent),
+  };
+}
 
 export const MarketBar: React.FC = () => {
   const [open, setOpen] = useState(false);
@@ -15,10 +28,25 @@ export const MarketBar: React.FC = () => {
   const lastPriceChange = useDriftStore((s) => s.lastPriceChange);
   const isSubscribed = useDriftStore((s) => s.isSubscribed);
 
-  const market = DRIFT_CONFIG.markets[selectedMarket as keyof typeof DRIFT_CONFIG.markets];
+  const market = DRIFT_CONFIG.markets[selectedMarket] ?? DRIFT_CONFIG.markets[0];
   const displayPrice = oraclePrice > 0 ? oraclePrice : 0;
   const up = lastPriceChange >= 0;
   const fundingPct = fundingRate * 100;
+
+  // 24h stats from Binance
+  const [stats24h, setStats24h] = useState<{ volume: number; priceChangePct: number } | null>(null);
+  const statsIntervalRef = useRef<ReturnType<typeof setInterval>>();
+
+  useEffect(() => {
+    const load = () => {
+      fetch24hStats(market.binanceSymbol ?? 'SOLUSDT')
+        .then(setStats24h)
+        .catch(() => {});
+    };
+    load();
+    statsIntervalRef.current = setInterval(load, 30_000);
+    return () => clearInterval(statsIntervalRef.current);
+  }, [market.binanceSymbol]);
 
   return (
     <div className="h-12 flex items-center gap-6 px-4 shrink-0 bg-drift-panel border-b border-drift-border select-none overflow-x-auto">
@@ -30,10 +58,10 @@ export const MarketBar: React.FC = () => {
           className="flex items-center gap-2 hover:opacity-80 transition-opacity"
         >
           <div className="w-6 h-6 rounded-full bg-black/40 flex items-center justify-center">
-            <SolanaLogo size={16} />
+            <AssetIcon asset={market.baseAsset ?? 'SOL'} size={16} />
           </div>
           <span className="font-semibold text-[16px] text-txt-0">{market.pair ?? market.symbol}</span>
-          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-[10px] bg-yellow text-black leading-none">10x</span>
+          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-[10px] bg-yellow text-black leading-none">{market.maxLev ?? 10}x</span>
           <ChevronDown className={`w-3.5 h-3.5 text-txt-3 transition-transform ${open ? 'rotate-180' : ''}`} />
         </button>
 
@@ -59,7 +87,7 @@ export const MarketBar: React.FC = () => {
               >
                 <div className="flex items-center gap-2">
                   <div className="w-5 h-5 rounded-full bg-black/40 flex items-center justify-center">
-                    <SolanaLogo size={14} />
+                    <AssetIcon asset={m.baseAsset ?? 'SOL'} size={14} />
                   </div>
                   <span className="text-txt-0 font-medium">{m.symbol}</span>
                 </div>
@@ -74,16 +102,16 @@ export const MarketBar: React.FC = () => {
 
       {/* Right cluster — stat blocks with 32px spacing */}
       <div className="hidden md:flex items-center gap-8 ml-auto">
-        <Stat label="24H CHANGE" value={lastPriceChange !== 0 ? `${lastPriceChange >= 0 ? '+' : ''}${lastPriceChange.toFixed(2)}` : '—'} color={lastPriceChange >= 0 ? 'text-bull' : 'text-bear'} />
+        <Stat label="24H CHANGE" value={stats24h ? `${stats24h.priceChangePct >= 0 ? '+' : ''}${stats24h.priceChangePct.toFixed(2)}%` : (lastPriceChange !== 0 ? `${lastPriceChange >= 0 ? '+' : ''}${lastPriceChange.toFixed(2)}` : '—')} color={stats24h ? (stats24h.priceChangePct >= 0 ? 'text-bull' : 'text-bear') : (lastPriceChange >= 0 ? 'text-bull' : 'text-bear')} />
         <Stat label="FUNDING RATE" value={fundingRate !== 0 ? `${fundingPct >= 0 ? '+' : ''}${fundingPct.toFixed(4)}%` : '—'} color={fundingPct < 0 ? 'text-bear' : fundingPct > 0 ? 'text-bull' : undefined} />
-        <Stat label="OPEN INTEREST" value={openInterest > 0 ? `${openInterest.toLocaleString(undefined, { maximumFractionDigits: 1 })} SOL` : '—'} />
-        <Stat label="24H VOLUME" value="—" />
+        <Stat label="OPEN INTEREST" value={openInterest > 0 ? `${openInterest.toLocaleString(undefined, { maximumFractionDigits: 1 })} ${market.baseAsset ?? 'SOL'}` : '—'} />
+        <Stat label="24H VOLUME" value={stats24h ? `$${formatVolume(stats24h.volume)}` : '—'} />
       </div>
     </div>
   );
 };
 
-const Stat: React.FC<{ label: string; value: string; color?: string }> = ({ label, value, color }) => (
+/** Format volume to human-readable (e.g. 1.2B, 345M, 12.5K) */\nfunction formatVolume(v: number): string {\n  if (v >= 1e9) return `${(v / 1e9).toFixed(2)}B`;\n  if (v >= 1e6) return `${(v / 1e6).toFixed(2)}M`;\n  if (v >= 1e3) return `${(v / 1e3).toFixed(1)}K`;\n  return v.toFixed(0);\n}\n\nconst Stat: React.FC<{ label: string; value: string; color?: string }> = ({ label, value, color }) => (
   <div className="flex flex-col">
     <span className="text-[11px] leading-tight text-txt-1 uppercase tracking-[0.5px]">{label}</span>
     <span className={`text-[13px] font-medium tabular-nums font-mono ${color ?? 'text-txt-0'}`}>{value}</span>

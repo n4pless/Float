@@ -26,8 +26,8 @@ export const DRIFT_CONFIG = {
   
   // Markets
   markets: {
-    0: { symbol: 'SOL-PERP', index: 0, pair: 'SOL/USDC' },
-  },
+    0: { symbol: 'SOL-PERP', index: 0, pair: 'SOL/USDC', baseAsset: 'SOL', binanceSymbol: 'SOLUSDT', ccSymbol: 'SOL', maxLev: 10 },
+  } as Record<number, { symbol: string; index: number; pair: string; baseAsset: string; binanceSymbol: string; ccSymbol: string; maxLev: number }>,
   
   // Default leverage limits
   maxLeverage: 10,

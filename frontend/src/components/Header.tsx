@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { Settings, ExternalLink, Droplets, Menu, X, Search } from 'lucide-react';
+import { Settings, ExternalLink, Droplets, Menu, X, Search, Globe, Zap, Check } from 'lucide-react';
 import { UserAccountSelector } from './UserAccountSelector';
+import { AssetIcon } from './icons/AssetIcon';
+import DRIFT_CONFIG from '../config';
+import { useDriftStore } from '../stores/useDriftStore';
 
 export type Page = 'trade' | 'user' | 'learn' | 'insurance' | 'positions';
 
@@ -28,6 +31,67 @@ export const Header: React.FC<HeaderProps> = ({
   const { publicKey, connected } = useWallet();
   const [showSettings, setShowSettings] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Search state
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const setSelectedMarket = useDriftStore((s) => s.setSelectedMarket);
+  const selectedMarket = useDriftStore((s) => s.selectedMarket);
+
+  // Settings modal state
+  const [showRpcModal, setShowRpcModal] = useState(false);
+  const [showFeeModal, setShowFeeModal] = useState(false);
+  const [customRpc, setCustomRpc] = useState(DRIFT_CONFIG.rpc);
+  const [priorityFee, setPriorityFee] = useState('1000');
+
+  // Filtered markets for search
+  const allMarkets = Object.entries(DRIFT_CONFIG.markets);
+  const filteredMarkets = searchQuery.trim()
+    ? allMarkets.filter(([, m]) =>
+        m.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        m.baseAsset.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        m.pair.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : allMarkets;
+
+  // Keyboard shortcut: "/" to open search
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === '/' && !e.ctrlKey && !e.metaKey && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        setSearchOpen(true);
+        setTimeout(() => searchInputRef.current?.focus(), 50);
+      }
+      if (e.key === 'Escape') {
+        setSearchOpen(false);
+        setSearchQuery('');
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, []);
+
+  // Close search on click outside
+  useEffect(() => {
+    if (!searchOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setSearchOpen(false);
+        setSearchQuery('');
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [searchOpen]);
+
+  const selectMarket = useCallback((idx: number) => {
+    setSelectedMarket(idx);
+    setSearchOpen(false);
+    setSearchQuery('');
+    if (currentPage !== 'trade') onNavigate?.('trade');
+  }, [setSelectedMarket, currentPage, onNavigate]);
 
   useEffect(() => { setMobileMenuOpen(false); }, [currentPage]);
 
@@ -72,11 +136,65 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Center: Search bar (desktop) */}
-      <div className="hidden md:flex items-center">
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-drift-surface w-[200px] xl:w-[240px]">
-          <Search className="w-3.5 h-3.5 text-txt-3" />
-          <span className="text-[13px] text-txt-3">Search markets</span>
-          <span className="ml-auto text-[11px] text-txt-3 border border-drift-border rounded px-1.5 py-0.5 leading-none">/</span>
+      <div className="hidden md:flex items-center" ref={searchContainerRef}>
+        <div className="relative">
+          <div
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-full w-[200px] xl:w-[240px] transition-colors cursor-text ${
+              searchOpen ? 'bg-drift-active ring-1 ring-accent/40' : 'bg-drift-surface hover:bg-drift-active'
+            }`}
+            onClick={() => { setSearchOpen(true); setTimeout(() => searchInputRef.current?.focus(), 50); }}
+          >
+            <Search className="w-3.5 h-3.5 text-txt-3 shrink-0" />
+            {searchOpen ? (
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search markets..."
+                className="bg-transparent text-[13px] text-txt-0 outline-none w-full placeholder:text-txt-3"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && filteredMarkets.length > 0) {
+                    selectMarket(+filteredMarkets[0][0]);
+                  }
+                }}
+              />
+            ) : (
+              <span className="text-[13px] text-txt-3">Search markets</span>
+            )}
+            {!searchOpen && (
+              <span className="ml-auto text-[11px] text-txt-3 border border-drift-border rounded px-1.5 py-0.5 leading-none">/</span>
+            )}
+          </div>
+
+          {/* Search results dropdown */}
+          {searchOpen && (
+            <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-drift-surface border border-drift-border rounded-md shadow-lg overflow-hidden">
+              {filteredMarkets.length === 0 ? (
+                <div className="px-3 py-4 text-center text-[12px] text-txt-3">No markets found</div>
+              ) : (
+                <>
+                  <div className="px-3 py-1.5 text-[10px] text-txt-3 font-semibold uppercase tracking-wider">Perpetuals</div>
+                  {filteredMarkets.map(([idx, m]) => (
+                    <button
+                      key={idx}
+                      onClick={() => selectMarket(+idx)}
+                      className={`w-full flex items-center justify-between px-3 py-2 text-[12px] hover:bg-drift-active transition-colors ${
+                        +idx === selectedMarket ? 'bg-drift-active/60' : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <AssetIcon asset={m.baseAsset} size={18} />
+                        <span className="text-txt-0 font-medium">{m.symbol}</span>
+                        <span className="text-txt-3 text-[11px]">{m.pair}</span>
+                      </div>
+                      {+idx === selectedMarket && <Check className="w-3.5 h-3.5 text-accent" />}
+                    </button>
+                  ))}
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -106,12 +224,18 @@ export const Header: React.FC<HeaderProps> = ({
           {showSettings && (
             <div className="absolute right-0 top-full mt-1 w-48 py-1 rounded-md bg-drift-surface border border-drift-border z-50">
               <div className="px-3 py-1.5 text-[10px] text-txt-3 font-semibold uppercase tracking-wider">Settings</div>
-              <button className="w-full text-left px-3 py-2 text-[11px] text-txt-1 hover:bg-drift-active transition-colors flex items-center gap-2">
-                <ExternalLink className="w-3 h-3 text-txt-3" />
+              <button
+                onMouseDown={(e) => { e.preventDefault(); setShowRpcModal(true); setShowSettings(false); }}
+                className="w-full text-left px-3 py-2 text-[11px] text-txt-1 hover:bg-drift-active transition-colors flex items-center gap-2"
+              >
+                <Globe className="w-3 h-3 text-txt-3" />
                 RPC Endpoint
               </button>
-              <button className="w-full text-left px-3 py-2 text-[11px] text-txt-1 hover:bg-drift-active transition-colors flex items-center gap-2">
-                <Settings className="w-3 h-3 text-txt-3" />
+              <button
+                onMouseDown={(e) => { e.preventDefault(); setShowFeeModal(true); setShowSettings(false); }}
+                className="w-full text-left px-3 py-2 text-[11px] text-txt-1 hover:bg-drift-active transition-colors flex items-center gap-2"
+              >
+                <Zap className="w-3 h-3 text-txt-3" />
                 Priority Fees
               </button>
             </div>
@@ -169,12 +293,18 @@ export const Header: React.FC<HeaderProps> = ({
               {/* Settings */}
               <div className="space-y-0.5">
                 <div className="text-[10px] text-txt-3 font-semibold uppercase tracking-wider mb-1">Settings</div>
-                <button className="w-full text-left py-2 text-[12px] text-txt-1 hover:text-txt-0 flex items-center gap-2 transition-colors">
-                  <ExternalLink className="w-3.5 h-3.5 text-txt-3" />
+                <button
+                  onClick={() => { setShowRpcModal(true); setMobileMenuOpen(false); }}
+                  className="w-full text-left py-2 text-[12px] text-txt-1 hover:text-txt-0 flex items-center gap-2 transition-colors"
+                >
+                  <Globe className="w-3.5 h-3.5 text-txt-3" />
                   RPC Endpoint
                 </button>
-                <button className="w-full text-left py-2 text-[12px] text-txt-1 hover:text-txt-0 flex items-center gap-2 transition-colors">
-                  <Settings className="w-3.5 h-3.5 text-txt-3" />
+                <button
+                  onClick={() => { setShowFeeModal(true); setMobileMenuOpen(false); }}
+                  className="w-full text-left py-2 text-[12px] text-txt-1 hover:text-txt-0 flex items-center gap-2 transition-colors"
+                >
+                  <Zap className="w-3.5 h-3.5 text-txt-3" />
                   Priority Fees
                 </button>
               </div>
@@ -192,6 +322,123 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
         </>
+      )}
+      {/* ── RPC Endpoint Modal ── */}
+      {showRpcModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60" onClick={() => setShowRpcModal(false)}>
+          <div className="bg-drift-panel border border-drift-border rounded-lg p-5 w-[380px] max-w-[90vw] shadow-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[14px] font-semibold text-txt-0">RPC Endpoint</h3>
+              <button onClick={() => setShowRpcModal(false)} className="text-txt-3 hover:text-txt-0 transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-[11px] text-txt-2 mb-3">Custom Solana RPC URL. Changes apply on next page reload.</p>
+            <input
+              type="text"
+              value={customRpc}
+              onChange={(e) => setCustomRpc(e.target.value)}
+              placeholder="https://api.devnet.solana.com"
+              className="w-full px-3 py-2 bg-drift-surface border border-drift-border rounded text-[12px] text-txt-0 font-mono outline-none focus:border-accent/50 transition-colors"
+            />
+            <div className="flex items-center gap-2 mt-2">
+              {[
+                { label: 'Devnet', url: 'https://api.devnet.solana.com' },
+                { label: 'Helius', url: DRIFT_CONFIG.rpc },
+              ].map((preset) => (
+                <button
+                  key={preset.label}
+                  onClick={() => setCustomRpc(preset.url)}
+                  className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${
+                    customRpc === preset.url ? 'bg-accent/20 text-accent' : 'bg-drift-surface text-txt-2 hover:text-txt-0'
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <button onClick={() => setShowRpcModal(false)} className="px-3 py-1.5 rounded text-[11px] text-txt-2 hover:text-txt-0 transition-colors">
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  try { localStorage.setItem('value_custom_rpc', customRpc); } catch {}
+                  setShowRpcModal(false);
+                  window.location.reload();
+                }}
+                className="px-3 py-1.5 rounded bg-accent text-white text-[11px] font-medium hover:bg-accent/80 transition-colors"
+              >
+                Save & Reload
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Priority Fee Modal ── */}
+      {showFeeModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60" onClick={() => setShowFeeModal(false)}>
+          <div className="bg-drift-panel border border-drift-border rounded-lg p-5 w-[380px] max-w-[90vw] shadow-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[14px] font-semibold text-txt-0">Priority Fees</h3>
+              <button onClick={() => setShowFeeModal(false)} className="text-txt-3 hover:text-txt-0 transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-[11px] text-txt-2 mb-3">Max priority fee in micro-lamports. Higher fees = faster transaction inclusion.</p>
+            <div className="space-y-2">
+              {[
+                { label: 'Low', value: '100', desc: 'Economy' },
+                { label: 'Medium', value: '1000', desc: 'Standard' },
+                { label: 'High', value: '10000', desc: 'Fast' },
+                { label: 'Turbo', value: '100000', desc: 'Highest priority' },
+              ].map((tier) => (
+                <button
+                  key={tier.value}
+                  onClick={() => setPriorityFee(tier.value)}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded border transition-colors ${
+                    priorityFee === tier.value
+                      ? 'border-accent bg-accent/10 text-txt-0'
+                      : 'border-drift-border bg-drift-surface text-txt-1 hover:border-txt-3'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-[12px] font-medium">{tier.label}</span>
+                    <span className="text-[10px] text-txt-3">{tier.desc}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] font-mono text-txt-2">{Number(tier.value).toLocaleString()} μL</span>
+                    {priorityFee === tier.value && <Check className="w-3.5 h-3.5 text-accent" />}
+                  </div>
+                </button>
+              ))}
+            </div>
+            <div className="mt-3">
+              <label className="text-[10px] text-txt-3 uppercase tracking-wider font-medium">Custom (micro-lamports)</label>
+              <input
+                type="number"
+                value={priorityFee}
+                onChange={(e) => setPriorityFee(e.target.value)}
+                className="w-full mt-1 px-3 py-2 bg-drift-surface border border-drift-border rounded text-[12px] text-txt-0 font-mono outline-none focus:border-accent/50 transition-colors"
+              />
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <button onClick={() => setShowFeeModal(false)} className="px-3 py-1.5 rounded text-[11px] text-txt-2 hover:text-txt-0 transition-colors">
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  try { localStorage.setItem('value_priority_fee', priorityFee); } catch {}
+                  setShowFeeModal(false);
+                }}
+                className="px-3 py-1.5 rounded bg-accent text-white text-[11px] font-medium hover:bg-accent/80 transition-colors"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </header>
   );
