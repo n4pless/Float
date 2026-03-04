@@ -18,13 +18,13 @@ async function fetchDlobL2(marketIndex: number): Promise<L2Orderbook | null> {
     const convert = (
       levels: { price: string; size: string }[],
     ): OrderbookLevel[] => {
-      let cumUsd = 0;
+      let cumSize = 0;
       return levels.map((l) => {
         const price = Number(l.price) / PRICE_PRECISION;
         const size = Number(l.size) / BASE_PRECISION;
         const sizeUsd = price * size;
-        cumUsd += sizeUsd;
-        return { price, size, sizeUsd, total: cumUsd, isMine: false };
+        cumSize += size;
+        return { price, size, sizeUsd, total: cumSize, isMine: false };
       });
     };
 
@@ -239,7 +239,7 @@ const Row: React.FC<{
         {level.price.toFixed(dec)}
       </span>
       <span className="relative z-10 text-right tabular-nums text-txt-0">{fmtSize(level.size)}</span>
-      <span className="relative z-10 text-right tabular-nums text-txt-0">{fmt(level.total)}</span>
+      <span className="relative z-10 text-right tabular-nums text-txt-0">{fmtSize(level.total)}</span>
     </div>
   );
 };
