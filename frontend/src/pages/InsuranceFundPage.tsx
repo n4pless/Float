@@ -53,7 +53,7 @@ function formatDuration(seconds: number): string {
 }
 
 const Skeleton: React.FC<{ className?: string }> = ({ className = '' }) => (
-  <div className={`animate-pulse rounded bg-drift-surface/60 ${className}`} />
+  <div className={`animate-pulse bg-drift-surface/60 ${className}`} />
 );
 
 /* ─── SVG Arc Gauge for pool share ─── */
@@ -93,9 +93,9 @@ const MiniDonut: React.FC<{ pct: number }> = ({ pct }) => {
 /* ─── Pill toggle buttons ─── */
 const PillBtn: React.FC<{ label: string; onClick: () => void; active?: boolean }> = ({ label, onClick, active }) => (
   <button type="button" onClick={onClick}
-    className={`px-3.5 py-1.5 rounded-full text-[11px] font-semibold transition-colors ${
-      active ? 'bg-accent text-white' : 'bg-drift-surface/60 text-txt-3 hover:text-txt-1 hover:bg-drift-surface'
-    }`}>{label}</button>
+    className={`px-3.5 py-1.5 text-[11px] font-semibold transition-colors ${
+      active ? 'bg-accent text-white' : 'bg-drift-surface text-txt-1 hover:text-txt-0 hover:bg-drift-elevated'
+    }`} style={{ borderRadius: 6 }}>{label}</button>
 );
 
 /* ═══════════ Main Page ═══════════ */
@@ -214,14 +214,14 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack }) 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-auto bg-drift-bg">
       {/* ── Header ── */}
-      <div className="sticky top-0 z-20 flex items-center gap-3 px-4 sm:px-6 py-3 bg-drift-bg border-b border-drift-border">
-        <button onClick={onBack} className="text-txt-2 hover:text-txt-0 text-sm transition-colors">&larr; Back</button>
+      <div className="sticky top-0 z-20 flex items-center gap-3 px-4 sm:px-6 bg-drift-bg border-b border-drift-border" style={{ height: 48 }}>
+        <button onClick={onBack} className="text-txt-1 hover:text-txt-0 text-[13px] font-medium transition-colors">&larr; Back</button>
         <div className="w-px h-4 bg-drift-border" />
-        <h1 className="text-sm font-semibold text-txt-0">Insurance Fund</h1>
-        <span className="text-[10px] font-medium text-accent px-2 py-0.5 rounded border border-accent/20 bg-accent/5">USDC</span>
+        <h1 className="text-[14px] font-semibold text-txt-0">Vault</h1>
+        <span className="text-[10px] font-bold text-accent px-2 py-0.5 border border-accent/20 bg-accent/5" style={{ borderRadius: 4 }}>USDC</span>
         <div className="flex-1" />
         <span className="hidden sm:inline text-[10px] text-bull font-medium">● Live</span>
-        <button onClick={handleRefresh} className={`text-[11px] text-txt-3 hover:text-txt-0 transition-colors ${isRefreshing ? 'opacity-50' : ''}`}>
+        <button onClick={handleRefresh} className={`text-[11px] text-txt-1 hover:text-txt-0 transition-colors ${isRefreshing ? 'opacity-50' : ''}`}>
           Refresh
         </button>
       </div>
@@ -231,36 +231,35 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack }) 
         {/* ╔══════════════════════════════════════════╗
             ║  1. HERO SECTION — gradient card          ║
             ╚══════════════════════════════════════════╝ */}
-        <div className="rounded-lg border border-drift-border overflow-hidden"
-          style={{ background: 'linear-gradient(135deg, #0d1b2a 0%, #0a2725 100%)' }}>
+        <div className="border border-drift-border bg-drift-panel overflow-hidden">
           <div className="p-6 sm:p-8">
             <div className="flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-8">
               <div className="flex-1 space-y-3">
-                <h2 className="text-[13px] font-semibold text-txt-1 uppercase tracking-wider">Insurance Fund</h2>
+                <h2 className="text-[12px] font-semibold text-txt-1 uppercase tracking-widest">Insurance Fund</h2>
                 {dataLoaded ? (
-                  <div className="text-[48px] sm:text-[56px] font-bold tracking-tight leading-none tabular-nums">
+                  <div className="text-[40px] sm:text-[48px] font-bold tracking-tight leading-none font-mono tabular-nums">
                     <span className="text-bull">$</span>
                     <span className="text-txt-0">{fundStats!.vaultBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                 ) : <Skeleton className="h-14 w-64" />}
-                <p className="text-[13px] text-txt-2 leading-relaxed max-w-lg">
+                <p className="text-[13px] text-txt-1 leading-relaxed max-w-lg">
                   Stake USDC to earn <span className="text-accent font-semibold">{ifFeePct}%</span> of protocol revenue while backstopping the exchange against socialized losses.
                 </p>
               </div>
             </div>
             {/* Icon chips */}
             <div className="flex flex-wrap items-center gap-2.5 mt-5">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/8">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-drift-elevated border border-drift-border" style={{ borderRadius: 4 }}>
                 <Shield className="w-3.5 h-3.5 text-accent" />
-                <span className="text-[11px] font-medium text-txt-1">Backstop Protection</span>
+                <span className="text-[11px] font-medium text-txt-0">Backstop Protection</span>
               </div>
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/8">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-drift-elevated border border-drift-border" style={{ borderRadius: 4 }}>
                 <TrendingUp className="w-3.5 h-3.5 text-bull" />
-                <span className="text-[11px] font-medium text-txt-1">Revenue Share</span>
+                <span className="text-[11px] font-medium text-txt-0">Revenue Share</span>
               </div>
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/8">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-drift-elevated border border-drift-border" style={{ borderRadius: 4 }}>
                 <Zap className="w-3.5 h-3.5 text-yellow" />
-                <span className="text-[11px] font-medium text-txt-1">Instant Withdrawal</span>
+                <span className="text-[11px] font-medium text-txt-0">Instant Withdrawal</span>
               </div>
             </div>
           </div>
@@ -271,62 +270,62 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack }) 
             ╚══════════════════════════════════════════╝ */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {/* Primary: Vault Balance */}
-          <div className="rounded border border-drift-border bg-drift-panel p-4 flex flex-col gap-2">
+          <div className="border border-drift-border bg-drift-panel p-4 flex flex-col gap-2">
             <div className="flex items-center gap-1.5">
               <Wallet className="w-3.5 h-3.5 text-accent" />
-              <span className="text-[11px] text-txt-3 uppercase tracking-wide font-semibold">Vault Balance</span>
+              <span className="text-[11px] text-txt-1 uppercase tracking-wide font-semibold">Vault Balance</span>
             </div>
             {!dataLoaded ? <Skeleton className="h-7 w-20" /> : (
-              <span className="text-[22px] font-bold tabular-nums text-txt-0 leading-none">{formatCompact(fundStats!.vaultBalance)}</span>
+              <span className="text-[22px] font-bold font-mono tabular-nums text-txt-0 leading-none">{formatCompact(fundStats!.vaultBalance)}</span>
             )}
-            <span className="text-[10px] text-txt-3">Total USDC deposited</span>
+            <span className="text-[10px] text-txt-1">Total USDC deposited</span>
           </div>
           {/* Secondary: Total Shares */}
-          <div className="rounded border border-drift-border bg-drift-panel/60 p-4 flex flex-col gap-2">
+          <div className="border border-drift-border bg-drift-panel/60 p-4 flex flex-col gap-2">
             <div className="flex items-center gap-1.5">
-              <Layers className="w-3.5 h-3.5 text-txt-3" />
-              <span className="text-[10px] text-txt-3 uppercase tracking-wide">Total Shares</span>
+              <Layers className="w-3.5 h-3.5 text-txt-1" />
+              <span className="text-[10px] text-txt-1 uppercase tracking-wide">Total Shares</span>
             </div>
             {!dataLoaded ? <Skeleton className="h-5 w-16" /> : (
-              <span className="text-[15px] font-semibold tabular-nums text-txt-1 leading-none">{Number(fundStats!.totalShares).toLocaleString()}</span>
+              <span className="text-[15px] font-semibold font-mono tabular-nums text-txt-0 leading-none">{Number(fundStats!.totalShares).toLocaleString()}</span>
             )}
-            <span className="text-[10px] text-txt-3">Yours: {fundStats ? Number(fundStats.userShares).toLocaleString() : '—'}</span>
+            <span className="text-[10px] font-mono text-txt-1">Yours: {fundStats ? Number(fundStats.userShares).toLocaleString() : '—'}</span>
           </div>
           {/* Secondary: Fee Allocation with mini donut */}
-          <div className="rounded border border-drift-border bg-drift-panel/60 p-4 flex flex-col gap-2">
+          <div className="border border-drift-border bg-drift-panel/60 p-4 flex flex-col gap-2">
             <div className="flex items-center gap-1.5">
-              <PieChart className="w-3.5 h-3.5 text-txt-3" />
-              <span className="text-[10px] text-txt-3 uppercase tracking-wide">Fee Allocation</span>
+              <PieChart className="w-3.5 h-3.5 text-txt-1" />
+              <span className="text-[10px] text-txt-1 uppercase tracking-wide">Fee Allocation</span>
             </div>
             {!dataLoaded ? <Skeleton className="h-5 w-16" /> : (
-              <span className="text-[15px] font-semibold tabular-nums text-txt-1 leading-none">
+              <span className="text-[15px] font-semibold font-mono tabular-nums text-txt-0 leading-none">
                 <MiniDonut pct={ifFeePctNum} />{ifFeePct}%
               </span>
             )}
-            <span className="text-[10px] text-txt-3">{stakerSharePct}% to stakers</span>
+            <span className="text-[10px] font-mono text-txt-1">{stakerSharePct}% to stakers</span>
           </div>
           {/* Secondary: Withdrawal with checkmark */}
-          <div className="rounded border border-drift-border bg-drift-panel/60 p-4 flex flex-col gap-2">
+          <div className="border border-drift-border bg-drift-panel/60 p-4 flex flex-col gap-2">
             <div className="flex items-center gap-1.5">
-              <ArrowUpFromLine className="w-3.5 h-3.5 text-txt-3" />
-              <span className="text-[10px] text-txt-3 uppercase tracking-wide">Withdrawal</span>
+              <ArrowUpFromLine className="w-3.5 h-3.5 text-txt-1" />
+              <span className="text-[10px] text-txt-1 uppercase tracking-wide">Withdrawal</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="text-[15px] font-semibold text-txt-1 leading-none">Instant</span>
               <CheckCircle2 className="w-4 h-4 text-bull" />
             </div>
-            <span className="text-[10px] text-txt-3">{fundStats ? `Settles ${formatDuration(fundStats.revenueSettlePeriod)}` : '—'}</span>
+            <span className="text-[10px] text-txt-1">{fundStats ? `Settles ${formatDuration(fundStats.revenueSettlePeriod)}` : '—'}</span>
           </div>
           {/* Primary: Fees Collected */}
-          <div className="rounded border border-drift-border bg-drift-panel p-4 flex flex-col gap-2 col-span-2 sm:col-span-1">
+          <div className="border border-drift-border bg-drift-panel p-4 flex flex-col gap-2 col-span-2 sm:col-span-1">
             <div className="flex items-center gap-1.5">
               <DollarSign className="w-3.5 h-3.5 text-accent" />
-              <span className="text-[11px] text-txt-3 uppercase tracking-wide font-semibold">Fees Collected</span>
+              <span className="text-[11px] text-txt-1 uppercase tracking-wide font-semibold">Fees Collected</span>
             </div>
             {!dataLoaded ? <Skeleton className="h-7 w-20" /> : (
-              <span className="text-[22px] font-bold tabular-nums text-txt-0 leading-none">{formatCompact(fundStats!.totalFeesCollected)}</span>
+              <span className="text-[22px] font-bold font-mono tabular-nums text-txt-0 leading-none">{formatCompact(fundStats!.totalFeesCollected)}</span>
             )}
-            <span className="text-[10px] text-txt-3">From trading activity</span>
+            <span className="text-[10px] text-txt-1">From trading activity</span>
           </div>
         </div>
 
@@ -341,7 +340,7 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack }) 
           <div className="lg:col-span-3 space-y-4 order-2 lg:order-1">
 
             {/* 3. STAKE/UNSTAKE UNIFIED CARD */}
-            <div className="rounded border border-drift-border bg-drift-panel overflow-hidden">
+            <div className="border border-drift-border bg-drift-panel overflow-hidden">
               {/* Tabs at top of card */}
               <div className="flex border-b border-drift-border">
                 {(['stake', 'unstake'] as const).map(tab => {
@@ -367,18 +366,18 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack }) 
                 <div className="p-6 space-y-4">
                   {/* Wallet balance prominent */}
                   {connected && (
-                    <div className="rounded bg-drift-bg border border-drift-border px-4 py-3 flex items-center justify-between">
-                      <span className="text-[11px] text-txt-3 uppercase tracking-wide">Wallet Balance</span>
-                      <span className="text-[18px] font-bold tabular-nums text-txt-0">{formatUsdPlain(walletUsdc)}</span>
+                    <div className="bg-drift-input border border-drift-border px-4 py-3 flex items-center justify-between">
+                      <span className="text-[11px] text-txt-1 uppercase tracking-wide">Wallet Balance</span>
+                      <span className="text-[18px] font-bold font-mono tabular-nums text-txt-0">{formatUsdPlain(walletUsdc)}</span>
                     </div>
                   )}
                   {/* Amount input */}
                   <div>
                     <label className="text-[11px] text-txt-3 uppercase tracking-wide mb-2 block">Deposit Amount</label>
-                    <div className="flex items-center h-12 rounded bg-drift-bg border border-drift-border focus-within:border-accent/40 transition-colors">
-                      <span className="pl-4 text-[12px] font-semibold text-txt-2">USDC</span>
+                    <div className="flex items-center h-12 bg-drift-input border border-drift-border focus-within:border-accent/40 transition-colors" style={{ borderRadius: 4 }}>
+                      <span className="pl-4 text-[12px] font-semibold text-txt-1">USDC</span>
                       <input type="number" step="0.01" min="0" value={stakeAmount} onChange={e => setStakeAmount(e.target.value)} placeholder="0.00"
-                        className="flex-1 px-3 h-full bg-transparent text-right text-txt-0 text-[18px] font-semibold tabular-nums placeholder:text-txt-3/30 focus:outline-none" />
+                        className="flex-1 px-3 h-full bg-transparent text-right text-txt-0 text-[18px] font-semibold font-mono tabular-nums placeholder:text-txt-3/30 focus:outline-none" />
                     </div>
                   </div>
                   {/* Pill toggles */}
@@ -398,12 +397,12 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack }) 
                   )}
                   {/* Action */}
                   {!connected ? (
-                    <div className="flex flex-col items-center gap-3 py-8 rounded bg-drift-bg border border-dashed border-drift-border">
-                      <p className="text-[12px] text-txt-2">Connect your wallet to stake</p><WalletMultiButton />
+                    <div className="flex flex-col items-center gap-3 py-8 bg-drift-input border border-dashed border-drift-border">
+                      <p className="text-[12px] text-txt-1">Connect your wallet to stake</p><WalletMultiButton />
                     </div>
                   ) : (
                     <button onClick={handleStake} disabled={loading || !stakeAmount || parseFloat(stakeAmount) <= 0}
-                      className="w-full py-3.5 rounded bg-bull text-white text-[13px] font-semibold disabled:opacity-30 disabled:cursor-not-allowed active:opacity-80 transition-opacity flex items-center justify-center gap-2">
+                      className="w-full py-3.5 bg-bull text-white text-[13px] font-semibold disabled:opacity-30 disabled:cursor-not-allowed active:opacity-80 transition-opacity flex items-center justify-center gap-2" style={{ borderRadius: 6 }}>
                       {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                       {loading ? 'Staking…' : `Stake ${stakeAmount && parseFloat(stakeAmount) > 0 ? `${parseFloat(stakeAmount).toLocaleString()} USDC` : 'USDC'}`}
                     </button>
@@ -415,7 +414,7 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack }) 
                     {showStakeInfo ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                   </button>
                   {showStakeInfo && (
-                    <div className="text-[11px] text-txt-3 leading-relaxed rounded bg-drift-bg border border-drift-border px-4 py-3">
+                    <div className="text-[11px] text-txt-1 leading-relaxed bg-drift-input border border-drift-border px-4 py-3">
                       USDC deposited into the Insurance Fund vault. You'll receive shares proportional to the fund's total value.
                       Your share of protocol fees accrues automatically.
                     </div>
@@ -427,22 +426,22 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack }) 
               {activeTab === 'unstake' && (
                 <div className="p-6 space-y-4">
                   {hasPendingWithdraw && (
-                    <div className="rounded p-4 border border-bull/20 bg-bull/5 space-y-3">
+                    <div className="p-4 border border-bull/20 bg-bull/5 space-y-3">
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-bull" />
                         <span className="text-[13px] font-semibold text-bull">Unstake Ready</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-[20px] font-bold text-txt-0 tabular-nums">{formatUsdPlain(userStake!.lastWithdrawRequestValue)}</span>
+                        <span className="text-[20px] font-bold text-txt-0 font-mono tabular-nums">{formatUsdPlain(userStake!.lastWithdrawRequestValue)}</span>
                         <span className="text-bull font-semibold text-[11px] uppercase">Ready</span>
                       </div>
                       <div className="flex gap-2">
                         <button onClick={handleCompleteUnstake} disabled={loading}
-                          className="flex-1 py-3 rounded bg-bull text-white text-[13px] font-semibold disabled:opacity-40 transition-opacity flex items-center justify-center gap-2">
+                          className="flex-1 py-3 bg-bull text-white text-[13px] font-semibold disabled:opacity-40 transition-opacity flex items-center justify-center gap-2" style={{ borderRadius: 6 }}>
                           {loading && <Loader2 className="w-4 h-4 animate-spin" />} Complete Withdrawal
                         </button>
                         <button onClick={handleCancelUnstake} disabled={loading}
-                          className="px-4 py-3 rounded border border-drift-border text-txt-2 text-[12px] font-medium hover:text-txt-0 transition-colors">
+                          className="px-4 py-3 border border-drift-border text-txt-1 text-[12px] font-medium hover:text-txt-0 transition-colors" style={{ borderRadius: 6 }}>
                           Cancel
                         </button>
                       </div>
@@ -452,17 +451,17 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack }) 
                     <>
                       {/* Staked balance prominent */}
                       {userStake?.isInitialized && (
-                        <div className="rounded bg-drift-bg border border-drift-border px-4 py-3 flex items-center justify-between">
-                          <span className="text-[11px] text-txt-3 uppercase tracking-wide">Staked Value</span>
-                          <span className="text-[18px] font-bold tabular-nums text-txt-0">{formatUsdPlain(userStake.stakeValue)}</span>
+                        <div className="bg-drift-input border border-drift-border px-4 py-3 flex items-center justify-between">
+                          <span className="text-[11px] text-txt-1 uppercase tracking-wide">Staked Value</span>
+                          <span className="text-[18px] font-bold font-mono tabular-nums text-txt-0">{formatUsdPlain(userStake.stakeValue)}</span>
                         </div>
                       )}
                       <div>
                         <label className="text-[11px] text-txt-3 uppercase tracking-wide mb-2 block">Withdraw Amount</label>
-                        <div className="flex items-center h-12 rounded bg-drift-bg border border-drift-border focus-within:border-bear/40 transition-colors">
-                          <span className="pl-4 text-[12px] font-semibold text-txt-2">USDC</span>
+                        <div className="flex items-center h-12 bg-drift-input border border-drift-border focus-within:border-bear/40 transition-colors" style={{ borderRadius: 4 }}>
+                          <span className="pl-4 text-[12px] font-semibold text-txt-1">USDC</span>
                           <input type="number" step="0.01" min="0" value={unstakeAmount} onChange={e => setUnstakeAmount(e.target.value)} placeholder="0.00"
-                            className="flex-1 px-3 h-full bg-transparent text-right text-txt-0 text-[18px] font-semibold tabular-nums placeholder:text-txt-3/30 focus:outline-none" />
+                            className="flex-1 px-3 h-full bg-transparent text-right text-txt-0 text-[18px] font-semibold font-mono tabular-nums placeholder:text-txt-3/30 focus:outline-none" />
                         </div>
                       </div>
                       {/* Pill toggles */}
@@ -474,12 +473,12 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack }) 
                         </div>
                       )}
                       {!connected ? (
-                        <div className="flex flex-col items-center gap-3 py-8 rounded bg-drift-bg border border-dashed border-drift-border">
-                          <p className="text-[12px] text-txt-2">Connect your wallet to unstake</p><WalletMultiButton />
+                        <div className="flex flex-col items-center gap-3 py-8 bg-drift-input border border-dashed border-drift-border">
+                          <p className="text-[12px] text-txt-1">Connect your wallet to unstake</p><WalletMultiButton />
                         </div>
                       ) : (
                         <button onClick={handleRequestUnstake} disabled={loading || !unstakeAmount || parseFloat(unstakeAmount) <= 0 || !userStake?.isInitialized}
-                          className="w-full py-3.5 rounded bg-bear text-white text-[13px] font-semibold disabled:opacity-30 disabled:cursor-not-allowed active:opacity-80 transition-opacity flex items-center justify-center gap-2">
+                          className="w-full py-3.5 bg-bear text-white text-[13px] font-semibold disabled:opacity-30 disabled:cursor-not-allowed active:opacity-80 transition-opacity flex items-center justify-center gap-2" style={{ borderRadius: 6 }}>
                           {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                           {loading ? 'Processing…' : `Withdraw ${unstakeAmount && parseFloat(unstakeAmount) > 0 ? `${parseFloat(unstakeAmount).toLocaleString()} USDC` : ''}`}
                         </button>
@@ -492,13 +491,13 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack }) 
 
             {/* Status messages */}
             {error && (
-              <div className="flex items-center gap-2 p-4 rounded border border-bear/15 bg-bear/8 text-bear text-[12px]">
+              <div className="flex items-center gap-2 p-4 border border-bear/15 bg-bear/8 text-bear text-[12px]">
                 <span className="flex-1">{error}</span>
                 <button onClick={() => setError(null)} className="text-bear/60 hover:text-bear text-xs transition-colors">✕</button>
               </div>
             )}
             {success && (
-              <div className="flex items-center gap-2 p-4 rounded border border-bull/15 bg-bull/8 text-bull text-[12px]">
+              <div className="flex items-center gap-2 p-4 border border-bull/15 bg-bull/8 text-bull text-[12px]">
                 <span className="flex-1">{success}</span>
               </div>
             )}
@@ -508,11 +507,11 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack }) 
           <div className="lg:col-span-2 space-y-4 order-1 lg:order-2">
 
             {/* 4. YOUR POSITION — prominent card */}
-            <div className="rounded border border-drift-border bg-drift-panel overflow-hidden">
+            <div className="border border-drift-border bg-drift-panel overflow-hidden">
               <div className="flex items-center justify-between px-6 py-4 border-b border-drift-border">
-                <h3 className="text-[14px] font-semibold text-txt-0 uppercase tracking-wide">Your Position</h3>
+                <h3 className="text-[13px] font-semibold text-txt-0 uppercase tracking-wide">Your Position</h3>
                 {userStake?.isInitialized && (
-                  <span className="flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-full border border-bull/20 text-bull font-semibold bg-bull/5">
+                  <span className="flex items-center gap-1.5 text-[10px] px-2.5 py-1 border border-bull/20 text-bull font-semibold bg-bull/5" style={{ borderRadius: 12 }}>
                     <span className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-bull opacity-75" />
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-bull" />
@@ -542,16 +541,16 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack }) 
                     {/* Hero staked value */}
                     <div className="text-center">
                       <div className="text-[10px] text-txt-3 uppercase tracking-wider mb-2">Staked Value</div>
-                      <div className="text-[36px] font-bold tracking-tight leading-none tabular-nums">
+                      <div className="text-[36px] font-bold font-mono tracking-tight leading-none tabular-nums">
                         <span className="text-bull">$</span>
                         <span className="text-txt-0">{userStake.stakeValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       </div>
                       {/* P&L with $ and % */}
                       <div className="flex items-center justify-center gap-2 mt-2">
-                        <span className={`text-[14px] font-semibold tabular-nums ${pnlDollar >= 0 ? 'text-bull' : 'text-bear'}`}>
+                        <span className={`text-[14px] font-semibold font-mono tabular-nums ${pnlDollar >= 0 ? 'text-bull' : 'text-bear'}`}>
                           {pnlDollar >= 0 ? '+' : ''}{formatUsdPlain(pnlDollar)}
                         </span>
-                        <span className={`text-[12px] tabular-nums ${pnlDollar >= 0 ? 'text-bull/70' : 'text-bear/70'}`}>
+                        <span className={`text-[12px] font-mono tabular-nums ${pnlDollar >= 0 ? 'text-bull/70' : 'text-bear/70'}`}>
                           ({pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%)
                         </span>
                       </div>
@@ -565,21 +564,21 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack }) 
 
                     {/* Two-column detail row */}
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="rounded bg-drift-bg border border-drift-border px-3.5 py-3 text-center">
-                        <div className="text-[10px] text-txt-3 mb-1">Your Shares</div>
+                      <div className="bg-drift-input border border-drift-border px-3.5 py-3 text-center">
+                        <div className="text-[10px] text-txt-1 mb-1">Your Shares</div>
                         <div className="text-[14px] font-semibold text-txt-0 tabular-nums font-mono">{Number(userStake.ifShares).toLocaleString()}</div>
                       </div>
-                      <div className="rounded bg-drift-bg border border-drift-border px-3.5 py-3 text-center">
-                        <div className="text-[10px] text-txt-3 mb-1">Cost Basis</div>
-                        <div className="text-[14px] font-semibold text-txt-0 tabular-nums">{formatUsdPlain(userStake.costBasis)}</div>
+                      <div className="bg-drift-input border border-drift-border px-3.5 py-3 text-center">
+                        <div className="text-[10px] text-txt-1 mb-1">Cost Basis</div>
+                        <div className="text-[14px] font-semibold text-txt-0 tabular-nums font-mono">{formatUsdPlain(userStake.costBasis)}</div>
                       </div>
                     </div>
 
                     {/* Pending unstake */}
                     {hasPendingWithdraw && (
-                      <div className="rounded bg-yellow/5 border border-yellow/15 px-3.5 py-2.5 flex items-center justify-between">
-                        <span className="text-[11px] text-txt-3">Pending Unstake</span>
-                        <span className="text-[12px] font-semibold text-yellow tabular-nums">{formatUsdPlain(userStake.lastWithdrawRequestValue)}</span>
+                      <div className="bg-yellow/5 border border-yellow/15 px-3.5 py-2.5 flex items-center justify-between">
+                        <span className="text-[11px] text-txt-1">Pending Unstake</span>
+                        <span className="text-[12px] font-semibold font-mono text-yellow tabular-nums">{formatUsdPlain(userStake.lastWithdrawRequestValue)}</span>
                       </div>
                     )}
                   </div>
@@ -588,7 +587,7 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack }) 
             </div>
 
             {/* 5. HOW IT WORKS — collapsible stepper */}
-            <div className="rounded border border-drift-border bg-drift-panel overflow-hidden">
+            <div className="border border-drift-border bg-drift-panel overflow-hidden">
               <button onClick={() => setShowHowItWorks(!showHowItWorks)}
                 className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-drift-surface/20 transition-colors">
                 <h3 className="text-[14px] font-semibold text-txt-0 uppercase tracking-wide">How It Works</h3>
@@ -622,7 +621,7 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack }) 
             </div>
 
             {/* 6. RISK DISCLOSURE — amber warning card */}
-            <div className="rounded border-l-4 border border-yellow/30 border-l-yellow bg-drift-panel p-5 space-y-2">
+            <div className="border-l-4 border border-yellow/30 border-l-yellow bg-drift-panel p-5 space-y-2">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-yellow shrink-0" />
                 <span className="text-[13px] font-semibold text-yellow">Risk Disclosure</span>
