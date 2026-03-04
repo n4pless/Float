@@ -85,14 +85,14 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
   return (
     <div className="flex flex-col h-full">
       {/* Tabs */}
-      <div className="flex items-center shrink-0 px-1 border-b border-drift-border overflow-x-auto">
+      <div className="flex items-center shrink-0 px-2 border-b border-drift-border overflow-x-auto" style={{ height: 40 }}>
         {tabs.map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
-              className={`px-3 py-2 text-[11px] font-medium relative transition-colors whitespace-nowrap border-b-2 -mb-px ${
-                tab === t.key ? 'text-txt-0 border-txt-0' : 'text-txt-3 hover:text-txt-2 border-transparent'}`}>
+              className={`px-3 h-full text-[13px] font-medium relative transition-colors whitespace-nowrap border-b-2 -mb-px ${
+                tab === t.key ? 'text-txt-0 border-bull' : 'text-txt-1 hover:text-txt-0 border-transparent'}`}>
               {t.label}
               {(t.count ?? 0) > 0 && (
-                <span className="text-[9px] ml-1.5 tabular-nums text-txt-3">{t.count}</span>
+                <span className="text-[11px] ml-1.5 font-mono tabular-nums text-txt-1">{t.count}</span>
               )}
             </button>
         ))}
@@ -105,11 +105,11 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
         ) : tab === 'positions' ? (
           positions.length === 0 ? <Empty icon={Layers} text="No open positions" /> : (
             <div className="overflow-x-auto">
-            <table className="w-full text-[11px] min-w-[640px]">
+            <table className="w-full text-[12px] min-w-[640px]">
               <thead>
-                <tr className="bg-drift-surface/30">
+                <tr className="bg-drift-surface/50" style={{ height: 32 }}>
                   {['Market','Side','Size','Entry Price','Mark Price','Total P&L','Liq. Price',''].map(h => (
-                    <th key={h} className={`px-3 py-2 font-medium text-txt-3 ${h === '' ? 'text-center' : h === 'Market' || h === 'Side' ? 'text-left' : 'text-right'}`}>{h}</th>
+                    <th key={h} className={`px-3 font-medium text-txt-1 text-[11px] uppercase tracking-wide ${h === '' ? 'text-center' : h === 'Market' || h === 'Side' ? 'text-left' : 'text-right'}`}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -118,25 +118,25 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
                   const m = DRIFT_CONFIG.markets[pos.marketIndex as keyof typeof DRIFT_CONFIG.markets];
                   const long = pos.direction === 'LONG';
                   return (
-                    <tr key={pos.marketIndex} className="hover:bg-drift-surface/30 transition-colors border-b border-drift-border/50">
-                      <td className="px-3 py-2.5">
+                    <tr key={pos.marketIndex} className="hover:bg-drift-surface/30 transition-colors border-b border-drift-border/50" style={{ height: 36 }}>
+                      <td className="px-3">
                         <div className="flex items-center gap-2">
-                          <div className="w-5 h-5 rounded-md bg-black/40 flex items-center justify-center">
+                          <div className="w-5 h-5 rounded-full bg-black/40 flex items-center justify-center">
                             <SolanaLogo size={14} />
                           </div>
                           <span className="font-semibold text-txt-0">{m?.symbol ?? `PERP-${pos.marketIndex}`}</span>
                         </div>
                       </td>
-                      <td className="px-3 py-2.5">
-                        <span className={`px-2 py-1 rounded-md text-[10px] font-semibold ${
-                          long ? 'bg-bull/10 text-bull' : 'bg-bear/10 text-bear'}`}>
+                      <td className="px-3">
+                        <span className={`px-2 py-0.5 text-[10px] font-semibold ${
+                          long ? 'bg-bull/10 text-bull' : 'bg-bear/10 text-bear'}`} style={{ borderRadius: 4 }}>
                           {pos.direction}
                         </span>
                       </td>
-                      <td className="px-3 py-2.5 text-right tabular-nums text-txt-1 font-medium">{pos.baseAssetAmount.toFixed(4)}</td>
-                      <td className="px-3 py-2.5 text-right tabular-nums text-txt-1">${pos.entryPrice.toFixed(2)}</td>
-                      <td className="px-3 py-2.5 text-right tabular-nums text-txt-1">${pos.markPrice.toFixed(2)}</td>
-                      <td className="px-3 py-2.5 text-right tabular-nums">
+                      <td className="px-3 text-right font-mono tabular-nums text-txt-0 font-medium">{pos.baseAssetAmount.toFixed(4)}</td>
+                      <td className="px-3 text-right font-mono tabular-nums text-txt-0">${pos.entryPrice.toFixed(2)}</td>
+                      <td className="px-3 text-right font-mono tabular-nums text-txt-0">${pos.markPrice.toFixed(2)}</td>
+                      <td className="px-3 text-right font-mono tabular-nums">
                         {(() => {
                           const totalPnl = pos.unrealizedPnl + (pos.settledPnl ?? 0);
                           return (
@@ -153,13 +153,13 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
                           );
                         })()}
                       </td>
-                      <td className="px-3 py-2.5 text-right tabular-nums text-txt-2">
+                      <td className="px-3 text-right font-mono tabular-nums text-txt-1">
                         {pos.liquidationPrice > 0 ? `$${pos.liquidationPrice.toFixed(2)}` : '—'}
                       </td>
-                      <td className="px-3 py-2.5 text-center">
+                      <td className="px-3 text-center">
                         <button onClick={() => setCloseModalPos(pos)}
                           disabled={closingIdx === pos.marketIndex}
-                          className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-semibold bg-bear/10 text-bear hover:bg-bear/20 transition-all disabled:opacity-50 mx-auto">
+                          className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-semibold bg-bear/10 text-bear hover:bg-bear/20 transition-all disabled:opacity-50 mx-auto" style={{ borderRadius: 4 }}>
                           <X className="w-3 h-3" />
                           {closingIdx === pos.marketIndex ? '…' : 'Close'}
                         </button>
@@ -174,11 +174,11 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
         ) : tab === 'orders' ? (
           openOrders.length === 0 ? <Empty icon={ClipboardList} text="No open orders" /> : (
             <div className="overflow-x-auto">
-            <table className="w-full text-[11px] min-w-[560px]">
+            <table className="w-full text-[12px] min-w-[560px]">
               <thead>
-                <tr className="bg-drift-surface/30">
+                <tr className="bg-drift-surface/50" style={{ height: 32 }}>
                   {['Market','Side','Type','Size','Price','Filled',''].map(h => (
-                    <th key={h} className={`px-3 py-2 font-medium text-txt-3 ${h === '' ? 'text-center' : h === 'Market' || h === 'Side' || h === 'Type' ? 'text-left' : 'text-right'}`}>{h}</th>
+                    <th key={h} className={`px-3 font-medium text-txt-1 text-[11px] uppercase tracking-wide ${h === '' ? 'text-center' : h === 'Market' || h === 'Side' || h === 'Type' ? 'text-left' : 'text-right'}`}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -197,24 +197,24 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
                     : 'triggerLimit' in order.orderType ? 'Stop Limit'
                     : 'oracle' in order.orderType ? 'Oracle' : 'Unknown';
                   return (
-                    <tr key={order.orderId} className="hover:bg-drift-surface/30 transition-colors border-b border-drift-border/50">
-                      <td className="px-3 py-2.5">
+                    <tr key={order.orderId} className="hover:bg-drift-surface/30 transition-colors border-b border-drift-border/50" style={{ height: 36 }}>
+                      <td className="px-3">
                         <span className="font-semibold text-txt-0">{m?.symbol ?? `PERP-${order.marketIndex}`}</span>
                       </td>
-                      <td className="px-3 py-2.5">
-                        <span className={`px-2 py-1 rounded-md text-[10px] font-semibold ${
-                          isLong ? 'bg-bull/10 text-bull' : 'bg-bear/10 text-bear'}`}>
+                      <td className="px-3">
+                        <span className={`px-2 py-0.5 text-[10px] font-semibold ${
+                          isLong ? 'bg-bull/10 text-bull' : 'bg-bear/10 text-bear'}`} style={{ borderRadius: 4 }}>
                           {isLong ? 'LONG' : 'SHORT'}
                         </span>
                       </td>
-                      <td className="px-3 py-2.5 text-txt-2 text-[10px] font-medium">{orderTypeStr}</td>
-                      <td className="px-3 py-2.5 text-right tabular-nums text-txt-1 font-medium">{sizeBase.toFixed(4)}</td>
-                      <td className="px-3 py-2.5 text-right tabular-nums text-txt-1">{priceVal > 0 ? `$${priceVal.toFixed(2)}` : 'Market'}</td>
-                      <td className="px-3 py-2.5 text-right tabular-nums text-txt-2">{filledBase.toFixed(4)}</td>
-                      <td className="px-3 py-2.5 text-center">
+                      <td className="px-3 text-txt-1 text-[11px] font-medium">{orderTypeStr}</td>
+                      <td className="px-3 text-right font-mono tabular-nums text-txt-0 font-medium">{sizeBase.toFixed(4)}</td>
+                      <td className="px-3 text-right font-mono tabular-nums text-txt-0">{priceVal > 0 ? `$${priceVal.toFixed(2)}` : 'Market'}</td>
+                      <td className="px-3 text-right font-mono tabular-nums text-txt-1">{filledBase.toFixed(4)}</td>
+                      <td className="px-3 text-center">
                         <button onClick={() => handleCancelOrder(order.orderId)}
                           disabled={cancellingId === order.orderId}
-                          className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-semibold bg-bear/10 text-bear hover:bg-bear/20 transition-all disabled:opacity-50 mx-auto">
+                          className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-semibold bg-bear/10 text-bear hover:bg-bear/20 transition-all disabled:opacity-50 mx-auto" style={{ borderRadius: 4 }}>
                           <X className="w-3 h-3" />
                           {cancellingId === order.orderId ? '…' : 'Cancel'}
                         </button>
@@ -229,11 +229,11 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
         ) : tab === 'balances' ? (
           accountSpotBalances.length === 0 ? <Empty icon={Wallet} text="No account balances — deposit to see balances" /> : (
           <div className="overflow-x-auto">
-          <table className="w-full text-[11px] min-w-[400px]">
+          <table className="w-full text-[12px] min-w-[400px]">
             <thead>
-              <tr className="bg-drift-surface/30">
+              <tr className="bg-drift-surface/50" style={{ height: 32 }}>
                 {['Asset','Deposits','Borrows','Net Balance','Value (USD)'].map(h => (
-                  <th key={h} className={`px-3 py-2 font-medium text-txt-3 ${h === 'Asset' ? 'text-left' : 'text-right'}`}>{h}</th>
+                  <th key={h} className={`px-3 font-medium text-txt-1 text-[11px] uppercase tracking-wide ${h === 'Asset' ? 'text-left' : 'text-right'}`}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -341,11 +341,11 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
                 </div>
               </div>
             )}
-            <table className="w-full text-[11px] min-w-[640px]">
+            <table className="w-full text-[12px] min-w-[640px]">
               <thead>
-                <tr className="bg-drift-surface/30">
+                <tr className="bg-drift-surface/50" style={{ height: 32 }}>
                   {['Bot','Wallet','Side','Size (SOL)','Entry','Mark','P&L','Orders'].map(h => (
-                    <th key={h} className={`px-3 py-2 font-medium text-txt-3 ${
+                    <th key={h} className={`px-3 font-medium text-txt-1 text-[11px] uppercase tracking-wide ${
                       h === 'Bot' || h === 'Wallet' || h === 'Side' ? 'text-left' : 'text-right'
                     }`}>{h}</th>
                   ))}
@@ -430,11 +430,11 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
         ) : tab === 'tradeHistory' ? (
           myTrades.length === 0 ? <Empty icon={History} text={walletKey ? "No trades for your wallet" : "No trade history"} /> : (
             <div className="overflow-x-auto">
-            <table className="w-full text-[11px] min-w-[560px]">
+            <table className="w-full text-[12px] min-w-[560px]">
               <thead>
-                <tr className="bg-drift-surface/30">
+                <tr className="bg-drift-surface/50" style={{ height: 32 }}>
                   {['Time','Market','Side','Price','Size (USD)','Fee','Tx'].map(h => (
-                    <th key={h} className={`px-3 py-2 font-medium text-txt-3 ${h === 'Time' || h === 'Market' || h === 'Side' || h === 'Tx' ? 'text-left' : 'text-right'}`}>{h}</th>
+                    <th key={h} className={`px-3 font-medium text-txt-1 text-[11px] uppercase tracking-wide ${h === 'Time' || h === 'Market' || h === 'Side' || h === 'Tx' ? 'text-left' : 'text-right'}`}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -446,32 +446,32 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
                   const isBuy = t.side === 'buy';
                   const fee = (t.takerFee ?? 0) + (t.makerFee ?? 0);
                   return (
-                    <tr key={`${t.fillId ?? ''}-${t.ts}-${i}`} className="hover:bg-drift-surface/30 transition-colors border-b border-drift-border/50">
-                      <td className="px-3 py-2.5 text-txt-2">
+                    <tr key={`${t.fillId ?? ''}-${t.ts}-${i}`} className="hover:bg-drift-surface/30 transition-colors border-b border-drift-border/50" style={{ height: 36 }}>
+                      <td className="px-3 text-txt-1">
                         <div className="flex flex-col">
-                          <span className="tabular-nums">{time}</span>
-                          <span className="text-[9px] text-txt-3">{date}</span>
+                          <span className="font-mono tabular-nums">{time}</span>
+                          <span className="text-[9px] text-txt-1">{date}</span>
                         </div>
                       </td>
-                      <td className="px-3 py-2.5">
+                      <td className="px-3">
                         <div className="flex items-center gap-1.5">
                           <SolanaLogo size={13} />
                           <span className="font-semibold text-txt-0">{m?.symbol ?? 'SOL-PERP'}</span>
                         </div>
                       </td>
-                      <td className="px-3 py-2.5">
-                        <span className={`px-2 py-1 rounded-md text-[10px] font-semibold ${
-                          isBuy ? 'bg-bull/10 text-bull' : 'bg-bear/10 text-bear'}`}>
+                      <td className="px-3">
+                        <span className={`px-2 py-0.5 text-[10px] font-semibold ${
+                          isBuy ? 'bg-bull/10 text-bull' : 'bg-bear/10 text-bear'}`} style={{ borderRadius: 4 }}>
                           {isBuy ? 'BUY' : 'SELL'}
                         </span>
                       </td>
-                      <td className={`px-3 py-2.5 text-right tabular-nums font-medium ${isBuy ? 'text-bull' : 'text-bear'}`}>
+                      <td className={`px-3 text-right font-mono tabular-nums font-medium ${isBuy ? 'text-bull' : 'text-bear'}`}>
                         ${t.price.toFixed(2)}
                       </td>
-                      <td className="px-3 py-2.5 text-right tabular-nums text-txt-1 font-medium">
+                      <td className="px-3 text-right font-mono tabular-nums text-txt-0 font-medium">
                         ${t.size.toFixed(2)}
                       </td>
-                      <td className="px-3 py-2.5 text-right tabular-nums text-txt-3">
+                      <td className="px-3 text-right font-mono tabular-nums text-txt-1">
                         {fee > 0 ? `$${fee.toFixed(4)}` : '—'}
                       </td>
                       <td className="px-3 py-2.5">
@@ -502,15 +502,15 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
       </div>
 
       {/* Status bar */}
-      <div className="h-7 flex items-center justify-between px-4 shrink-0 bg-drift-panel/50 border-t border-drift-border">
+      <div className="flex items-center justify-between px-4 shrink-0 bg-drift-panel border-t border-drift-border" style={{ height: 28 }}>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5">
             <Wifi className="w-3 h-3 text-bull" />
-            <span className="text-[10px] text-txt-2 font-medium">Connected</span>
+            <span className="text-[11px] text-txt-0 font-medium">Connected</span>
           </div>
-          <span className="text-[10px] text-txt-3">RPC: Devnet</span>
+          <span className="text-[11px] text-txt-1 font-mono">RPC: Devnet</span>
         </div>
-        <span className="text-[10px] text-txt-3 font-mono">v1.0.0</span>
+        <span className="text-[11px] text-txt-1 font-mono">v1.0.0</span>
       </div>
 
       {/* Close Position Modal */}
@@ -538,10 +538,10 @@ const Empty: React.FC<{ icon: any; text: string }> = ({ icon: Icon, text }) => (
 
 const AmmStat: React.FC<{ label: string; value: string; color?: string; sub?: string }> = ({ label, value, color, sub }) => (
   <div className="flex flex-col">
-    <span className="text-[9px] text-txt-3 uppercase tracking-wider">{label}</span>
+    <span className="text-[10px] text-txt-1 uppercase tracking-wide">{label}</span>
     <div className="flex items-baseline gap-1">
-      <span className={`text-[11px] font-semibold tabular-nums ${color ?? 'text-txt-1'}`}>{value}</span>
-      {sub && <span className={`text-[8px] font-semibold ${color ?? 'text-txt-3'}`}>{sub}</span>}
+      <span className={`text-[12px] font-semibold font-mono tabular-nums ${color ?? 'text-txt-0'}`}>{value}</span>
+      {sub && <span className={`text-[9px] font-semibold ${color ?? 'text-txt-1'}`}>{sub}</span>}
     </div>
   </div>
 );
@@ -550,20 +550,20 @@ const AccountBalanceRow: React.FC<{
   sym: string; color: string; deposits: number; borrows: number;
   netBalance: number; valueUsd: number; icon?: string;
 }> = ({ sym, color, deposits, borrows, netBalance, valueUsd, icon }) => (
-  <tr className="hover:bg-drift-surface/30 transition-colors border-b border-drift-border/50">
-    <td className="px-3 py-2.5">
+  <tr className="hover:bg-drift-surface/30 transition-colors border-b border-drift-border/50" style={{ height: 36 }}>
+    <td className="px-3">
       <div className="flex items-center gap-2">
-        <div className="w-5 h-5 rounded-md flex items-center justify-center text-[9px] text-white font-bold" style={{ background: color }}>
+        <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] text-white font-bold" style={{ background: color }}>
           {icon ?? sym[0]}
         </div>
         <span className="font-semibold text-txt-0">{sym}</span>
       </div>
     </td>
-    <td className="px-3 py-2.5 text-right tabular-nums text-bull font-medium">{deposits > 0 ? deposits.toFixed(4) : '—'}</td>
-    <td className="px-3 py-2.5 text-right tabular-nums text-bear">{borrows > 0 ? borrows.toFixed(4) : '—'}</td>
-    <td className={`px-3 py-2.5 text-right tabular-nums font-medium ${netBalance >= 0 ? 'text-txt-1' : 'text-bear'}`}>
+    <td className="px-3 text-right font-mono tabular-nums text-bull font-medium">{deposits > 0 ? deposits.toFixed(4) : '—'}</td>
+    <td className="px-3 text-right font-mono tabular-nums text-bear">{borrows > 0 ? borrows.toFixed(4) : '—'}</td>
+    <td className={`px-3 text-right font-mono tabular-nums font-medium ${netBalance >= 0 ? 'text-txt-0' : 'text-bear'}`}>
       {netBalance.toFixed(4)}
     </td>
-    <td className="px-3 py-2.5 text-right tabular-nums text-txt-1 font-medium">${valueUsd.toFixed(2)}</td>
+    <td className="px-3 text-right font-mono tabular-nums text-txt-0 font-medium">${valueUsd.toFixed(2)}</td>
   </tr>
 );

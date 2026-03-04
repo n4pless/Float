@@ -172,45 +172,47 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
 
   return (
     <div className="flex flex-col h-full overflow-y-auto custom-scrollbar">
-      {/* ── Buy / Sell tabs (Backpack style) ── */}
+      {/* ── Buy / Sell toggle — full width, shared edge, 40px ── */}
       <div className="flex shrink-0">
         {(['long', 'short'] as Side[]).map(s => {
           const active = side === s;
           const isBuy = s === 'long';
           return (
             <button key={s} onClick={() => setSide(s)}
-              className={`flex-1 py-2.5 text-[12px] font-semibold transition-colors ${
+              className={`flex-1 text-[14px] font-semibold transition-colors ${
                 active
-                  ? isBuy ? 'bg-bull/15 text-bull border-b-2 border-bull' : 'bg-bear/15 text-bear border-b-2 border-bear'
-                  : 'text-txt-3 hover:text-txt-2 border-b-2 border-transparent'
-              }`}>
-              {isBuy ? 'Buy / Long' : 'Sell / Short'}
+                  ? isBuy ? 'bg-bull text-white' : 'bg-bear text-white'
+                  : 'bg-drift-surface text-txt-1 hover:text-txt-0'
+              }`}
+              style={{ height: 40 }}>
+              {isBuy ? 'Buy' : 'Sell'}
             </button>
           );
         })}
       </div>
 
-      {/* ── Order type tabs ── */}
-      <div className="flex items-center gap-0 shrink-0 border-b border-drift-border">
-        {(['market', 'limit'] as OrdType[]).map(t => (
+      {/* ── Order type tabs — Limit active underlined ── */}
+      <div className="flex items-center gap-4 px-3 shrink-0 border-b border-drift-border" style={{ height: 36 }}>
+        {(['limit', 'market'] as OrdType[]).map(t => (
           <button key={t} onClick={() => setOrdType(t)}
-            className={`px-4 py-2 text-[11px] font-medium capitalize transition-colors border-b-2 -mb-px ${
+            className={`text-[13px] font-medium capitalize transition-colors relative pb-2 ${
               ordType === t
-                ? 'text-txt-0 border-txt-0'
-                : 'text-txt-3 hover:text-txt-2 border-transparent'
+                ? 'text-txt-0'
+                : 'text-txt-1 hover:text-txt-0'
             }`}>
             {t}
+            {ordType === t && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-txt-0" />}
           </button>
         ))}
         <button onClick={() => setOrdType('privacy')}
-          className={`px-3 py-2 text-[11px] font-medium transition-colors border-b-2 -mb-px flex items-center gap-1.5 ${
+          className={`text-[13px] font-medium transition-colors relative pb-2 flex items-center gap-1.5 ${
             ordType === 'privacy'
-              ? 'text-purple border-purple'
-              : 'text-txt-3 hover:text-txt-2 border-transparent'
+              ? 'text-purple'
+              : 'text-txt-1 hover:text-txt-0'
           }`}>
           <ShieldCheck className="w-3 h-3" />
           Arcium
-          <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-purple/15 text-purple leading-none">NEW</span>
+          {ordType === 'privacy' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-purple" />}
         </button>
       </div>
 
@@ -228,10 +230,15 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
         />
       )}
 
-      {ordType !== 'privacy' && <div className="p-3 space-y-2.5 flex-1">
+      {ordType !== 'privacy' && <div className="p-3 space-y-3 flex-1">
+        {/* Balance display */}
+        <div className="flex justify-end">
+          <span className="text-[12px] text-txt-1">Balance <span className="font-mono text-txt-0">{collateralUsd > 0 ? `$${collateralUsd.toFixed(2)}` : '0.00'}</span></span>
+        </div>
+
         {/* Messages */}
         {msg && (
-          <div className={`px-2.5 py-2 rounded text-[11px] flex items-start gap-2 leading-relaxed ${
+          <div className={`px-3 py-2 text-[12px] flex items-start gap-2 leading-relaxed ${
             msg.type === 'ok'
               ? 'bg-bull/8 text-bull'
               : 'bg-bear/8 text-bear'
@@ -241,37 +248,16 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
           </div>
         )}
 
-        {/* ── Leverage ── */}
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] text-txt-3">Leverage</span>
-            <span className="text-[11px] font-semibold tabular-nums text-txt-0">
-              {leverage}×
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
-            {LEV_PRESETS.map(l => (
-              <button key={l} onClick={() => setLeverage(l)}
-                className={`flex-1 py-1 rounded text-[10px] font-semibold transition-colors ${
-                  leverage === l
-                    ? 'bg-drift-active text-txt-0'
-                    : 'bg-drift-surface text-txt-3 hover:text-txt-2'
-                }`}>
-                {l}×
-              </button>
-            ))}
-          </div>
-          <input type="range" min={1} max={DRIFT_CONFIG.maxLeverage} step={1}
-            value={leverage} onChange={e => setLeverage(+e.target.value)}
-            className="w-full accent-current h-1 cursor-pointer"
-            style={{ accentColor: side === 'long' ? '#24b47e' : '#f84960' }}
-          />
-        </div>
-
         {/* ── Limit price ── */}
         {ordType === 'limit' && (
           <div>
-            <label className="text-[11px] text-txt-3 font-medium mb-1.5 block">Price</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-[12px] text-txt-1">Price</label>
+              <div className="flex items-center gap-2">
+                <button className="text-[12px] text-txt-1 hover:text-accent transition-colors">Mid</button>
+                <button className="text-[12px] text-txt-1 hover:text-accent transition-colors">BBO</button>
+              </div>
+            </div>
             <InputField
               value={price}
               onChange={setPrice}
@@ -284,12 +270,12 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
         {/* ── Size ── */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="text-[11px] text-txt-3 font-medium">Size</label>
+            <label className="text-[12px] text-txt-1">Quantity</label>
             <button
               onClick={() => handlePct(100)}
-              className="text-[10px] text-txt-3 hover:text-accent transition-colors cursor-pointer"
+              className="text-[12px] text-txt-1 hover:text-accent transition-colors cursor-pointer"
             >
-              Max: <span className="text-txt-2 tabular-nums font-medium">{maxSize > 0 ? maxSize.toFixed(4) : '0'} {sym}</span>
+              Max: <span className="font-mono text-txt-0">{maxSize > 0 ? maxSize.toFixed(4) : '0'}</span>
             </button>
           </div>
           <InputField
@@ -298,53 +284,79 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
             placeholder="0.00"
             suffix={sym}
           />
-          {/* Notional under input */}
           {sizeNum > 0 && (
-            <div className="text-right mt-1 text-[10px] tabular-nums text-txt-3">
+            <div className="text-right mt-1 text-[11px] font-mono tabular-nums text-txt-3">
               ≈ ${notional.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           )}
         </div>
 
-        {/* ── % buttons + slider ── */}
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-1">
-            {PCT.map(p => (
-              <button key={p} onClick={() => handlePct(p)}
-                className={`flex-1 py-1 rounded text-[10px] font-semibold transition-colors ${
-                  pct === p
-                    ? 'bg-drift-active text-txt-0'
-                    : 'bg-drift-surface text-txt-3 hover:text-txt-2'
-                }`}>
-                {p}%
-              </button>
-            ))}
-          </div>
-          <div className="relative h-1 rounded-full bg-drift-surface overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-200 ${
-                side === 'long' ? 'bg-bull/60' : 'bg-bear/60'
-              }`}
-              style={{ width: `${pct}%` }}
-            />
+        {/* ── Slider ── */}
+        <div className="space-y-1">
+          <input type="range" min={0} max={100} step={1}
+            value={pct} onChange={e => handlePct(+e.target.value)}
+            className="w-full h-1 cursor-pointer"
+            style={{ accentColor: '#4C8BF5' }}
+          />
+          <div className="flex justify-between text-[11px] text-txt-3 font-mono">
+            <span>0</span>
+            <span>100%</span>
           </div>
         </div>
 
-        {/* ── Toggles ── */}
+        {/* ── Order value ── */}
+        <div>
+          <label className="text-[12px] text-txt-1 mb-1.5 block">Order value</label>
+          <InputField
+            value={notional > 0 ? notional.toFixed(2) : ''}
+            onChange={() => {}}
+            placeholder="0"
+            suffix="USD"
+          />
+        </div>
+
+        {/* ── Leverage ── */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[12px] text-txt-1">Leverage</span>
+            <span className="text-[12px] font-semibold font-mono tabular-nums text-txt-0">
+              {leverage}×
+            </span>
+          </div>
+          <div className="flex items-center gap-1">
+            {LEV_PRESETS.map(l => (
+              <button key={l} onClick={() => setLeverage(l)}
+                className={`flex-1 py-1 text-[11px] font-semibold font-mono transition-colors ${
+                  leverage === l
+                    ? 'bg-drift-active text-txt-0'
+                    : 'bg-drift-surface text-txt-3 hover:text-txt-1'
+                }`}>
+                {l}×
+              </button>
+            ))}
+          </div>
+          <input type="range" min={1} max={DRIFT_CONFIG.maxLeverage} step={1}
+            value={leverage} onChange={e => setLeverage(+e.target.value)}
+            className="w-full h-1 cursor-pointer"
+            style={{ accentColor: '#4C8BF5' }}
+          />
+        </div>
+
+        {/* ── Toggles — Post Only / IOC ── */}
         <div className="flex items-center gap-3 py-0.5">
+          <MiniToggle label="Post Only" checked={postOnly} onChange={setPostOnly} />
           <MiniToggle label="Reduce Only" checked={reduceOnly} onChange={setReduceOnly} />
-          {ordType === 'limit' && <MiniToggle label="Post Only" checked={postOnly} onChange={setPostOnly} />}
           <MiniToggle label="TP/SL" checked={showTpSl} onChange={setShowTpSl} />
         </div>
 
         {/* ── TP/SL ── */}
         {showTpSl && (
-          <div className="space-y-2 rounded p-2.5 bg-drift-surface border border-drift-border">
+          <div className="space-y-2 p-3 bg-drift-surface border border-drift-border">
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[10px] font-semibold text-bull">Take Profit</span>
+                <span className="text-[11px] font-semibold text-bull">Take Profit</span>
                 {tp && sizeNum > 0 && (
-                  <span className="text-[10px] tabular-nums text-bull">
+                  <span className="text-[11px] font-mono tabular-nums text-bull">
                     +${((side === 'long' ? parseFloat(tp) - markPrice : markPrice - parseFloat(tp)) * sizeNum).toFixed(2)}
                   </span>
                 )}
@@ -353,9 +365,9 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
             </div>
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[10px] font-semibold text-bear">Stop Loss</span>
+                <span className="text-[11px] font-semibold text-bear">Stop Loss</span>
                 {sl && sizeNum > 0 && (
-                  <span className="text-[10px] tabular-nums text-bear">
+                  <span className="text-[11px] font-mono tabular-nums text-bear">
                     -${((side === 'long' ? markPrice - parseFloat(sl) : parseFloat(sl) - markPrice) * sizeNum).toFixed(2)}
                   </span>
                 )}
@@ -365,14 +377,15 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
           </div>
         )}
 
-        {/* ── Submit ── */}
+        {/* ── Submit — 40px, full-width, border-radius 6px ── */}
         {connected ? (
           <button onClick={handleSubmit} disabled={loading || !sizeNum}
-            className={`w-full py-2.5 rounded text-[12px] font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-white ${
+            className={`w-full text-[14px] font-semibold transition-all disabled:opacity-30 disabled:cursor-not-allowed text-white ${
               side === 'long'
                 ? 'bg-bull hover:brightness-110'
                 : 'bg-bear hover:brightness-110'
-            }`}>
+            }`}
+            style={{ height: 40, borderRadius: 6 }}>
             {loading ? (
               <span className="flex items-center justify-center gap-2">
                 <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -383,16 +396,16 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
             )}
           </button>
         ) : (
-          <WalletMultiButton className="!w-full !justify-center !rounded" />
+          <WalletMultiButton className="!w-full !justify-center" />
         )}
 
         {/* ── Slippage (collapsible) ── */}
         <button
           onClick={() => setShowSlippage(!showSlippage)}
-          className="flex items-center justify-between w-full text-[11px] text-txt-3 hover:text-txt-2 transition-colors py-0.5"
+          className="flex items-center justify-between w-full text-[12px] text-txt-1 hover:text-txt-0 transition-colors py-0.5"
         >
           <span className="font-medium">Slippage Tolerance</span>
-          <span className="flex items-center gap-1 tabular-nums text-txt-2">
+          <span className="flex items-center gap-1 font-mono tabular-nums text-txt-0">
             {slippage}%
             <ChevronDown className={`w-3 h-3 transition-transform ${showSlippage ? 'rotate-180' : ''}`} />
           </span>
@@ -401,10 +414,10 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
           <div className="flex gap-1">
             {SLIP.map(s => (
               <button key={s} onClick={() => setSlippage(s)}
-                className={`flex-1 py-1 rounded text-[10px] font-semibold transition-colors ${
+                className={`flex-1 py-1 text-[11px] font-semibold font-mono transition-colors ${
                   slippage === s
                     ? 'bg-drift-active text-accent'
-                    : 'bg-drift-surface text-txt-3 hover:text-txt-2'
+                    : 'bg-drift-surface text-txt-3 hover:text-txt-1'
                 }`}>
                 {s}%
               </button>
@@ -413,9 +426,9 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
         )}
 
         {/* ── Order Summary ── */}
-        <div className="rounded bg-drift-surface border border-drift-border overflow-hidden">
+        <div className="bg-drift-surface border border-drift-border overflow-hidden">
           <div className="px-3 py-1.5 border-b border-drift-border">
-            <span className="text-[11px] font-medium text-txt-2">Order Summary</span>
+            <span className="text-[12px] font-medium text-txt-1">Order Summary</span>
           </div>
           <div className="px-3 py-2 space-y-1.5">
             <SummaryRow label="Mark Price" value={markPrice > 0 ? `$${markPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '—'} />
@@ -428,31 +441,30 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
         </div>
 
         {/* ── Account snapshot ── */}
-        <div className="rounded bg-drift-surface border border-drift-border overflow-hidden">
+        <div className="bg-drift-surface border border-drift-border overflow-hidden">
           <div className="px-3 py-1.5 border-b border-drift-border">
-            <span className="text-[11px] font-medium text-txt-2">Account</span>
+            <span className="text-[12px] font-medium text-txt-1">Account</span>
           </div>
           <div className="px-3 py-2 space-y-1.5">
-            {/* Health bar */}
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] text-txt-3">Health</span>
-                <span className={`text-[11px] font-bold tabular-nums ${
+                <span className="text-[11px] text-txt-3">Health</span>
+                <span className={`text-[12px] font-bold font-mono tabular-nums ${
                   (accountState?.health ?? 100) > 50 ? 'text-bull' : (accountState?.health ?? 100) > 20 ? 'text-yellow' : 'text-bear'
                 }`}>
                   {(accountState?.health ?? 100).toFixed(0)}%
                 </span>
               </div>
-              <div className="h-1.5 rounded-full bg-drift-bg overflow-hidden">
+              <div className="h-1 bg-drift-bg overflow-hidden">
                 <div
-                  className="h-full rounded-full transition-all duration-500"
+                  className="h-full transition-all duration-500"
                   style={{
                     width: `${accountState?.health ?? 100}%`,
                     background: (accountState?.health ?? 100) > 50
-                      ? '#24b47e'
+                      ? '#00D26A'
                       : (accountState?.health ?? 100) > 20
-                        ? '#efa411'
-                        : '#f84960',
+                        ? '#F0B90B'
+                        : '#FF4D6A',
                   }}
                 />
               </div>
@@ -481,36 +493,36 @@ const InputField: React.FC<{
   suffix?: string;
   compact?: boolean;
 }> = ({ value, onChange, placeholder, suffix, compact }) => (
-  <div className={`flex items-center rounded bg-drift-surface border border-drift-border hover:border-drift-border-lt focus-within:border-txt-3/40 transition-colors ${compact ? 'px-2.5 h-7' : 'px-3 h-8'}`}>
+  <div className={`flex items-center bg-drift-input border border-drift-border hover:border-drift-border-lt focus-within:border-accent/30 transition-colors ${compact ? 'px-3 h-8' : 'px-3'}`} style={compact ? {} : { height: 36, borderRadius: 4 }}>
     <input
       type="number"
       value={value}
       onChange={e => onChange(e.target.value)}
       placeholder={placeholder}
-      className={`flex-1 bg-transparent text-txt-0 tabular-nums outline-none w-full ${compact ? 'text-[11px]' : 'text-[11px]'}`}
+      className={`flex-1 bg-transparent text-txt-0 font-mono tabular-nums text-right outline-none w-full ${compact ? 'text-[12px]' : 'text-[14px]'}`}
     />
-    {suffix && <span className={`text-txt-3 ml-1.5 font-medium shrink-0 text-[10px]`}>{suffix}</span>}
+    {suffix && <span className="text-txt-3 ml-2 font-medium shrink-0 text-[11px]">{suffix}</span>}
   </div>
 );
 
 const MiniToggle: React.FC<{ label: string; checked: boolean; onChange: (v: boolean) => void }> = ({ label, checked, onChange }) => (
   <button
     onClick={() => onChange(!checked)}
-    className={`flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-medium transition-colors ${
-      checked
-        ? 'bg-drift-active text-accent'
-        : 'text-txt-3 hover:text-txt-2'
+    className={`flex items-center gap-1.5 text-[12px] transition-colors ${
+      checked ? 'text-txt-0' : 'text-txt-1 hover:text-txt-0'
     }`}
   >
-    <div className={`w-1.5 h-1.5 rounded-full transition-colors ${checked ? 'bg-accent' : 'bg-txt-3/50'}`} />
+    <div className={`w-3 h-3 border flex items-center justify-center transition-colors ${checked ? 'border-accent bg-accent/20' : 'border-drift-border-lt'}`} style={{ borderRadius: 2 }}>
+      {checked && <svg width="8" height="8" viewBox="0 0 8 8"><path d="M1.5 4L3 5.5L6.5 2" stroke="#4C8BF5" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+    </div>
     {label}
   </button>
 );
 
 const SummaryRow: React.FC<{ label: string; value: string; valueClass?: string; highlight?: boolean }> = ({ label, value, valueClass, highlight }) => (
-  <div className="flex justify-between items-center text-[10.5px]">
-    <span className="text-txt-3">{label}</span>
-    <span className={`tabular-nums font-medium ${valueClass ?? (highlight ? 'text-yellow' : 'text-txt-1')}`}>{value}</span>
+  <div className="flex justify-between items-center text-[11px]">
+    <span className="text-txt-1">{label}</span>
+    <span className={`font-mono tabular-nums font-medium ${valueClass ?? (highlight ? 'text-yellow' : 'text-txt-0')}`}>{value}</span>
   </div>
 );
 

@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useDriftStore } from '../stores/useDriftStore';
 import type { L2Orderbook, OrderbookLevel } from '../sdk/drift-client-wrapper';
 
-const ROW_H = 19; // px per row
-const PRICE_PRECISION = 1_000_000;   // 1e6
-const BASE_PRECISION  = 1_000_000_000; // 1e9
+const ROW_H = 22; // px per row — Backpack spec
+const PRICE_PRECISION = 1_000_000;
+const BASE_PRECISION  = 1_000_000_000;
 
 /** Fetch L2 from the DLOB server (proxied via /dlob/) */
 async function fetchDlobL2(marketIndex: number): Promise<L2Orderbook | null> {
@@ -58,8 +58,8 @@ export const OrderBook: React.FC<Props> = ({ onPriceClick }) => {
   const measure = useCallback(() => {
     if (!containerRef.current) return;
     const h = containerRef.current.clientHeight;
-    // Subtract header(~30) + col headers(~22) + spread(~30) = ~82px overhead
-    const available = h - 82;
+    // header(~32) + col headers(~24) + spread(~36) + bid/ask bar(~24) = ~116px overhead
+    const available = h - 116;
     const perSide = mode === 'both'
       ? Math.max(4, Math.floor(available / 2 / ROW_H))
       : Math.max(6, Math.floor(available / ROW_H));
@@ -73,7 +73,7 @@ export const OrderBook: React.FC<Props> = ({ onPriceClick }) => {
     return () => ro.disconnect();
   }, [measure]);
 
-  // Poll orderbook: primary = DLOB server, fallback = on-chain GPA
+  // Poll orderbook
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
     let cancelled = false;
@@ -81,11 +81,9 @@ export const OrderBook: React.FC<Props> = ({ onPriceClick }) => {
     const poll = async () => {
       if (cancelled) return;
       try {
-        // Primary: DLOB server (works without wallet connection)
         const dlob = await fetchDlobL2(selectedMarket);
         if (!cancelled && dlob && (dlob.asks.length > 0 || dlob.bids.length > 0)) {
           setL2(dlob);
-          // Push midpoint price to store when SDK isn't providing it
           const storePrice = useDriftStore.getState().oraclePrice;
           if (storePrice === 0 && dlob.bids.length > 0 && dlob.asks.length > 0) {
             const mid = (dlob.bids[0].price + dlob.asks[0].price) / 2;
@@ -93,7 +91,6 @@ export const OrderBook: React.FC<Props> = ({ onPriceClick }) => {
           }
           return;
         }
-        // Fallback: client-side GPA aggregation (needs subscription)
         if (!cancelled && client && isSubscribed) {
           const book = client.getOrdersL2(selectedMarket);
           setL2(book);
@@ -118,7 +115,6 @@ export const OrderBook: React.FC<Props> = ({ onPriceClick }) => {
     1,
   );
 
-  // Spread = best ask - best bid
   const bestAsk = asks.length > 0 ? asks[0].price : 0;
   const bestBid = bids.length > 0 ? bids[0].price : 0;
   const spread = bestAsk > 0 && bestBid > 0 ? bestAsk - bestBid : 0;
@@ -126,9 +122,14 @@ export const OrderBook: React.FC<Props> = ({ onPriceClick }) => {
   const displayMid = oraclePrice > 0 ? oraclePrice : midPrice;
   const spreadPct = displayMid > 0 ? (spread / displayMid) * 100 : 0;
 
-  const dec = 2;
+  // Bid/ask weight percentages
+  const totalBidVol = bids.length > 0 ? bids[bids.length - 1].total : 0;
+  const totalAskVol = asks.length > 0 ? asks[asks.length - 1].total : 0;
+  const totalVol = totalBidVol + totalAskVol;
+  const bidPct = totalVol > 0 ? Math.round((totalBidVol / totalVol) * 100) : 50;
+  const askPct = 100 - bidPct;
 
-  // Asks are sorted ascending (lowest first) — display reversed so lowest is at bottom near spread
+  const dec = 2;
   const visAsks = mode === 'bids' ? [] : asks.slice(0, visibleRows).reverse();
   const visBids = mode === 'asks' ? [] : bids.slice(0, visibleRows);
 
@@ -138,33 +139,33 @@ export const OrderBook: React.FC<Props> = ({ onPriceClick }) => {
 
   return (
     <div ref={containerRef} className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 shrink-0 border-b border-drift-border">
-        <span className="text-[11px] font-medium text-txt-0">Book</span>
-        <div className="flex items-center gap-0.5">
+      {/* Header — "Book" + mode icons */}
+      <div className="flex items-center justify-between px-3 shrink-0 border-b border-drift-border" style={{ height: 32 }}>
+        <span className="text-[13px] font-semibold text-txt-0">Book</span>
+        <div className="flex items-center gap-1">
           {(['both','bids','asks'] as const).map(m => (
             <button key={m} onClick={() => setMode(m)}
-              className={`w-5 h-4 flex items-center justify-center rounded-sm transition-colors ${mode === m ? 'bg-drift-active' : 'hover:bg-drift-surface'}`} title={m}>
-              {m === 'both' && <svg width="10" height="10"><rect y="0" width="10" height="4" fill="#f84960" rx="1" opacity=".7"/><rect y="6" width="10" height="4" fill="#24b47e" rx="1" opacity=".7"/></svg>}
-              {m === 'bids' && <svg width="10" height="10"><rect width="10" height="10" fill="#24b47e" rx="1" opacity=".7"/></svg>}
-              {m === 'asks' && <svg width="10" height="10"><rect width="10" height="10" fill="#f84960" rx="1" opacity=".7"/></svg>}
+              className={`w-4 h-4 flex items-center justify-center transition-colors ${mode === m ? 'opacity-100' : 'opacity-40 hover:opacity-70'}`} title={m}>
+              {m === 'both' && <svg width="12" height="12"><rect y="0" width="12" height="5" fill="#FF4D6A" rx="1"/><rect y="7" width="12" height="5" fill="#00D26A" rx="1"/></svg>}
+              {m === 'bids' && <svg width="12" height="12"><rect width="12" height="12" fill="#00D26A" rx="1"/></svg>}
+              {m === 'asks' && <svg width="12" height="12"><rect width="12" height="12" fill="#FF4D6A" rx="1"/></svg>}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Column headers */}
-      <div className="grid grid-cols-3 px-3 py-1 text-[10px] text-txt-3 font-medium">
-        <span>Price</span>
-        <span className="text-right">Size</span>
-        <span className="text-right">Total</span>
+      {/* Column headers — 11px uppercase */}
+      <div className="grid grid-cols-3 px-3 shrink-0 text-[11px] text-txt-1 font-medium" style={{ height: 24, lineHeight: '24px' }}>
+        <span>Price (USD)</span>
+        <span className="text-right">Size (SOL)</span>
+        <span className="text-right">Total (SOL)</span>
       </div>
 
       {/* Asks */}
       <div className={`overflow-hidden flex flex-col justify-end ${mode === 'bids' ? '' : 'shrink-0'}`} style={{ height: mode === 'bids' ? 0 : visibleRows * ROW_H }}>
         {!hasData ? (
           <div className="flex items-center justify-center h-full">
-            <span className="text-[11px] text-txt-3 animate-pulse">Loading orderbook…</span>
+            <span className="text-[12px] text-txt-3 animate-pulse">Loading orderbook…</span>
           </div>
         ) : (
           visAsks.map((l, i) => (
@@ -174,13 +175,13 @@ export const OrderBook: React.FC<Props> = ({ onPriceClick }) => {
         )}
       </div>
 
-      {/* Spread / Mark Price */}
-      <div className="px-3 py-1.5 flex items-center justify-between shrink-0 border-y border-drift-border">
-        <span className={`text-[13px] font-semibold tabular-nums ${displayMid > 0 ? (lastPriceChange >= 0 ? 'text-bull' : 'text-bear') : 'text-txt-2'}`}>
+      {/* Spread / Mark Price — 20px semibold */}
+      <div className="px-3 flex items-center justify-between shrink-0 border-y border-drift-border" style={{ height: 36 }}>
+        <span className={`text-[20px] font-semibold tabular-nums font-mono ${displayMid > 0 ? (lastPriceChange >= 0 ? 'text-bull' : 'text-bear') : 'text-txt-1'}`}>
           {displayMid > 0 ? displayMid.toFixed(dec) : '—'}
         </span>
         {spread > 0 && (
-          <span className="text-[10px] tabular-nums text-txt-3">
+          <span className="text-[11px] tabular-nums font-mono text-txt-3">
             {spread.toFixed(dec)} ({spreadPct.toFixed(3)}%)
           </span>
         )}
@@ -190,7 +191,7 @@ export const OrderBook: React.FC<Props> = ({ onPriceClick }) => {
       <div className={`overflow-hidden ${mode === 'asks' ? '' : 'shrink-0'}`} style={{ height: mode === 'asks' ? 0 : visibleRows * ROW_H }}>
         {!hasData ? (
           <div className="flex items-center justify-center h-full">
-            <span className="text-[11px] text-txt-3">No resting buy orders</span>
+            <span className="text-[12px] text-txt-3">No resting buy orders</span>
           </div>
         ) : (
           visBids.map((l, i) => (
@@ -199,11 +200,23 @@ export const OrderBook: React.FC<Props> = ({ onPriceClick }) => {
           ))
         )}
       </div>
+
+      {/* Bid/Ask Percentage Bar */}
+      <div className="mt-auto px-3 shrink-0 border-t border-drift-border" style={{ height: 24 }}>
+        <div className="flex items-center h-full gap-2">
+          <span className="text-[11px] font-mono text-bull tabular-nums">{bidPct}%</span>
+          <div className="flex-1 h-1 flex rounded-full overflow-hidden">
+            <div className="bg-bull/60 h-full transition-all duration-300" style={{ width: `${bidPct}%` }} />
+            <div className="bg-bear/60 h-full transition-all duration-300" style={{ width: `${askPct}%` }} />
+          </div>
+          <span className="text-[11px] font-mono text-bear tabular-nums">{askPct}%</span>
+        </div>
+      </div>
     </div>
   );
 };
 
-/* ── Row sub-component ───────────────────────── */
+/* ── Row sub-component — 22px height, monospace numbers ───── */
 
 const Row: React.FC<{
   level: OrderbookLevel; maxTotal: number;
@@ -211,22 +224,22 @@ const Row: React.FC<{
   side: 'ask' | 'bid'; onClick?: (p: number) => void;
 }> = ({ level, maxTotal, dec, fmt, fmtSize, side, onClick }) => {
   const color = side === 'ask' ? 'text-bear' : 'text-bull';
-  const barColor = side === 'ask' ? 'rgba(248,73,96,.06)' : 'rgba(36,180,126,.06)';
+  const barColor = side === 'ask' ? 'rgba(255,77,106,.10)' : 'rgba(0,210,106,.10)';
   const mineHighlight = level.isMine ? 'bg-accent/5' : '';
   return (
     <div
-      className={`grid grid-cols-3 px-3 py-px text-[11px] relative cursor-pointer hover:bg-drift-surface transition-colors ${mineHighlight}`}
-      style={{ height: 19 }}
+      className={`grid grid-cols-3 px-3 text-[12px] font-mono relative cursor-pointer hover:bg-drift-surface transition-colors ${mineHighlight}`}
+      style={{ height: ROW_H, lineHeight: `${ROW_H}px` }}
       onClick={() => onClick?.(level.price)}
       title={level.isMine ? 'Your order' : undefined}
     >
       <div className="absolute inset-y-0 right-0" style={{ width: `${(level.total / maxTotal) * 100}%`, background: barColor }} />
-      <span className={`relative z-10 tabular-nums font-medium ${color}`}>
+      <span className={`relative z-10 tabular-nums ${color}`}>
         {level.isMine && <span className="inline-block w-1.5 h-1.5 rounded-full bg-accent mr-1 align-middle" />}
         {level.price.toFixed(dec)}
       </span>
-      <span className="relative z-10 text-right tabular-nums text-txt-1">{fmtSize(level.size)}</span>
-      <span className="relative z-10 text-right tabular-nums text-txt-2">{fmt(level.total)}</span>
+      <span className="relative z-10 text-right tabular-nums text-txt-0">{fmtSize(level.size)}</span>
+      <span className="relative z-10 text-right tabular-nums text-txt-0">{fmt(level.total)}</span>
     </div>
   );
 };

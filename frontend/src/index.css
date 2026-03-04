@@ -4,27 +4,30 @@
 
 /* ── CSS Variables (Backpack Exchange theme) ── */
 :root {
-  --bg-base:       #0e0e11;
-  --bg-surface:    #141418;
-  --bg-elevated:   #1c1c24;
-  --bg-hover:      #1c1c24;
+  --bg-base:       #0D0D12;
+  --bg-surface:    #14141B;
+  --bg-elevated:   #1C1C27;
+  --bg-hover:      #1C1C27;
   --bg-active:     #24242e;
-  --border-subtle:  rgba(255,255,255,0.04);
-  --border-default: rgba(255,255,255,0.06);
-  --border-strong:  rgba(255,255,255,0.10);
-  --text-primary:   #f5f5f7;
-  --text-secondary: #8a8f98;
-  --text-tertiary:  #6c7080;
-  --text-muted:     #4e5261;
-  --accent:         #5c8ae6;
-  --accent-hover:   #6a96ee;
-  --accent-dim:     rgba(92,138,230,0.06);
-  --success:        #24b47e;
-  --success-dim:    rgba(36,180,126,0.08);
-  --danger:         #f84960;
-  --danger-dim:     rgba(248,73,96,0.08);
-  --warning:        #efa411;
-  --warning-dim:    rgba(239,164,17,0.08);
+  --bg-input:      #1A1A24;
+  --border-subtle:  #232334;
+  --border-default: #232334;
+  --border-strong:  #3A3A52;
+  --text-primary:   #E8E8ED;
+  --text-secondary: #6B6B80;
+  --text-tertiary:  #6B6B80;
+  --text-muted:     #4A4A5E;
+  --accent:         #4C8BF5;
+  --accent-hover:   #5a96ff;
+  --accent-dim:     rgba(76,139,245,0.06);
+  --success:        #00D26A;
+  --success-dim:    rgba(0,210,106,0.08);
+  --danger:         #FF4D6A;
+  --danger-dim:     rgba(255,77,106,0.08);
+  --warning:        #F0B90B;
+  --warning-dim:    rgba(240,185,11,0.08);
+  --green-bg:       rgba(0,210,106,0.10);
+  --red-bg:         rgba(255,77,106,0.10);
 }
 
 /* ── Reset ─────────────────────────────────────── */
@@ -226,10 +229,15 @@ input[type="range"]::-moz-range-thumb {
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
+@keyframes ticker {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
 .animate-fadeInUp { animation: fadeInUp 0.4s ease-out both; }
 .animate-fadeIn { animation: fadeIn 0.3s ease-out both; }
 .animate-slideInRight { animation: slideInRight 0.4s ease-out both; }
 .animate-scaleIn { animation: scaleIn 0.3s ease-out both; }
+.animate-ticker { animation: ticker 30s linear infinite; }
 .animate-float { animation: float 3s ease-in-out infinite; }
 .animate-pulseGlow { animation: pulseGlow 2s ease-in-out infinite; }
 .animate-gradientShift {

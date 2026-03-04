@@ -25,6 +25,7 @@ import { RecentTrades } from './components/RecentTrades';
 import { TradeForm } from './components/TradeForm';
 import { AccountPanel } from './components/AccountPanel';
 import { BottomPanel } from './components/BottomPanel';
+import { TickerBar } from './components/TickerBar';
 import { UserManagement } from './components/UserManagement';
 import '@solana/wallet-adapter-react-ui/styles.css';
 
@@ -200,35 +201,41 @@ function TradingApp() {
           </div>
 
           {/* ── Desktop layout (hidden on mobile, visible lg+) ── */}
-          <div className="hidden lg:flex flex-1 min-h-0 gap-px bg-drift-border">
-            {/* Left: Chart + Bottom panel */}
-            <div className="flex-1 flex flex-col min-w-0">
-              <div className="flex-[3] min-h-0 bg-drift-bg">
+          <div className="hidden lg:flex flex-col flex-1 min-h-0">
+            {/* Top row: Chart | OrderBook | Trades | Order Entry */}
+            <div className="flex flex-1 min-h-0">
+              {/* Chart (flex ~52%) */}
+              <div className="flex-1 min-w-0 bg-drift-bg border-r border-drift-border">
                 <PriceChart />
               </div>
-              <div className="flex-[2] min-h-0 bg-drift-bg border-t border-drift-border">
-                <BottomPanel trading={trading} />
-              </div>
-            </div>
 
-            {/* Middle: Order Book + Recent Trades */}
-            <div className="w-[260px] xl:w-[280px] shrink-0 flex flex-col min-h-0 bg-drift-bg overflow-hidden">
-              <div className="flex-[3] min-h-0 overflow-hidden">
+              {/* OrderBook (~18%) */}
+              <div className="w-[220px] xl:w-[240px] shrink-0 bg-drift-bg border-r border-drift-border overflow-hidden">
                 <OrderBook onPriceClick={handlePriceClick} />
               </div>
-              <div className="flex-[2] min-h-0 border-t border-drift-border overflow-hidden">
+
+              {/* Recent Trades (~12%) */}
+              <div className="w-[180px] xl:w-[200px] shrink-0 bg-drift-bg border-r border-drift-border overflow-hidden">
                 <RecentTrades />
+              </div>
+
+              {/* Order Entry (fixed 280px) */}
+              <div className="w-[280px] shrink-0 bg-drift-bg overflow-y-auto custom-scrollbar">
+                <TradeForm
+                  trading={trading}
+                  initialLimitPrice={limitPrice}
+                  onSwitchToAccount={() => setCurrentPage('user')}
+                />
               </div>
             </div>
 
-            {/* Right: Trade Form */}
-            <div className="w-[280px] xl:w-[300px] shrink-0 bg-drift-bg overflow-y-auto custom-scrollbar">
-              <TradeForm
-                trading={trading}
-                initialLimitPrice={limitPrice}
-                onSwitchToAccount={() => setCurrentPage('user')}
-              />
+            {/* Bottom Panel (full width) */}
+            <div className="h-[200px] xl:h-[220px] shrink-0 bg-drift-bg border-t border-drift-border">
+              <BottomPanel trading={trading} />
             </div>
+
+            {/* Ticker Bar */}
+            <TickerBar />
           </div>
         </>
       )}
