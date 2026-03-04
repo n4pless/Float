@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import {
   ConnectionProvider,
   WalletProvider,
@@ -28,6 +28,25 @@ import { BottomPanel } from './components/BottomPanel';
 import { UserManagement } from './components/UserManagement';
 import '@solana/wallet-adapter-react-ui/styles.css';
 
+/* ─── URL ↔ Market sync helpers ─── */
+const SYMBOL_TO_INDEX: Record<string, number> = {};
+const INDEX_TO_SYMBOL: Record<number, string> = {};
+for (const [idx, m] of Object.entries(DRIFT_CONFIG.markets)) {
+  SYMBOL_TO_INDEX[m.symbol.toUpperCase()] = +idx;
+  INDEX_TO_SYMBOL[+idx] = m.symbol;
+}
+
+function marketFromPath(): number | null {
+  const path = window.location.pathname.replace(/^\/+/, '').toUpperCase();
+  if (!path) return null;
+  return SYMBOL_TO_INDEX[path] ?? null;
+}
+
+function pushMarketUrl(idx: number) {
+  const sym = INDEX_TO_SYMBOL[idx];
+  if (sym) window.history.pushState(null, '', `/${sym}`);
+}
+
 function TradingApp() {
   const wallet = useWallet();
 
@@ -49,6 +68,31 @@ function TradingApp() {
 
   const [currentPage, setCurrentPage] = useState<Page>('trade');
   const [limitPrice, setLimitPrice] = useState<number | undefined>(undefined);
+
+  // URL ↔ market sync: parse initial path and listen for browser back/forward
+  const selectedMarket = useDriftStore((s) => s.selectedMarket);
+  const setSelectedMarket = useDriftStore((s) => s.setSelectedMarket);
+
+  useEffect(() => {
+    const initial = marketFromPath();
+    if (initial != null && initial !== useDriftStore.getState().selectedMarket) {
+      setSelectedMarket(initial);
+    } else if (initial == null) {
+      // No market in URL → set URL to current market
+      pushMarketUrl(useDriftStore.getState().selectedMarket);
+    }
+    const handlePopState = () => {
+      const mi = marketFromPath();
+      if (mi != null) setSelectedMarket(mi);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // When market changes (via MarketBar picker), update URL
+  useEffect(() => {
+    pushMarketUrl(selectedMarket);
+  }, [selectedMarket]);
 
   // Mobile view tab: which panel to show on small screens
   type MobileView = 'chart' | 'book' | 'trade' | 'account';

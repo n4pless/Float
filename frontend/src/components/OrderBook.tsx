@@ -161,7 +161,7 @@ export const OrderBook: React.FC<Props> = ({ onPriceClick }) => {
       </div>
 
       {/* Asks */}
-      <div className="overflow-hidden flex flex-col justify-end shrink-0" style={{ height: visibleRows * ROW_H }}>
+      <div className={`overflow-hidden flex flex-col justify-end ${mode === 'bids' ? '' : 'shrink-0'}`} style={{ height: mode === 'bids' ? 0 : visibleRows * ROW_H }}>
         {!hasData ? (
           <div className="flex items-center justify-center h-full">
             <span className="text-[11px] text-txt-3 animate-pulse">Loading orderbook…</span>
@@ -187,7 +187,7 @@ export const OrderBook: React.FC<Props> = ({ onPriceClick }) => {
       </div>
 
       {/* Bids */}
-      <div className="overflow-hidden shrink-0" style={{ height: visibleRows * ROW_H }}>
+      <div className={`overflow-hidden ${mode === 'asks' ? '' : 'shrink-0'}`} style={{ height: mode === 'asks' ? 0 : visibleRows * ROW_H }}>
         {!hasData ? (
           <div className="flex items-center justify-center h-full">
             <span className="text-[11px] text-txt-3">No resting buy orders</span>

@@ -2,12 +2,15 @@ import React, { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { X, Activity, ArrowDownToLine, Layers, ClipboardList, Wallet, Clock, History, Bot, Wifi } from 'lucide-react';
 import { SolanaLogo } from './icons/SolanaLogo';
+import { ClosePositionModal } from './ClosePositionModal';
 import { useDriftStore, selectRecentTrades, selectBotPositions, selectAmmStats } from '../stores/useDriftStore';
 import DRIFT_CONFIG from '../config';
+import type { UserPosition } from '../sdk/drift-client-wrapper';
 
 interface Props {
   trading: {
     closePosition: (marketIndex: number) => Promise<string>;
+    closeLimitPosition: (marketIndex: number, sizeBase: number, limitPrice: number) => Promise<string>;
     cancelOrder: (orderId: number) => Promise<string>;
   };
 }
@@ -15,11 +18,12 @@ interface Props {
 type Tab = 'positions' | 'orders' | 'balances' | 'bots' | 'orderHistory' | 'tradeHistory';
 
 export const BottomPanel: React.FC<Props> = ({ trading }) => {
-  const { connected } = useWallet();
+  const { connected, publicKey } = useWallet();
   const [tab, setTab] = useState<Tab>('positions');
   const [closingIdx, setClosingIdx] = useState<number | null>(null);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
   const [settling, setSettling] = useState(false);
+  const [closeModalPos, setCloseModalPos] = useState<UserPosition | null>(null);
 
   // Client for settle PnL
   const client = useDriftStore((s) => s.client);
@@ -34,12 +38,22 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
   const botPositions = useDriftStore(selectBotPositions);
   const ammStats = useDriftStore(selectAmmStats);
 
+  // Filter trade history: only show trades for the connected wallet
+  const walletKey = publicKey?.toBase58() ?? '';
+  const myTrades = walletKey
+    ? recentTrades.filter(t => t.taker === walletKey || t.maker === walletKey)
+    : recentTrades; // if no wallet, show all (shouldn't happen since we gate on connected)
+
   const handleClose = async (mi: number) => {
     try {
       setClosingIdx(mi);
       await trading.closePosition(mi);
     } catch (e) { console.error(e); }
     finally { setClosingIdx(null); }
+  };
+
+  const handleLimitClose = async (mi: number, sizeBase: number, limitPrice: number) => {
+    await trading.closeLimitPosition(mi, sizeBase, limitPrice);
   };
 
   const handleCancelOrder = async (orderId: number) => {
@@ -65,7 +79,7 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
     { key: 'balances', label: 'Balances' },
     { key: 'bots', label: 'Bot Monitor', count: botPositions.filter(b => b.direction !== 'FLAT').length },
     { key: 'orderHistory', label: 'Order History' },
-    { key: 'tradeHistory', label: 'Trade History', count: recentTrades.length },
+    { key: 'tradeHistory', label: 'Trade History', count: myTrades.length },
   ];
 
   return (
@@ -143,7 +157,7 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
                         {pos.liquidationPrice > 0 ? `$${pos.liquidationPrice.toFixed(2)}` : '—'}
                       </td>
                       <td className="px-3 py-2.5 text-center">
-                        <button onClick={() => handleClose(pos.marketIndex)}
+                        <button onClick={() => setCloseModalPos(pos)}
                           disabled={closingIdx === pos.marketIndex}
                           className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-semibold bg-bear/10 text-bear hover:bg-bear/20 transition-all disabled:opacity-50 mx-auto">
                           <X className="w-3 h-3" />
@@ -414,7 +428,7 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
             </div>
           )
         ) : tab === 'tradeHistory' ? (
-          recentTrades.length === 0 ? <Empty icon={History} text="No trade history" /> : (
+          myTrades.length === 0 ? <Empty icon={History} text={walletKey ? "No trades for your wallet" : "No trade history"} /> : (
             <div className="overflow-x-auto">
             <table className="w-full text-[11px] min-w-[560px]">
               <thead>
@@ -425,7 +439,7 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
                 </tr>
               </thead>
               <tbody>
-                {recentTrades.map((t, i) => {
+                {myTrades.map((t, i) => {
                   const time = new Date(t.ts).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
                   const date = new Date(t.ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                   const m = t.marketIndex != null ? DRIFT_CONFIG.markets[t.marketIndex as keyof typeof DRIFT_CONFIG.markets] : null;
@@ -498,6 +512,17 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
         </div>
         <span className="text-[10px] text-txt-3 font-mono">v1.0.0</span>
       </div>
+
+      {/* Close Position Modal */}
+      {closeModalPos && (
+        <ClosePositionModal
+          position={closeModalPos}
+          oraclePrice={oraclePrice}
+          onClose={() => setCloseModalPos(null)}
+          onMarketClose={handleClose}
+          onLimitClose={handleLimitClose}
+        />
+      )}
     </div>
   );
 };

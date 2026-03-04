@@ -1660,6 +1660,52 @@ export class DriftTradingClient {
     }
   }
 
+  /**
+   * Close a position (fully or partially) with a limit order.
+   * Places a reduce-only limit order that won't increase the position.
+   */
+  async closeLimitPosition(
+    marketIndex: number,
+    sizeBase: number,
+    limitPrice: number,
+  ): Promise<string> {
+    try {
+      const user = this.driftClient.getUser();
+      const pos = user.getPerpPosition(marketIndex);
+      if (!pos || pos.baseAssetAmount.isZero()) {
+        throw new Error('No open position');
+      }
+
+      const closeDir = pos.baseAssetAmount.gt(new BN(0))
+        ? PositionDirection.SHORT
+        : PositionDirection.LONG;
+
+      const baseAmount = new BN(Math.floor(sizeBase * BASE_PRECISION.toNumber()));
+      const priceBN = new BN(Math.floor(limitPrice * PRICE_PRECISION.toNumber()));
+
+      console.log(`[drift] placing reduce-only limit close: dir=${closeDir === PositionDirection.LONG ? 'LONG' : 'SHORT'}, size=${sizeBase}, price=${limitPrice}`);
+
+      const txSig = await this.driftClient.placePerpOrder({
+        marketIndex,
+        direction: closeDir,
+        baseAssetAmount: baseAmount,
+        orderType: OrderType.LIMIT,
+        price: priceBN,
+        reduceOnly: true,
+      });
+
+      const txSigStr = typeof txSig === 'string' ? txSig : String(txSig);
+      console.log('[drift] limit close order placed:', txSigStr);
+      await this._refreshAllUserAccounts();
+      return txSigStr;
+    } catch (err: any) {
+      const msg = err?.message || err?.toString() || 'Unknown error';
+      const logs = err?.logs?.join?.('\n') || '';
+      if (logs) console.error('[drift] limit close tx logs:\n', logs);
+      throw new Error(`Limit close failed: ${msg}`);
+    }
+  }
+
   async cancelOrder(orderId: number): Promise<string> {
     const txSig = await this.driftClient.cancelOrder(orderId);
     // Force-refresh ALL user accounts so the orderbook updates immediately

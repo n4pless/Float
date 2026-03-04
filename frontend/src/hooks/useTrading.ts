@@ -262,9 +262,47 @@ export function useTrading(forceRefresh: () => Promise<void>) {
     [forceRefresh],
   );
 
+  const closeLimitPosition = useCallback(
+    async (marketIndex: number, sizeBase: number, limitPrice: number): Promise<string> => {
+      const { client } = useDriftStore.getState();
+      if (!client) throw new Error('Client not connected');
+
+      const toastId = toast.loading('Placing Limit Close Order', {
+        description: `${sizeBase.toFixed(4)} SOL @ $${limitPrice.toFixed(2)}`,
+      });
+
+      try {
+        const txSig = await client.closeLimitPosition(marketIndex, sizeBase, limitPrice);
+
+        toast.success('Limit Close Order Placed', {
+          id: toastId,
+          description: `Tx: ${txSig.slice(0, 8)}…${txSig.slice(-4)}`,
+          action: {
+            label: 'View',
+            onClick: () => window.open(txLink(txSig), '_blank'),
+          },
+          duration: 5000,
+        });
+
+        await forceRefresh();
+        setTimeout(() => forceRefresh(), 2000);
+        return txSig;
+      } catch (err: any) {
+        toast.error('Limit Close Failed', {
+          id: toastId,
+          description: err.message?.slice(0, 120) || 'Unknown error',
+          duration: 6000,
+        });
+        throw err;
+      }
+    },
+    [forceRefresh],
+  );
+
   return {
     executeTrade,
     closePosition,
+    closeLimitPosition,
     cancelOrder,
     deposit,
     withdraw,

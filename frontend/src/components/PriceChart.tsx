@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { createChart, ColorType, CrosshairMode, IChartApi, ISeriesApi, CandlestickData, Time, LineData, CandlestickSeries, HistogramSeries, LineSeries } from 'lightweight-charts';
+import { createChart, ColorType, CrosshairMode, IChartApi, ISeriesApi, CandlestickData, Time, LineData, CandlestickSeries, HistogramSeries, LineSeries, CreatePriceLineOptions } from 'lightweight-charts';
 import { useDriftStore, selectOraclePrice } from '../stores/useDriftStore';
 import { BarChart2, RefreshCw } from 'lucide-react';
 
@@ -93,6 +93,7 @@ export const PriceChart: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const currentPrice = useDriftStore(selectOraclePrice);
+  const positions = useDriftStore((s) => s.positions);
   const candlesRef = useRef<Candle[]>([]);
 
   // Fetch candles when timeframe changes
@@ -261,6 +262,49 @@ export const PriceChart: React.FC = () => {
       });
     }
   }, [currentPrice]);
+
+  // Show entry and liquidation price lines for the active position
+  const entryLineRef = useRef<any>(null);
+  const liqLineRef = useRef<any>(null);
+
+  useEffect(() => {
+    const series = candleSeriesRef.current || lineSeriesRef.current;
+    if (!series) return;
+
+    // Remove old lines
+    try { if (entryLineRef.current) series.removePriceLine(entryLineRef.current); } catch { /* ok */ }
+    try { if (liqLineRef.current) series.removePriceLine(liqLineRef.current); } catch { /* ok */ }
+    entryLineRef.current = null;
+    liqLineRef.current = null;
+
+    // Find position for selectedMarket (index 0 = SOL-PERP)
+    const pos = positions.find(p => p.marketIndex === 0);
+    if (!pos || pos.baseAssetAmount === 0) return;
+
+    // Entry price line
+    if (pos.entryPrice > 0) {
+      entryLineRef.current = series.createPriceLine({
+        price: pos.entryPrice,
+        color: '#5c8ae6',
+        lineWidth: 1,
+        lineStyle: 2, // dashed
+        axisLabelVisible: true,
+        title: `Entry $${pos.entryPrice.toFixed(2)}`,
+      } as CreatePriceLineOptions);
+    }
+
+    // Liquidation price line
+    if (pos.liquidationPrice > 0) {
+      liqLineRef.current = series.createPriceLine({
+        price: pos.liquidationPrice,
+        color: '#f84960',
+        lineWidth: 1,
+        lineStyle: 2, // dashed
+        axisLabelVisible: true,
+        title: `Liq $${pos.liquidationPrice.toFixed(2)}`,
+      } as CreatePriceLineOptions);
+    }
+  }, [positions, chartMode, candles]);
 
   // OHLC display for last candle
   const last = candles.length > 0 ? candles[candles.length - 1] : null;
