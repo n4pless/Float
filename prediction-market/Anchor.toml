@@ -1,0 +1,9 @@
+[provider]
+cluster = "devnet"
+wallet = "~/.config/solana/id.json"
+
+[programs.devnet]
+prediction = "FWaSUVUSBk7MoYbWL8DLWkbfLHgbMcmGfYLgVQ5foaLf"
+
+[scripts]
+test = "echo ok"

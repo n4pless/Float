@@ -1,296 +1,267 @@
 /**
- * Prediction Market Store — Simple 2x Payout Model
+ * Prediction Market Store — On-chain Zustand store
  *
- * Each round is 5 minutes. Uses live SOL oracle price.
- *
- * Payout model (simple — no prize pools):
- *   - You bet X USDC on UP or DOWN
- *   - If correct: you get 1.95x back (2x minus 2.5% fee)
- *   - If wrong: you lose your bet
- *   - Tie (exact same price): full refund
+ * Polls the Solana prediction program for game state, rounds, and user bets.
+ * Builds and sends transactions for bet / claim through the user's wallet.
  */
 import { create } from 'zustand';
+import { Connection, PublicKey, Transaction } from '@solana/web3.js';
+import {
+  fetchGame, fetchRounds, fetchUserBets, fetchRound,
+  buildBetBullIx, buildBetBearIx, buildClaimIx,
+  PRICE_PRECISION,
+  type GameAccount,
+  type RoundAccount,
+  type UserBetAccount,
+} from '../prediction/client';
+import DRIFT_CONFIG from '../config';
 
-/* ─── Types ─────────────────────────────────────── */
+/* ─── Display types used by the UI ───────────────── */
 
-export type RoundStatus = 'next' | 'live' | 'expired' | 'canceled' | 'later';
-export type BetDirection = 'up' | 'down';
+export type RoundStatus = 'expired' | 'live' | 'next' | 'later' | 'calculating';
 
-export interface Bet {
-  id: string;
-  roundId: number;
-  direction: BetDirection;
-  amount: number;
-  wallet: string;
-  timestamp: number;
-  claimed: boolean;
-  payout: number; // set after round expires
-}
-
-export interface PredictionRound {
-  id: number;
-  status: RoundStatus;
-  lockPrice: number;
-  closePrice: number;
-  lockTimestamp: number;
-  closeTimestamp: number;
-  bets: Bet[];
-  result?: 'up' | 'down' | 'tie';
-  totalUp: number;   // count of UP participants
-  totalDown: number;  // count of DOWN participants
-}
-
-export interface PredictionState {
-  rounds: PredictionRound[];
-  currentRoundId: number;
+export interface DisplayRound {
   epoch: number;
-  roundDurationMs: number;
+  status: RoundStatus;
+  lockPrice: number;       // human-readable USD
+  closePrice: number;
+  lockTimestamp: number;    // unix seconds
+  closeTimestamp: number;
+  totalAmount: number;      // SOL (not lamports)
+  bullAmount: number;
+  bearAmount: number;
+  rewardAmount: number;
+  oracleCalled: boolean;
+  result?: 'bull' | 'bear' | 'tie';
+  payoutMultiplier?: number; // e.g. 2.5x for the winning side
+}
+
+export interface DisplayBet {
+  epoch: number;
+  amount: number;           // SOL
+  position: 'bull' | 'bear';
+  claimed: boolean;
+  payout: number;           // SOL (computed)
+}
+
+/* ─── Store interface ────────────────────────────── */
+
+interface PredictionStore {
+  // Connection
+  connection: Connection | null;
+  setConnection: (c: Connection) => void;
+
+  // On-chain state
+  game: GameAccount | null;
+  rounds: DisplayRound[];
+  userBets: Map<number, DisplayBet>;  // epoch → bet
+  loading: boolean;
+  error: string | null;
+
+  // Live price (from Binance WS, not on-chain)
+  livePrice: number;
+  setLivePrice: (p: number) => void;
+
+  // Timer
   timeRemainingMs: number;
-  userBets: Bet[];
-  userWallet: string | null;
+  setTimeRemainingMs: (ms: number) => void;
 
-  initializeRounds: (currentPrice: number) => void;
-  advanceRound: (currentPrice: number) => void;
-  placeBet: (direction: BetDirection, amount: number, wallet: string) => boolean;
-  claimWinnings: (roundId: number, wallet: string) => number;
-  setTimeRemaining: (ms: number) => void;
-  setUserWallet: (wallet: string | null) => void;
-  getUserBetForRound: (roundId: number, wallet: string) => Bet | undefined;
-  reset: () => void;
+  // Actions
+  refresh: (wallet?: PublicKey) => Promise<void>;
+  placeBet: (
+    wallet: PublicKey,
+    epoch: number,
+    direction: 'bull' | 'bear',
+    amountSol: number,
+    sendTransaction: (tx: Transaction, connection: Connection) => Promise<string>,
+  ) => Promise<string>;
+  claimWinnings: (
+    wallet: PublicKey,
+    epoch: number,
+    sendTransaction: (tx: Transaction, connection: Connection) => Promise<string>,
+  ) => Promise<string>;
 }
 
-/* ─── Constants ──────────────────────────────────── */
+/* ─── Helpers ────────────────────────────────────── */
 
-const ROUND_DURATION_MS = 5 * 60 * 1000;
-export const PAYOUT_MULTIPLIER = 1.95; // 2x minus 2.5% fee
-const STORAGE_KEY = 'value_prediction_v2';
+const LAMPORTS = 1_000_000_000;
+const lamToSol = (l: number) => l / LAMPORTS;
+const priceToUsd = (p: number) => p / PRICE_PRECISION;
 
-/* ─── Persistence ────────────────────────────────── */
+function classifyRound(r: RoundAccount, game: GameAccount): RoundStatus {
+  const nowSec = Math.floor(Date.now() / 1000);
+  // The "live" round is the one that is locked (bets closed) and waiting to close
+  // The "next" round is the latest epoch (accepting bets)
+  // Expired rounds have oracleCalled = true
 
-function saveState(rounds: PredictionRound[], epoch: number, userBets: Bet[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      rounds: rounds.slice(-20),
-      epoch,
-      userBets: userBets.slice(-100),
-      savedAt: Date.now(),
-    }));
-  } catch {}
-}
-
-function loadState(): { rounds: PredictionRound[]; epoch: number; userBets: Bet[] } | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw);
-    if (Date.now() - data.savedAt > 60 * 60 * 1000) return null;
-    return data;
-  } catch {
-    return null;
+  if (r.oracleCalled) return 'expired';
+  if (r.lockPrice > 0 && !r.oracleCalled) {
+    // Locked but not yet closed = live
+    return 'live';
   }
+  if (r.epoch === game.currentEpoch) return 'next';
+  if (r.epoch > game.currentEpoch) return 'later';
+  // If lock price is 0 and epoch < currentEpoch, it's in limbo (shouldn't happen normally)
+  return 'calculating';
 }
 
-/* ─── Round factory ──────────────────────────────── */
+function toDisplayRound(r: RoundAccount, game: GameAccount): DisplayRound {
+  const status = classifyRound(r, game);
+  const lockP = priceToUsd(r.lockPrice);
+  const closeP = priceToUsd(r.closePrice);
 
-function createRound(id: number, status: RoundStatus, lockTimestamp: number): PredictionRound {
+  let result: 'bull' | 'bear' | 'tie' | undefined;
+  let payoutMultiplier: number | undefined;
+
+  if (r.oracleCalled) {
+    if (r.lockPrice === r.closePrice || r.bullAmount === 0 || r.bearAmount === 0) {
+      result = 'tie';
+    } else if (r.closePrice > r.lockPrice) {
+      result = 'bull';
+      payoutMultiplier = r.bullAmount > 0 ? r.rewardAmount / r.bullAmount : 0;
+    } else {
+      result = 'bear';
+      payoutMultiplier = r.bearAmount > 0 ? r.rewardAmount / r.bearAmount : 0;
+    }
+  }
+
   return {
-    id, status,
-    lockPrice: 0, closePrice: 0,
-    lockTimestamp,
-    closeTimestamp: lockTimestamp + ROUND_DURATION_MS,
-    bets: [],
-    totalUp: 0, totalDown: 0,
+    epoch: r.epoch,
+    status,
+    lockPrice: lockP,
+    closePrice: closeP,
+    lockTimestamp: r.lockTimestamp,
+    closeTimestamp: r.closeTimestamp,
+    totalAmount: lamToSol(r.totalAmount),
+    bullAmount: lamToSol(r.bullAmount),
+    bearAmount: lamToSol(r.bearAmount),
+    rewardAmount: lamToSol(r.rewardAmount),
+    oracleCalled: r.oracleCalled,
+    result,
+    payoutMultiplier,
   };
 }
 
-/* ─── Simulated participant counts ───────────────── */
+function computePayout(r: RoundAccount, b: UserBetAccount): number {
+  if (!r.oracleCalled) return 0;
 
-function addSimulatedActivity(round: PredictionRound): void {
-  round.totalUp = 3 + Math.floor(Math.random() * 15);
-  round.totalDown = 3 + Math.floor(Math.random() * 15);
+  const refund =
+    r.lockPrice === r.closePrice ||
+    r.bullAmount === 0 ||
+    r.bearAmount === 0;
+
+  if (refund) return lamToSol(b.amount);
+
+  const bullsWin = r.closePrice > r.lockPrice;
+  const userBull = b.position === 0;
+
+  if (bullsWin !== userBull) return 0;
+
+  const winTotal = bullsWin ? r.bullAmount : r.bearAmount;
+  return lamToSol(Math.floor((b.amount * r.rewardAmount) / winTotal));
 }
 
 /* ─── Store ──────────────────────────────────────── */
 
-const saved = loadState();
+export const usePredictionStore = create<PredictionStore>((set, get) => ({
+  connection: null,
+  setConnection: (c) => set({ connection: c }),
 
-export const usePredictionStore = create<PredictionState>((set, get) => ({
-  rounds: saved?.rounds ?? [],
-  currentRoundId: saved?.epoch ? saved.epoch - 1 : 0,
-  epoch: saved?.epoch ?? 1,
-  roundDurationMs: ROUND_DURATION_MS,
+  game: null,
+  rounds: [],
+  userBets: new Map(),
+  loading: false,
+  error: null,
+
+  livePrice: 0,
+  setLivePrice: (p) => set({ livePrice: p }),
+
   timeRemainingMs: 0,
-  userBets: saved?.userBets ?? [],
-  userWallet: null,
+  setTimeRemainingMs: (ms) => set({ timeRemainingMs: Math.max(0, ms) }),
 
-  initializeRounds: (currentPrice: number) => {
-    const state = get();
-    if (state.rounds.length > 0 && state.rounds.some(r => r.status === 'live' || r.status === 'next')) {
-      return;
-    }
+  refresh: async (wallet?: PublicKey) => {
+    const conn = get().connection;
+    if (!conn) return;
 
-    const now = Date.now();
-    const alignedNow = Math.floor(now / ROUND_DURATION_MS) * ROUND_DURATION_MS;
-    const epoch = state.epoch || 1;
-
-    const rounds: PredictionRound[] = [];
-    for (let i = -5; i <= 2; i++) {
-      const roundId = epoch + i + 5;
-      const lockTs = alignedNow + i * ROUND_DURATION_MS;
-
-      if (i < 0) {
-        const round = createRound(roundId, 'expired', lockTs);
-        const variation = (Math.random() - 0.5) * 4;
-        round.lockPrice = currentPrice + variation;
-        round.closePrice = round.lockPrice + (Math.random() - 0.48) * 3;
-        round.result = round.closePrice > round.lockPrice ? 'up'
-          : round.closePrice < round.lockPrice ? 'down' : 'tie';
-        addSimulatedActivity(round);
-        rounds.push(round);
-      } else if (i === 0) {
-        const round = createRound(roundId, 'live', lockTs);
-        round.lockPrice = currentPrice + (Math.random() - 0.5) * 1;
-        addSimulatedActivity(round);
-        rounds.push(round);
-      } else if (i === 1) {
-        const round = createRound(roundId, 'next', lockTs + ROUND_DURATION_MS);
-        addSimulatedActivity(round);
-        rounds.push(round);
-      } else {
-        const round = createRound(roundId, 'later', lockTs + ROUND_DURATION_MS * 2);
-        rounds.push(round);
-      }
-    }
-
-    set({
-      rounds,
-      currentRoundId: rounds.find(r => r.status === 'live')?.id ?? epoch + 5,
-      epoch: epoch + 10,
-      timeRemainingMs: (alignedNow + ROUND_DURATION_MS) - now,
-    });
-  },
-
-  advanceRound: (currentPrice: number) => {
-    const now = Date.now();
-
-    set((prev) => {
-      const newRounds = prev.rounds.map(r => {
-        if (r.status === 'live') {
-          const result = currentPrice > r.lockPrice ? 'up' as const
-            : currentPrice < r.lockPrice ? 'down' as const
-            : 'tie' as const;
-          const bets = r.bets.map(b => ({
-            ...b,
-            payout: result === 'tie' ? b.amount
-              : b.direction === result ? b.amount * PAYOUT_MULTIPLIER
-              : 0,
-          }));
-          return { ...r, status: 'expired' as RoundStatus, closePrice: currentPrice, closeTimestamp: now, result, bets };
-        }
-        if (r.status === 'next') {
-          return { ...r, status: 'live' as RoundStatus, lockPrice: currentPrice, lockTimestamp: now, closeTimestamp: now + ROUND_DURATION_MS };
-        }
-        if (r.status === 'later') {
-          return { ...r, status: 'next' as RoundStatus, lockTimestamp: now + ROUND_DURATION_MS, closeTimestamp: now + ROUND_DURATION_MS * 2 };
-        }
-        return r;
-      });
-
-      const laterRound = createRound(prev.epoch + 1, 'later', now + ROUND_DURATION_MS * 2);
-      const updatedRounds = [...newRounds, laterRound].slice(-15);
-
-      const nextRound = updatedRounds.find(r => r.status === 'next');
-      if (nextRound && nextRound.totalUp === 0 && nextRound.totalDown === 0) {
-        addSimulatedActivity(nextRound);
+    try {
+      const game = await fetchGame(conn);
+      if (!game || !game.genesisStart) {
+        set({ game, rounds: [], loading: false, error: 'Game not initialized' });
+        return;
       }
 
-      const updatedUserBets = prev.userBets.map(ub => {
-        const round = updatedRounds.find(r => r.id === ub.roundId);
-        if (round?.status === 'expired' && ub.payout === 0 && !ub.claimed) {
-          const result = round.result;
-          if (result === 'tie') return { ...ub, payout: ub.amount };
-          if (ub.direction === result) return { ...ub, payout: ub.amount * PAYOUT_MULTIPLIER };
+      // Determine which epochs to fetch (last 8 or fewer)
+      const maxEpoch = game.currentEpoch;
+      const minEpoch = Math.max(1, maxEpoch - 7);
+      const epochs: number[] = [];
+      for (let e = minEpoch; e <= maxEpoch; e++) epochs.push(e);
+
+      const [roundMap, betMap] = await Promise.all([
+        fetchRounds(conn, epochs),
+        wallet ? fetchUserBets(conn, epochs, wallet) : Promise.resolve(new Map<number, UserBetAccount>()),
+      ]);
+
+      const displayRounds: DisplayRound[] = [];
+      const displayBets = new Map<number, DisplayBet>();
+
+      for (const ep of epochs) {
+        const r = roundMap.get(ep);
+        if (!r) continue;
+        displayRounds.push(toDisplayRound(r, game));
+
+        const b = betMap.get(ep);
+        if (b) {
+          displayBets.set(ep, {
+            epoch: ep,
+            amount: lamToSol(b.amount),
+            position: b.position === 0 ? 'bull' : 'bear',
+            claimed: b.claimed,
+            payout: computePayout(r, b),
+          });
         }
-        return ub;
-      });
+      }
 
-      saveState(updatedRounds, prev.epoch + 1, updatedUserBets);
-
-      return {
-        rounds: updatedRounds,
-        currentRoundId: updatedRounds.find(r => r.status === 'live')?.id ?? prev.currentRoundId,
-        epoch: prev.epoch + 1,
-        timeRemainingMs: ROUND_DURATION_MS,
-        userBets: updatedUserBets,
-      };
-    });
+      set({ game, rounds: displayRounds, userBets: displayBets, loading: false, error: null });
+    } catch (err: any) {
+      console.error('Prediction refresh error:', err);
+      set({ error: err.message || 'Failed to fetch' });
+    }
   },
 
-  placeBet: (direction: BetDirection, amount: number, wallet: string) => {
-    const state = get();
-    const nextRound = state.rounds.find(r => r.status === 'next');
-    if (!nextRound || amount <= 0) return false;
+  placeBet: async (wallet, epoch, direction, amountSol, sendTransaction) => {
+    const conn = get().connection;
+    if (!conn) throw new Error('No connection');
 
-    const existing = state.userBets.find(b => b.roundId === nextRound.id && b.wallet === wallet);
-    if (existing) return false;
+    const lamports = Math.round(amountSol * LAMPORTS);
+    const ix = direction === 'bull'
+      ? buildBetBullIx(wallet, epoch, lamports)
+      : buildBetBearIx(wallet, epoch, lamports);
 
-    const bet: Bet = {
-      id: `bet-${nextRound.id}-${wallet}-${Date.now()}`,
-      roundId: nextRound.id,
-      direction, amount, wallet,
-      timestamp: Date.now(),
-      claimed: false,
-      payout: 0,
-    };
+    const tx = new Transaction().add(ix);
+    tx.feePayer = wallet;
+    tx.recentBlockhash = (await conn.getLatestBlockhash()).blockhash;
 
-    set((prev) => {
-      const updatedRounds = prev.rounds.map(r => {
-        if (r.id === nextRound.id) {
-          return {
-            ...r,
-            bets: [...r.bets, bet],
-            totalUp: direction === 'up' ? r.totalUp + 1 : r.totalUp,
-            totalDown: direction === 'down' ? r.totalDown + 1 : r.totalDown,
-          };
-        }
-        return r;
-      });
-      const newUserBets = [...prev.userBets, bet];
-      saveState(updatedRounds, prev.epoch, newUserBets);
-      return { rounds: updatedRounds, userBets: newUserBets };
-    });
-    return true;
+    const sig = await sendTransaction(tx, conn);
+    await conn.confirmTransaction(sig, 'confirmed');
+
+    // Refresh after bet
+    await get().refresh(wallet);
+    return sig;
   },
 
-  claimWinnings: (roundId: number, wallet: string) => {
-    const state = get();
-    const userBet = state.userBets.find(b => b.roundId === roundId && b.wallet === wallet && !b.claimed);
-    if (!userBet || userBet.payout <= 0) return 0;
+  claimWinnings: async (wallet, epoch, sendTransaction) => {
+    const conn = get().connection;
+    if (!conn) throw new Error('No connection');
 
-    const payout = userBet.payout;
-    set((prev) => {
-      const updatedUserBets = prev.userBets.map(b => b.id === userBet.id ? { ...b, claimed: true } : b);
-      const updatedRounds = prev.rounds.map(r => {
-        if (r.id === roundId) {
-          return { ...r, bets: r.bets.map(b => b.id === userBet.id ? { ...b, claimed: true } : b) };
-        }
-        return r;
-      });
-      saveState(updatedRounds, prev.epoch, updatedUserBets);
-      return { rounds: updatedRounds, userBets: updatedUserBets };
-    });
-    return payout;
-  },
+    const ix = buildClaimIx(wallet, epoch);
+    const tx = new Transaction().add(ix);
+    tx.feePayer = wallet;
+    tx.recentBlockhash = (await conn.getLatestBlockhash()).blockhash;
 
-  setTimeRemaining: (ms: number) => set({ timeRemainingMs: Math.max(0, ms) }),
-  setUserWallet: (wallet) => set({ userWallet: wallet }),
+    const sig = await sendTransaction(tx, conn);
+    await conn.confirmTransaction(sig, 'confirmed');
 
-  getUserBetForRound: (roundId, wallet) => {
-    return get().userBets.find(b => b.roundId === roundId && b.wallet === wallet);
-  },
-
-  reset: () => {
-    localStorage.removeItem(STORAGE_KEY);
-    set({ rounds: [], currentRoundId: 0, epoch: 1, timeRemainingMs: 0, userBets: [] });
+    await get().refresh(wallet);
+    return sig;
   },
 }));

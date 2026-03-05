@@ -1,28 +1,23 @@
 /**
- * PredictionPage — SOL/USD Prediction Market
+ * PredictionPage — PancakeSwap-style on-chain SOL/USD prediction market.
  *
- * Clean, modern UI with:
- * - Horizontally scrollable round cards
- * - Glassmorphism-inspired card design
- * - Animated live round with progress ring
- * - Clean UP/DOWN betting with amount slider
- * - Simple 1.95x payout model (no prize pools)
+ * Horizontal scrolling card chain. Each card has:
+ *   - UP (green) top section with payout multiplier
+ *   - Round info in the middle (status, prices, pool)
+ *   - DOWN (pink) bottom section with payout multiplier
+ *
+ * Data is fetched directly from the on-chain Prediction program via RPC.
+ * Bets and claims are sent as Solana transactions through the user's wallet.
  */
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import {
   ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Clock,
-  Trophy, Lock, CheckCircle2, XCircle, Loader2, ChevronDown,
-  History, Flame, ArrowLeft, Users, Zap, Gift, TrendingUp,
+  Trophy, Lock, CheckCircle2, XCircle, Loader2,
+  History, Flame, ArrowLeft, Zap, TrendingUp, Award, Timer,
 } from 'lucide-react';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { useDriftStore } from '../stores/useDriftStore';
-import {
-  usePredictionStore,
-  PAYOUT_MULTIPLIER,
-  type PredictionRound,
-  type BetDirection,
-} from '../stores/usePredictionStore';
-import { AssetIcon } from '../components/icons/AssetIcon';
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { usePredictionStore, type DisplayRound, type DisplayBet, type RoundStatus } from '../stores/usePredictionStore';
+import { PRICE_PRECISION } from '../prediction/client';
 import { toast } from 'sonner';
 
 /* ─── Helpers ────────────────────────────────────── */
@@ -36,24 +31,29 @@ function fmtPrice(n: number, digits = 2): string {
   return n === 0 ? '—' : `$${n.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
 }
 
-function fmtUSD(n: number): string {
-  return n < 0.01 ? '<$0.01' : `$${n.toFixed(2)}`;
+function fmtSol(n: number): string {
+  if (n === 0) return '0';
+  if (n < 0.001) return '<0.001';
+  return n.toFixed(n < 1 ? 4 : 3);
 }
 
-function delta(a: number, b: number) {
-  const d = a - b;
+function priceDelta(current: number, locked: number) {
+  const d = current - locked;
   return { value: `${d >= 0 ? '+' : ''}$${Math.abs(d).toFixed(4)}`, up: d >= 0 };
 }
 
-/* ─── Progress Ring for timer ────────────────────── */
-const ProgressRing: React.FC<{ pct: number; size?: number; stroke?: number }> = ({ pct, size = 44, stroke = 3 }) => {
+/* ─── Progress Ring ──────────────────────────────── */
+
+const ProgressRing: React.FC<{ pct: number; size?: number; stroke?: number; color?: string }> = ({
+  pct, size = 52, stroke = 3, color = '#4C8BF5',
+}) => {
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const offset = c * (1 - Math.min(1, Math.max(0, pct)));
   return (
     <svg width={size} height={size} className="rotate-[-90deg]">
       <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={stroke} />
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="currentColor" strokeWidth={stroke}
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke}
         strokeDasharray={c} strokeDashoffset={offset} strokeLinecap="round"
         className="transition-[stroke-dashoffset] duration-1000 ease-linear" />
     </svg>
@@ -61,311 +61,355 @@ const ProgressRing: React.FC<{ pct: number; size?: number; stroke?: number }> = 
 };
 
 /* ═══════════════════════════════════════════════════
-   ROUND CARD
+   ROUND CARD — PancakeSwap Style
    ═══════════════════════════════════════════════════ */
 
 interface CardProps {
-  round: PredictionRound;
-  price: number;
-  wallet: string | null;
-  onBet: (id: number, dir: BetDirection, amt: number) => void;
-  onClaim: (id: number) => void;
+  round: DisplayRound;
+  bet?: DisplayBet;
+  livePrice: number;
+  intervalSec: number;
+  onBet: (epoch: number, dir: 'bull' | 'bear', sol: number) => void;
+  onClaim: (epoch: number) => void;
+  walletConnected: boolean;
 }
 
-const RoundCard: React.FC<CardProps> = ({ round, price, wallet, onBet, onClaim }) => {
-  const [betDir, setBetDir] = useState<BetDirection | null>(null);
+const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, onBet, onClaim, walletConnected }) => {
+  const [betDir, setBetDir] = useState<'bull' | 'bear' | null>(null);
   const [betAmt, setBetAmt] = useState('');
-  const getUserBetForRound = usePredictionStore(s => s.getUserBetForRound);
+  const [placing, setPlacing] = useState(false);
 
-  const userBet = wallet ? getUserBetForRound(round.id, wallet) : undefined;
-  const won = round.status === 'expired' && round.result && userBet?.direction === round.result;
-  const lost = round.status === 'expired' && round.result && userBet && userBet.direction !== round.result;
-  const claimable = won && userBet && !userBet.claimed;
+  const { status, epoch } = round;
+  const isLive = status === 'live';
+  const isNext = status === 'next';
+  const isExpired = status === 'expired';
+  const isLater = status === 'later';
 
-  const liveDelta = round.status === 'live' && round.lockPrice > 0 ? delta(price, round.lockPrice) : null;
-  const expDelta = round.status === 'expired' && round.lockPrice > 0 ? delta(round.closePrice, round.lockPrice) : null;
+  // Live delta
+  const liveDelta = isLive && round.lockPrice > 0 ? priceDelta(livePrice, round.lockPrice) : null;
+  const expDelta = isExpired && round.lockPrice > 0 && round.closePrice > 0 ? priceDelta(round.closePrice, round.lockPrice) : null;
 
-  const submit = (dir: BetDirection) => {
+  // Payout multipliers
+  const bullPayout = round.result === 'bull' && round.payoutMultiplier ? round.payoutMultiplier.toFixed(2) : null;
+  const bearPayout = round.result === 'bear' && round.payoutMultiplier ? round.payoutMultiplier.toFixed(2) : null;
+
+  // UP/DOWN pool percentages
+  const total = round.bullAmount + round.bearAmount;
+  const bullPct = total > 0 ? Math.round((round.bullAmount / total) * 100) : 50;
+  const bearPct = 100 - bullPct;
+
+  // User bet status
+  const userWon = isExpired && bet && round.result && (
+    (round.result === 'bull' && bet.position === 'bull') ||
+    (round.result === 'bear' && bet.position === 'bear') ||
+    round.result === 'tie'
+  );
+  const userLost = isExpired && bet && !userWon;
+  const claimable = userWon && bet && !bet.claimed && bet.payout > 0;
+
+  const submit = async (dir: 'bull' | 'bear') => {
     const a = parseFloat(betAmt);
-    if (isNaN(a) || a <= 0) { toast.error('Enter a valid amount'); return; }
-    onBet(round.id, dir, a);
-    setBetAmt('');
-    setBetDir(null);
+    if (isNaN(a) || a <= 0) { toast.error('Enter a valid SOL amount'); return; }
+    if (!walletConnected) { toast.error('Connect wallet first'); return; }
+    setPlacing(true);
+    try {
+      onBet(epoch, dir, a);
+    } finally {
+      setPlacing(false);
+      setBetAmt('');
+      setBetDir(null);
+    }
   };
 
-  /* ── Card chrome ── */
-  const isLive = round.status === 'live';
-  const isNext = round.status === 'next';
-  const isExpired = round.status === 'expired';
-  const isLater = round.status === 'later';
-
-  const border = isLive ? 'border-accent/60 shadow-[0_0_30px_rgba(76,139,245,0.12)]'
+  /* ── Card border & header color ── */
+  const borderClass = isLive ? 'border-accent/60 shadow-[0_0_24px_rgba(76,139,245,0.15)]'
     : isNext ? 'border-purple/40'
-    : 'border-drift-border/70';
-
-  const headerBg = isLive ? 'bg-accent/10'
-    : isNext ? 'bg-purple/8'
-    : isExpired && round.result === 'up' ? 'bg-bull/8'
-    : isExpired && round.result === 'down' ? 'bg-bear/8'
-    : 'bg-drift-surface/40';
+    : isExpired && round.result === 'bull' ? 'border-bull/30'
+    : isExpired && round.result === 'bear' ? 'border-bear/30'
+    : 'border-drift-border/50';
 
   return (
-    <div className={`w-[290px] sm:w-[310px] shrink-0 rounded-2xl border ${border} bg-drift-panel/95 backdrop-blur-sm overflow-hidden transition-all duration-300 snap-center`}>
+    <div className={`w-[300px] sm:w-[320px] shrink-0 rounded-2xl border ${borderClass} bg-drift-panel overflow-hidden transition-all snap-center flex flex-col`}>
 
-      {/* ── Header ── */}
-      <div className={`flex items-center justify-between px-4 py-2.5 ${headerBg}`}>
-        <div className="flex items-center gap-2">
-          {isLive && <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />}
-          {isLive && <Flame className="w-3.5 h-3.5 text-accent" />}
-          {isNext && <Zap className="w-3.5 h-3.5 text-purple" />}
-          {isExpired && <CheckCircle2 className="w-3.5 h-3.5 text-txt-3" />}
-          {isLater && <Clock className="w-3.5 h-3.5 text-txt-3" />}
-          <span className={`text-[12px] font-bold tracking-wide ${
-            isLive ? 'text-accent' : isNext ? 'text-purple' : 'text-txt-3'
-          }`}>
-            {isLive ? 'LIVE' : isNext ? 'NEXT' : isExpired ? 'CLOSED' : 'LATER'}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          {(round.totalUp > 0 || round.totalDown > 0) && (
-            <div className="flex items-center gap-1 text-[10px] text-txt-3">
-              <Users className="w-3 h-3" />
-              <span>{round.totalUp + round.totalDown}</span>
+      {/* ═══ UP (BULL) Section ═══ */}
+      <div className={`relative px-4 py-2.5 ${
+        isExpired && round.result === 'bull' ? 'bg-bull/12' : 'bg-bull/5'
+      } border-b border-drift-border/30`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+              isExpired && round.result === 'bull' ? 'bg-bull' : 'bg-bull/20'
+            }`}>
+              <ArrowUp className={`w-3.5 h-3.5 ${isExpired && round.result === 'bull' ? 'text-white' : 'text-bull'}`} />
             </div>
+            <span className="text-[13px] font-bold text-bull">UP</span>
+            {bullPayout && (
+              <span className="text-[12px] font-bold text-bull bg-bull/10 px-2 py-0.5 rounded-full">
+                {bullPayout}x Payout
+              </span>
+            )}
+          </div>
+          {total > 0 && (
+            <span className="text-[11px] text-txt-3 font-mono">{bullPct}%</span>
           )}
-          <span className="text-[10px] text-txt-3 font-mono">#{round.id}</span>
         </div>
+        {/* Show user bet indicator on UP */}
+        {bet?.position === 'bull' && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+            <div className="w-5 h-5 rounded-full bg-bull flex items-center justify-center">
+              <CheckCircle2 className="w-3 h-3 text-white" />
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* ── Result banner for expired ── */}
-      {isExpired && round.result && round.result !== 'tie' && (
-        <div className={`flex items-center justify-center gap-2 py-2 text-[12px] font-bold ${
-          round.result === 'up' ? 'bg-bull/15 text-bull' : 'bg-bear/15 text-bear'
-        }`}>
-          {round.result === 'up' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
-          {round.result === 'up' ? 'UP Won' : 'DOWN Won'}
-          {expDelta && <span className="font-mono text-[11px] opacity-80">({expDelta.value})</span>}
+      {/* ═══ Middle Section (Round Info) ═══ */}
+      <div className="px-4 py-3 flex-1 min-h-[120px] flex flex-col justify-center">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            {isLive && <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />}
+            {isLive && <Flame className="w-3.5 h-3.5 text-accent" />}
+            {isNext && <Zap className="w-3.5 h-3.5 text-purple" />}
+            {isExpired && <CheckCircle2 className="w-3.5 h-3.5 text-txt-3" />}
+            {isLater && <Clock className="w-3.5 h-3.5 text-txt-3" />}
+            <span className={`text-[11px] font-bold tracking-wider ${
+              isLive ? 'text-accent' : isNext ? 'text-purple' : 'text-txt-3'
+            }`}>
+              {isLive ? 'LIVE' : isNext ? 'NEXT' : isExpired ? 'EXPIRED' : 'LATER'}
+            </span>
+          </div>
+          <span className="text-[10px] text-txt-3 font-mono">#{epoch}</span>
         </div>
-      )}
 
-      {/* ── Price Section ── */}
-      <div className="px-4 py-4 space-y-3">
+        {/* LIVE: current price & locked price */}
         {isLive && (
-          <>
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] text-txt-3 uppercase tracking-widest">Current Price</span>
+              <span className="text-[10px] text-txt-3 uppercase tracking-wider">Last Price</span>
               {liveDelta && (
                 <span className={`text-[11px] font-mono font-bold ${liveDelta.up ? 'text-bull' : 'text-bear'}`}>
                   {liveDelta.value}
                 </span>
               )}
             </div>
-            <div className={`text-[26px] font-extrabold font-mono tabular-nums leading-none ${
+            <div className={`text-[24px] font-extrabold font-mono tabular-nums leading-none ${
               liveDelta?.up ? 'text-bull' : liveDelta && !liveDelta.up ? 'text-bear' : 'text-txt-0'
             }`}>
-              {fmtPrice(price, 4)}
+              {fmtPrice(livePrice, 4)}
             </div>
             <div className="flex items-center justify-between text-[10px]">
-              <span className="text-txt-3">Locked</span>
+              <span className="text-txt-3">Locked Price</span>
               <span className="text-txt-1 font-mono">{fmtPrice(round.lockPrice, 4)}</span>
             </div>
-          </>
-        )}
-
-        {isExpired && (
-          <>
-            <div className="flex items-center justify-between text-[10px]">
-              <span className="text-txt-3 uppercase tracking-widest">Closed</span>
-              <span className={`font-mono font-bold ${
-                round.result === 'up' ? 'text-bull' : round.result === 'down' ? 'text-bear' : 'text-txt-1'
-              }`}>{fmtPrice(round.closePrice, 4)}</span>
+            {/* Prize Pool */}
+            <div className="flex items-center justify-between pt-1 border-t border-drift-border/30">
+              <span className="text-[10px] text-txt-3">Prize Pool</span>
+              <span className="text-[12px] font-bold text-txt-0 font-mono">{fmtSol(round.totalAmount)} SOL</span>
             </div>
-            <div className="flex items-center justify-between text-[10px]">
-              <span className="text-txt-3">Locked</span>
-              <span className="text-txt-1 font-mono">{fmtPrice(round.lockPrice, 4)}</span>
-            </div>
-          </>
-        )}
-
-        {isNext && (
-          <div className="text-center py-1">
-            <Lock className="w-5 h-5 text-purple/60 mx-auto mb-2" />
-            <p className="text-[12px] text-purple font-medium">Accepting Bets</p>
-            <p className="text-[10px] text-txt-3 mt-1">Price locks when this round goes live</p>
           </div>
         )}
 
+        {/* EXPIRED: closed/locked prices */}
+        {isExpired && (
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-[10px]">
+              <span className="text-txt-3">Closed Price</span>
+              <span className={`font-mono font-bold ${
+                round.result === 'bull' ? 'text-bull' : round.result === 'bear' ? 'text-bear' : 'text-txt-1'
+              }`}>{fmtPrice(round.closePrice, 4)}</span>
+            </div>
+            <div className="flex items-center justify-between text-[10px]">
+              <span className="text-txt-3">Locked Price</span>
+              <span className="text-txt-2 font-mono">{fmtPrice(round.lockPrice, 4)}</span>
+            </div>
+            {expDelta && (
+              <div className={`text-center text-[12px] font-bold mt-1 ${expDelta.up ? 'text-bull' : 'text-bear'}`}>
+                {expDelta.value}
+              </div>
+            )}
+            <div className="flex items-center justify-between pt-1.5 border-t border-drift-border/30">
+              <span className="text-[10px] text-txt-3">Prize Pool</span>
+              <span className="text-[11px] font-bold text-txt-0 font-mono">{fmtSol(round.totalAmount)} SOL</span>
+            </div>
+          </div>
+        )}
+
+        {/* NEXT: accepting bets */}
+        {isNext && !betDir && !bet && (
+          <div className="text-center space-y-3 py-2">
+            <Lock className="w-6 h-6 text-purple/50 mx-auto" />
+            <p className="text-[12px] text-purple font-semibold">Entry</p>
+            <div className="flex gap-2">
+              <button onClick={() => setBetDir('bull')}
+                className="flex-1 py-2.5 rounded-xl bg-bull/10 hover:bg-bull/20 border border-bull/20 hover:border-bull/40 text-bull font-bold text-[13px] transition-all flex items-center justify-center gap-1.5 active:scale-[0.97]">
+                <ArrowUp className="w-4 h-4" /> Enter UP
+              </button>
+              <button onClick={() => setBetDir('bear')}
+                className="flex-1 py-2.5 rounded-xl bg-bear/10 hover:bg-bear/20 border border-bear/20 hover:border-bear/40 text-bear font-bold text-[13px] transition-all flex items-center justify-center gap-1.5 active:scale-[0.97]">
+                <ArrowDown className="w-4 h-4" /> Enter DOWN
+              </button>
+            </div>
+            {round.totalAmount > 0 && (
+              <div className="text-[10px] text-txt-3">
+                Prize Pool: <span className="text-txt-1 font-mono font-bold">{fmtSol(round.totalAmount)} SOL</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* NEXT: bet form */}
+        {isNext && betDir && !bet && (
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                  betDir === 'bull' ? 'bg-bull/20' : 'bg-bear/20'
+                }`}>
+                  {betDir === 'bull'
+                    ? <ArrowUp className="w-3 h-3 text-bull" />
+                    : <ArrowDown className="w-3 h-3 text-bear" />}
+                </div>
+                <span className={`text-[12px] font-bold ${betDir === 'bull' ? 'text-bull' : 'text-bear'}`}>
+                  {betDir === 'bull' ? 'UP' : 'DOWN'}
+                </span>
+              </div>
+              <button onClick={() => setBetDir(null)} className="text-[10px] text-txt-3 hover:text-txt-1">✕</button>
+            </div>
+
+            <div className="relative">
+              <input type="number" value={betAmt} onChange={e => setBetAmt(e.target.value)}
+                placeholder="0.0" autoFocus step="0.01" min="0.001"
+                onKeyDown={e => { if (e.key === 'Enter') submit(betDir); }}
+                className="w-full pl-3 pr-12 py-2.5 bg-drift-surface border border-drift-border rounded-xl text-[14px] text-txt-0 font-mono outline-none focus:border-accent/50 placeholder:text-txt-3/40" />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-txt-3 font-bold">SOL</span>
+            </div>
+
+            <div className="flex gap-1">
+              {[0.01, 0.05, 0.1, 0.25, 0.5, 1].map(a => (
+                <button key={a} onClick={() => setBetAmt(a.toString())}
+                  className={`flex-1 py-1 rounded-lg text-[9px] font-semibold transition-colors ${
+                    betAmt === a.toString()
+                      ? 'bg-accent/20 text-accent border border-accent/30'
+                      : 'bg-drift-surface text-txt-2 hover:text-txt-0'
+                  }`}>
+                  {a}
+                </button>
+              ))}
+            </div>
+
+            <button onClick={() => submit(betDir)} disabled={placing || !betAmt || parseFloat(betAmt) <= 0}
+              className={`w-full py-2.5 rounded-xl font-bold text-[13px] text-white transition-all disabled:opacity-30 active:scale-[0.97] ${
+                betDir === 'bull'
+                  ? 'bg-gradient-to-r from-bull to-bull/70 hover:shadow-lg hover:shadow-bull/20'
+                  : 'bg-gradient-to-r from-bear to-bear/70 hover:shadow-lg hover:shadow-bear/20'
+              }`}>
+              {placing ? 'Placing...' : !walletConnected ? 'Connect Wallet' : `Bet ${betDir.toUpperCase()}`}
+            </button>
+          </div>
+        )}
+
+        {/* NEXT: already bet */}
+        {isNext && bet && (
+          <div className="text-center space-y-2 py-2">
+            <div className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl border ${
+              bet.position === 'bull' ? 'bg-bull/5 border-bull/20' : 'bg-bear/5 border-bear/20'
+            }`}>
+              {bet.position === 'bull'
+                ? <ArrowUp className="w-4 h-4 text-bull" />
+                : <ArrowDown className="w-4 h-4 text-bear" />}
+              <span className="text-[12px] font-bold text-txt-0">
+                {bet.position.toUpperCase()} — {fmtSol(bet.amount)} SOL
+              </span>
+            </div>
+            <p className="text-[10px] text-accent">Entered ✓</p>
+          </div>
+        )}
+
+        {/* LIVE: user bet status */}
+        {isLive && bet && (
+          <div className={`mt-2 flex items-center justify-between p-2.5 rounded-xl border ${
+            bet.position === 'bull' ? 'bg-bull/5 border-bull/20' : 'bg-bear/5 border-bear/20'
+          }`}>
+            <div className="flex items-center gap-2">
+              {bet.position === 'bull'
+                ? <ArrowUp className="w-3.5 h-3.5 text-bull" />
+                : <ArrowDown className="w-3.5 h-3.5 text-bear" />}
+              <span className="text-[11px] font-semibold text-txt-0">{fmtSol(bet.amount)} SOL</span>
+            </div>
+            <span className={`text-[10px] font-bold ${
+              liveDelta ? (bet.position === 'bull' ? (liveDelta.up ? 'text-bull' : 'text-bear') : (liveDelta.up ? 'text-bear' : 'text-bull')) : 'text-txt-3'
+            }`}>
+              {liveDelta ? ((bet.position === 'bull' ? liveDelta.up : !liveDelta.up) ? '● Winning' : '● Losing') : '...'}
+            </span>
+          </div>
+        )}
+
+        {/* EXPIRED: claim / result */}
+        {isExpired && claimable && (
+          <div className="mt-2">
+            <button onClick={() => onClaim(epoch)}
+              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-bull via-accent to-bull text-white font-bold text-[13px] flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-bull/20 active:scale-[0.97] transition-all">
+              <Trophy className="w-4 h-4" />
+              Collect {fmtSol(bet!.payout)} SOL
+            </button>
+          </div>
+        )}
+        {isExpired && userLost && !bet?.claimed && (
+          <div className="mt-2 flex items-center justify-center gap-1.5 p-2 rounded-xl bg-bear/5 border border-bear/10">
+            <XCircle className="w-3 h-3 text-bear" />
+            <span className="text-[11px] text-bear">Lost {fmtSol(bet!.amount)} SOL</span>
+          </div>
+        )}
+        {isExpired && bet?.claimed && (
+          <div className="mt-2 flex items-center justify-center gap-1.5 p-2 rounded-xl bg-bull/5 border border-bull/10">
+            <CheckCircle2 className="w-3 h-3 text-bull" />
+            <span className="text-[11px] text-bull">Collected</span>
+          </div>
+        )}
+
+        {/* LATER */}
         {isLater && (
-          <div className="text-center py-3">
-            <Clock className="w-5 h-5 text-txt-3/40 mx-auto mb-2" />
-            <p className="text-[11px] text-txt-3">Starting soon</p>
+          <div className="text-center py-6">
+            <Clock className="w-5 h-5 text-txt-3/30 mx-auto mb-1.5" />
+            <p className="text-[11px] text-txt-3">Later</p>
           </div>
         )}
       </div>
 
-      {/* ── Payout info ── */}
-      {!isLater && (
-        <div className="mx-4 mb-3 flex items-center gap-2 p-2.5 rounded-xl bg-drift-surface/60 border border-drift-border/50">
-          <Gift className="w-3.5 h-3.5 text-accent shrink-0" />
-          <span className="text-[11px] text-txt-1">
-            Win <span className="text-accent font-bold">{PAYOUT_MULTIPLIER}x</span> your bet
-          </span>
-        </div>
-      )}
-
-      {/* ── Bet buttons (NEXT round, no existing bet) ── */}
-      {isNext && !userBet && !betDir && (
-        <div className="px-4 pb-4 flex gap-2">
-          <button onClick={() => setBetDir('up')}
-            className="flex-1 py-3 rounded-xl bg-bull/10 hover:bg-bull/20 border border-bull/20 hover:border-bull/40 text-bull font-bold text-[13px] transition-all flex items-center justify-center gap-2 active:scale-[0.98]">
-            <ArrowUp className="w-4 h-4" /> UP
-          </button>
-          <button onClick={() => setBetDir('down')}
-            className="flex-1 py-3 rounded-xl bg-bear/10 hover:bg-bear/20 border border-bear/20 hover:border-bear/40 text-bear font-bold text-[13px] transition-all flex items-center justify-center gap-2 active:scale-[0.98]">
-            <ArrowDown className="w-4 h-4" /> DOWN
-          </button>
-        </div>
-      )}
-
-      {/* ── Bet form ── */}
-      {isNext && !userBet && betDir && (
-        <div className="px-4 pb-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${
-                betDir === 'up' ? 'bg-bull/20' : 'bg-bear/20'
-              }`}>
-                {betDir === 'up'
-                  ? <ArrowUp className="w-3.5 h-3.5 text-bull" />
-                  : <ArrowDown className="w-3.5 h-3.5 text-bear" />}
-              </div>
-              <span className={`text-[13px] font-bold ${betDir === 'up' ? 'text-bull' : 'text-bear'}`}>
-                {betDir === 'up' ? 'Going UP' : 'Going DOWN'}
-              </span>
+      {/* ═══ DOWN (BEAR) Section ═══ */}
+      <div className={`relative px-4 py-2.5 ${
+        isExpired && round.result === 'bear' ? 'bg-bear/12' : 'bg-bear/5'
+      } border-t border-drift-border/30`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+              isExpired && round.result === 'bear' ? 'bg-bear' : 'bg-bear/20'
+            }`}>
+              <ArrowDown className={`w-3.5 h-3.5 ${isExpired && round.result === 'bear' ? 'text-white' : 'text-bear'}`} />
             </div>
-            <button onClick={() => setBetDir(null)} className="text-[11px] text-txt-3 hover:text-txt-1 transition-colors">
-              Back
-            </button>
-          </div>
-
-          {/* Amount input */}
-          <div className="relative">
-            <input type="number" value={betAmt} onChange={e => setBetAmt(e.target.value)}
-              placeholder="Enter amount" autoFocus
-              onKeyDown={e => { if (e.key === 'Enter') submit(betDir); }}
-              className="w-full pl-4 pr-16 py-3 bg-drift-surface border border-drift-border rounded-xl text-[14px] text-txt-0 font-mono outline-none focus:border-accent/50 transition-colors placeholder:text-txt-3/50"
-            />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] text-txt-3 font-semibold">USDC</span>
-          </div>
-
-          {/* Quick amounts */}
-          <div className="flex gap-1.5">
-            {[1, 5, 10, 25, 50, 100].map(a => (
-              <button key={a} onClick={() => setBetAmt(a.toString())}
-                className={`flex-1 py-1.5 rounded-lg text-[10px] font-semibold transition-all ${
-                  betAmt === a.toString()
-                    ? 'bg-accent/20 text-accent border border-accent/30'
-                    : 'bg-drift-surface text-txt-2 hover:text-txt-0 border border-transparent'
-                }`}>
-                ${a}
-              </button>
-            ))}
-          </div>
-
-          {/* Potential win preview */}
-          {betAmt && parseFloat(betAmt) > 0 && (
-            <div className="flex items-center justify-between p-2.5 rounded-xl bg-bull/5 border border-bull/10">
-              <span className="text-[10px] text-txt-3">Potential win</span>
-              <span className="text-[13px] font-bold text-bull font-mono">
-                +{fmtUSD(parseFloat(betAmt) * (PAYOUT_MULTIPLIER - 1))}
+            <span className="text-[13px] font-bold text-bear">DOWN</span>
+            {bearPayout && (
+              <span className="text-[12px] font-bold text-bear bg-bear/10 px-2 py-0.5 rounded-full">
+                {bearPayout}x Payout
               </span>
-            </div>
+            )}
+          </div>
+          {total > 0 && (
+            <span className="text-[11px] text-txt-3 font-mono">{bearPct}%</span>
           )}
-
-          <button onClick={() => submit(betDir)}
-            disabled={!betAmt || parseFloat(betAmt) <= 0}
-            className={`w-full py-3 rounded-xl font-bold text-[14px] transition-all disabled:opacity-30 disabled:cursor-not-allowed text-white active:scale-[0.98] ${
-              betDir === 'up'
-                ? 'bg-gradient-to-r from-bull to-bull/80 hover:shadow-[0_4px_20px_rgba(0,210,106,0.3)]'
-                : 'bg-gradient-to-r from-bear to-bear/80 hover:shadow-[0_4px_20px_rgba(255,77,106,0.3)]'
-            }`}>
-            {!wallet ? 'Connect Wallet' : `Bet ${betDir.toUpperCase()}`}
-          </button>
         </div>
-      )}
-
-      {/* ── Active bet indicator ── */}
-      {isNext && userBet && (
-        <div className="px-4 pb-4">
-          <div className={`flex items-center justify-between p-3 rounded-xl border ${
-            userBet.direction === 'up' ? 'bg-bull/5 border-bull/20' : 'bg-bear/5 border-bear/20'
-          }`}>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-accent" />
-              <span className="text-[12px] font-semibold text-txt-0">
-                {userBet.direction === 'up' ? 'UP' : 'DOWN'} — {fmtUSD(userBet.amount)}
-              </span>
+        {bet?.position === 'bear' && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+            <div className="w-5 h-5 rounded-full bg-bear flex items-center justify-center">
+              <CheckCircle2 className="w-3 h-3 text-white" />
             </div>
-            <span className="text-[10px] text-accent font-mono">Locked</span>
           </div>
-        </div>
-      )}
-
-      {/* ── Live round bet indicator ── */}
-      {isLive && userBet && (
-        <div className="px-4 pb-4">
-          <div className={`flex items-center justify-between p-3 rounded-xl border ${
-            userBet.direction === 'up' ? 'bg-bull/5 border-bull/20' : 'bg-bear/5 border-bear/20'
-          }`}>
-            <div className="flex items-center gap-2">
-              {userBet.direction === 'up'
-                ? <ArrowUp className="w-4 h-4 text-bull" />
-                : <ArrowDown className="w-4 h-4 text-bear" />}
-              <span className="text-[12px] font-semibold text-txt-0">
-                Your bet: {fmtUSD(userBet.amount)}
-              </span>
-            </div>
-            <span className={`text-[10px] font-bold ${
-              liveDelta ? (userBet.direction === 'up' ? (liveDelta.up ? 'text-bull' : 'text-bear') : (liveDelta.up ? 'text-bear' : 'text-bull')) : 'text-txt-3'
-            }`}>
-              {liveDelta ? (
-                (userBet.direction === 'up' ? liveDelta.up : !liveDelta.up) ? 'Winning' : 'Losing'
-              ) : '...'}
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* ── Claim / Result ── */}
-      {isExpired && claimable && (
-        <div className="px-4 pb-4">
-          <button onClick={() => onClaim(round.id)}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-bull to-bull/70 hover:shadow-[0_4px_20px_rgba(0,210,106,0.3)] text-white font-bold text-[14px] transition-all flex items-center justify-center gap-2 active:scale-[0.98]">
-            <Trophy className="w-4 h-4" />
-            Claim {fmtUSD(userBet!.payout)}
-          </button>
-        </div>
-      )}
-
-      {isExpired && lost && !userBet?.claimed && (
-        <div className="px-4 pb-3">
-          <div className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-bear/5 border border-bear/10 text-[12px] text-bear">
-            <XCircle className="w-3.5 h-3.5" /> Lost {fmtUSD(userBet!.amount)}
-          </div>
-        </div>
-      )}
-
-      {isExpired && userBet?.claimed && (
-        <div className="px-4 pb-3">
-          <div className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-bull/5 border border-bull/10 text-[12px] text-bull">
-            <CheckCircle2 className="w-3.5 h-3.5" /> Claimed {fmtUSD(userBet.payout)}
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
-
 
 /* ═══════════════════════════════════════════════════
    PREDICTION PAGE
@@ -374,21 +418,25 @@ const RoundCard: React.FC<CardProps> = ({ round, price, wallet, onBet, onClaim }
 interface Props { onBack?: () => void; }
 
 export const PredictionPage: React.FC<Props> = ({ onBack }) => {
-  const { publicKey } = useWallet();
+  const { publicKey, sendTransaction } = useWallet();
+  const { connection } = useConnection();
   const walletStr = publicKey?.toBase58() ?? null;
-  const oraclePrice = useDriftStore(s => s.oraclePrice);
+
   const {
-    rounds, timeRemainingMs, initializeRounds, advanceRound,
-    placeBet, claimWinnings, setTimeRemaining, setUserWallet,
+    game, rounds, userBets, livePrice, timeRemainingMs, loading, error,
+    setConnection, refresh, placeBet, claimWinnings,
+    setLivePrice, setTimeRemainingMs,
   } = usePredictionStore();
 
   const scrollRef = useRef<HTMLDivElement>(null);
-  const initialized = useRef(false);
-  const [livePrice, setLivePrice] = useState(0);
   const [showHistory, setShowHistory] = useState(false);
-  const [showHowTo, setShowHowTo] = useState(false);
 
-  // Binance WebSocket for smooth live price
+  // Set connection once
+  useEffect(() => {
+    if (connection) setConnection(connection);
+  }, [connection]);
+
+  // Binance WS for live price
   useEffect(() => {
     let ws: WebSocket | null = null;
     try {
@@ -400,72 +448,82 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
     return () => { ws?.close(); };
   }, []);
 
-  const price = livePrice > 0 ? livePrice : oraclePrice;
-
-  useEffect(() => { setUserWallet(walletStr); }, [walletStr]);
-
+  // Poll on-chain data every 5s
   useEffect(() => {
-    if (price > 0 && !initialized.current) {
-      initializeRounds(price);
-      initialized.current = true;
-    }
-  }, [price]);
+    if (!connection) return;
+    refresh(publicKey ?? undefined);
+    const iv = setInterval(() => refresh(publicKey ?? undefined), 5000);
+    return () => clearInterval(iv);
+  }, [connection, publicKey]);
 
-  // Tick
+  // Timer tick
   useEffect(() => {
-    if (rounds.length === 0) return;
     const live = rounds.find(r => r.status === 'live');
     if (!live) return;
     const iv = setInterval(() => {
-      const rem = live.closeTimestamp - Date.now();
-      setTimeRemaining(rem);
-      if (rem <= 0 && price > 0) advanceRound(price);
+      const rem = live.closeTimestamp * 1000 - Date.now();
+      setTimeRemainingMs(rem);
     }, 1000);
     return () => clearInterval(iv);
-  }, [rounds, price]);
+  }, [rounds]);
 
-  // Auto-scroll to live on mount
+  // Auto-scroll to live card on load
   useEffect(() => {
     if (rounds.length > 0 && scrollRef.current) {
       const idx = rounds.findIndex(r => r.status === 'live');
       if (idx >= 0) {
-        const cw = 326;
+        const cw = 340;
         const w = scrollRef.current.offsetWidth;
-        scrollRef.current.scrollTo({ left: Math.max(0, idx * cw - w / 2 + cw / 2), behavior: 'smooth' });
+        scrollRef.current.scrollTo({
+          left: Math.max(0, idx * cw - w / 2 + cw / 2),
+          behavior: 'smooth',
+        });
       }
     }
   }, [rounds.length > 0]);
 
   const scroll = (d: 'left' | 'right') => {
-    scrollRef.current?.scrollBy({ left: d === 'left' ? -330 : 330, behavior: 'smooth' });
+    scrollRef.current?.scrollBy({ left: d === 'left' ? -340 : 340, behavior: 'smooth' });
   };
 
-  const handleBet = useCallback((id: number, dir: BetDirection, amt: number) => {
-    if (!walletStr) { toast.error('Connect wallet first'); return; }
-    if (placeBet(dir, amt, walletStr)) {
-      toast.success(`Bet ${dir.toUpperCase()} — ${fmtUSD(amt)}`);
-    } else {
-      toast.error('Already entered this round');
+  const handleBet = useCallback(async (epoch: number, dir: 'bull' | 'bear', sol: number) => {
+    if (!publicKey) { toast.error('Connect wallet'); return; }
+    try {
+      toast.loading('Placing bet...', { id: 'bet' });
+      await placeBet(publicKey, epoch, dir, sol, sendTransaction);
+      toast.success(`Bet ${dir.toUpperCase()} — ${sol} SOL`, { id: 'bet' });
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message?.slice(0, 80) || 'Bet failed', { id: 'bet' });
     }
-  }, [walletStr, placeBet]);
+  }, [publicKey, placeBet, sendTransaction]);
 
-  const handleClaim = useCallback((id: number) => {
-    if (!walletStr) return;
-    const p = claimWinnings(id, walletStr);
-    if (p > 0) toast.success(`Claimed ${fmtUSD(p)}!`);
-  }, [walletStr, claimWinnings]);
+  const handleClaim = useCallback(async (epoch: number) => {
+    if (!publicKey) return;
+    try {
+      toast.loading('Claiming...', { id: 'claim' });
+      await claimWinnings(publicKey, epoch, sendTransaction);
+      toast.success('Claimed!', { id: 'claim' });
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message?.slice(0, 80) || 'Claim failed', { id: 'claim' });
+    }
+  }, [publicKey, claimWinnings, sendTransaction]);
 
-  // User stats
-  const userBets = usePredictionStore(s => s.userBets);
-  const myBets = userBets.filter(b => b.wallet === walletStr);
-  const totalBet = myBets.reduce((s, b) => s + b.amount, 0);
+  // Stats
+  const myBets = useMemo(() => Array.from(userBets.values()), [userBets]);
+  const totalBetSol = myBets.reduce((s, b) => s + b.amount, 0);
   const totalWon = myBets.filter(b => b.payout > b.amount).reduce((s, b) => s + b.payout, 0);
   const wins = myBets.filter(b => b.payout > b.amount).length;
-  const losses = myBets.filter(b => b.payout === 0 && rounds.find(r => r.id === b.roundId)?.status === 'expired').length;
-  const net = totalWon - totalBet;
+  const losses = myBets.filter(b => b.payout === 0).length;
+  const net = totalWon - totalBetSol;
 
   const liveRound = rounds.find(r => r.status === 'live');
-  const pct = liveRound ? Math.max(0, (liveRound.closeTimestamp - Date.now()) / (5 * 60 * 1000)) : 0;
+  const intervalMs = (game?.intervalSeconds ?? 300) * 1000;
+  const pct = liveRound ? Math.max(0, (liveRound.closeTimestamp * 1000 - Date.now()) / intervalMs) : 0;
+
+  // Not initialized yet
+  const notReady = !game || !game.genesisStart;
 
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-drift-bg overflow-hidden">
@@ -480,42 +538,42 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
               </button>
             )}
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-accent/80 to-purple/80 flex items-center justify-center shadow-lg shadow-accent/10">
-                <TrendingUp className="w-4.5 h-4.5 text-white" />
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-accent to-purple flex items-center justify-center shadow-lg shadow-accent/10">
+                <TrendingUp className="w-5 h-5 text-white" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-[15px] font-bold text-txt-0">SOL Prediction</h1>
-                  <span className="text-[9px] bg-accent/15 text-accent px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Beta</span>
+                  <span className="text-[8px] bg-bull/15 text-bull px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">On-chain</span>
                 </div>
-                <p className="text-[10px] text-txt-3 mt-0.5">Predict price direction — win 1.95x</p>
+                <p className="text-[10px] text-txt-3 mt-0.5">Predict SOL price — win from the pool</p>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            {/* SOL Price pill */}
-            <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-drift-surface/80 border border-drift-border/60">
-              <AssetIcon asset="SOL" size={18} />
+            {/* SOL Price */}
+            <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-drift-surface/60 border border-drift-border/40">
+              <span className="text-[10px] text-txt-3 font-medium">SOL</span>
               <span className="text-[14px] font-bold text-txt-0 font-mono tabular-nums">
-                {price > 0 ? `$${price.toFixed(2)}` : '—'}
+                {livePrice > 0 ? `$${livePrice.toFixed(2)}` : '—'}
               </span>
             </div>
 
             {/* Timer ring */}
-            {liveRound && (
-              <div className="relative flex items-center justify-center text-accent">
-                <ProgressRing pct={pct} size={44} stroke={2.5} />
-                <span className="absolute text-[12px] font-bold font-mono tabular-nums text-accent">
+            {liveRound && timeRemainingMs > 0 && (
+              <div className="relative flex items-center justify-center">
+                <ProgressRing pct={pct} />
+                <span className="absolute text-[11px] font-bold font-mono tabular-nums text-accent">
                   {fmt(timeRemainingMs)}
                 </span>
               </div>
             )}
 
-            {/* History */}
+            {/* History toggle */}
             <button onClick={() => setShowHistory(!showHistory)}
               className={`p-2.5 rounded-xl transition-all ${
-                showHistory ? 'bg-accent/15 text-accent' : 'bg-drift-surface/60 text-txt-2 hover:text-txt-0 hover:bg-drift-surface'
+                showHistory ? 'bg-accent/15 text-accent' : 'bg-drift-surface/60 text-txt-2 hover:text-txt-0'
               }`}>
               <History className="w-4 h-4" />
             </button>
@@ -523,51 +581,50 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
         </div>
       </div>
 
-      {/* ═══ HOW IT WORKS ═══ */}
-      <div className="shrink-0 border-b border-drift-border/50">
-        <button onClick={() => setShowHowTo(!showHowTo)}
-          className="w-full flex items-center justify-between px-5 py-2 text-[11px] text-txt-2 hover:text-txt-0 transition-colors">
-          <span className="font-medium">How does it work?</span>
-          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showHowTo ? 'rotate-180' : ''}`} />
-        </button>
-        {showHowTo && (
-          <div className="px-5 pb-3 grid grid-cols-1 sm:grid-cols-3 gap-4 text-[11px]">
-            <HowStep icon={<Zap className="w-4 h-4 text-accent" />} title="Pick a direction"
-              desc="Predict if SOL will go UP or DOWN before the 5-minute round ends." />
-            <HowStep icon={<Gift className="w-4 h-4 text-purple" />} title="Bet any amount"
-              desc="Enter the USDC amount you want to bet. Your position locks once placed." />
-            <HowStep icon={<Trophy className="w-4 h-4 text-bull" />} title="Win 1.95x"
-              desc="Correct prediction? Get 1.95x your bet back. Wrong? You lose your bet." />
-          </div>
-        )}
-      </div>
-
       {/* ═══ CARDS CAROUSEL ═══ */}
       <div className="flex-1 flex flex-col min-h-0 relative">
-        {/* Left / Right arrows */}
+        {/* Arrows */}
         <button onClick={() => scroll('left')}
-          className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-xl bg-drift-panel/90 backdrop-blur-sm border border-drift-border/60 flex items-center justify-center text-txt-2 hover:text-txt-0 hover:bg-drift-surface transition-all shadow-lg">
+          className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-drift-panel/90 backdrop-blur-sm border border-drift-border/50 flex items-center justify-center text-txt-2 hover:text-txt-0 transition-all shadow-lg">
           <ChevronLeft className="w-5 h-5" />
         </button>
         <button onClick={() => scroll('right')}
-          className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-xl bg-drift-panel/90 backdrop-blur-sm border border-drift-border/60 flex items-center justify-center text-txt-2 hover:text-txt-0 hover:bg-drift-surface transition-all shadow-lg">
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-drift-panel/90 backdrop-blur-sm border border-drift-border/50 flex items-center justify-center text-txt-2 hover:text-txt-0 transition-all shadow-lg">
           <ChevronRight className="w-5 h-5" />
         </button>
 
         <div ref={scrollRef}
-          className="flex-1 flex items-center gap-4 px-14 overflow-x-auto scrollbar-hide snap-x snap-mandatory"
+          className="flex-1 flex items-center gap-5 px-14 overflow-x-auto scrollbar-hide snap-x snap-mandatory"
           style={{ scrollBehavior: 'smooth' }}>
-          {rounds.length === 0 ? (
+
+          {notReady ? (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center space-y-3">
                 <Loader2 className="w-8 h-8 text-accent/40 mx-auto animate-spin" />
-                <p className="text-[13px] text-txt-3">Connecting to oracle...</p>
+                <p className="text-[13px] text-txt-3">
+                  {error || 'Waiting for prediction game to initialize...'}
+                </p>
+              </div>
+            </div>
+          ) : rounds.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center space-y-3">
+                <Loader2 className="w-8 h-8 text-accent/40 mx-auto animate-spin" />
+                <p className="text-[13px] text-txt-3">Loading rounds...</p>
               </div>
             </div>
           ) : (
             rounds.map(r => (
-              <RoundCard key={r.id} round={r} price={price} wallet={walletStr}
-                onBet={handleBet} onClaim={handleClaim} />
+              <RoundCard
+                key={r.epoch}
+                round={r}
+                bet={userBets.get(r.epoch)}
+                livePrice={livePrice}
+                intervalSec={game?.intervalSeconds ?? 300}
+                onBet={handleBet}
+                onClaim={handleClaim}
+                walletConnected={!!publicKey}
+              />
             ))
           )}
         </div>
@@ -576,23 +633,25 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
       {/* ═══ BOTTOM BAR ═══ */}
       <div className="shrink-0 border-t border-drift-border bg-drift-panel/80 backdrop-blur-sm">
         {showHistory ? (
-          <HistoryTable rounds={rounds} wallet={walletStr} />
+          <HistoryPanel rounds={rounds} bets={myBets} onClaim={handleClaim} />
         ) : (
-          <div className="flex items-center justify-between px-5 sm:px-6 py-3">
+          <div className="flex items-center justify-between px-5 py-3">
             <div className="flex items-center gap-6 sm:gap-8">
-              <Stat label="Rounds" value={`${new Set(myBets.map(b => b.roundId)).size}`} />
+              <Stat label="Rounds" value={String(myBets.length)} />
               <Stat label="W / L" value={`${wins} / ${losses}`}
                 color={wins > losses ? 'text-bull' : losses > wins ? 'text-bear' : undefined} />
-              <Stat label="Total Bet" value={totalBet > 0 ? fmtUSD(totalBet) : '—'} />
-              <Stat label="P&L" value={net >= 0 ? `+${fmtUSD(net)}` : `-${fmtUSD(Math.abs(net))}`}
+              <Stat label="Total Bet" value={totalBetSol > 0 ? `${fmtSol(totalBetSol)} SOL` : '—'} />
+              <Stat label="P&L" value={`${net >= 0 ? '+' : ''}${fmtSol(Math.abs(net))} SOL`}
                 color={net >= 0 ? 'text-bull' : 'text-bear'} />
             </div>
             <div className="hidden sm:flex items-center gap-3 text-[10px] text-txt-3">
-              <span>{PAYOUT_MULTIPLIER}x payout</span>
+              <span className="flex items-center gap-1">
+                <div className="w-1.5 h-1.5 rounded-full bg-bull" /> On-chain
+              </span>
               <span className="w-px h-3 bg-drift-border" />
-              <span>5 min rounds</span>
+              <span>{game?.intervalSeconds ?? 300}s rounds</span>
               <span className="w-px h-3 bg-drift-border" />
-              <span>SOL/USD Oracle</span>
+              <span>{((game?.treasuryFee ?? 300) / 100).toFixed(1)}% fee</span>
             </div>
           </div>
         )}
@@ -603,16 +662,6 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
 
 /* ─── Sub-components ─────────────────────────────── */
 
-const HowStep: React.FC<{ icon: React.ReactNode; title: string; desc: string }> = ({ icon, title, desc }) => (
-  <div className="flex gap-3 p-3 rounded-xl bg-drift-surface/40 border border-drift-border/30">
-    <div className="shrink-0 mt-0.5">{icon}</div>
-    <div>
-      <div className="text-txt-0 font-semibold">{title}</div>
-      <div className="text-txt-3 mt-0.5 leading-relaxed">{desc}</div>
-    </div>
-  </div>
-);
-
 const Stat: React.FC<{ label: string; value: string; color?: string }> = ({ label, value, color }) => (
   <div>
     <div className="text-[9px] text-txt-3 uppercase tracking-widest">{label}</div>
@@ -620,13 +669,16 @@ const Stat: React.FC<{ label: string; value: string; color?: string }> = ({ labe
   </div>
 );
 
-const HistoryTable: React.FC<{ rounds: PredictionRound[]; wallet: string | null }> = ({ rounds, wallet }) => {
-  const userBets = usePredictionStore(s => s.userBets);
-  const bets = wallet ? userBets.filter(b => b.wallet === wallet).slice(-20).reverse() : [];
+const HistoryPanel: React.FC<{
+  rounds: DisplayRound[];
+  bets: DisplayBet[];
+  onClaim: (epoch: number) => void;
+}> = ({ rounds, bets, onClaim }) => {
+  const sorted = [...bets].sort((a, b) => b.epoch - a.epoch);
 
   return (
     <div className="max-h-[200px] overflow-y-auto">
-      {bets.length === 0 ? (
+      {sorted.length === 0 ? (
         <div className="text-center py-8">
           <History className="w-6 h-6 text-txt-3/30 mx-auto mb-2" />
           <p className="text-[12px] text-txt-3">No predictions yet</p>
@@ -636,38 +688,49 @@ const HistoryTable: React.FC<{ rounds: PredictionRound[]; wallet: string | null 
           <thead className="sticky top-0 bg-drift-panel">
             <tr className="text-txt-3 border-b border-drift-border">
               <th className="text-left px-5 py-2 font-medium">Round</th>
-              <th className="text-left px-2 py-2 font-medium">Direction</th>
+              <th className="text-left px-2 py-2 font-medium">Position</th>
               <th className="text-right px-2 py-2 font-medium">Bet</th>
               <th className="text-center px-2 py-2 font-medium">Result</th>
-              <th className="text-right px-5 py-2 font-medium">Payout</th>
+              <th className="text-right px-5 py-2 font-medium">Action</th>
             </tr>
           </thead>
           <tbody>
-            {bets.map(b => {
-              const r = rounds.find(rr => rr.id === b.roundId);
-              const pending = !r?.result;
+            {sorted.map(b => {
+              const r = rounds.find(rr => rr.epoch === b.epoch);
+              const pending = !r?.oracleCalled;
               const won = b.payout > b.amount;
+              const tie = b.payout === b.amount && b.payout > 0;
               return (
-                <tr key={b.id} className="border-b border-drift-border/30 hover:bg-drift-surface/20 transition-colors">
-                  <td className="px-5 py-2.5 font-mono text-txt-1">#{b.roundId}</td>
+                <tr key={b.epoch} className="border-b border-drift-border/30 hover:bg-drift-surface/20">
+                  <td className="px-5 py-2.5 font-mono text-txt-1">#{b.epoch}</td>
                   <td className="px-2 py-2.5">
-                    <span className={`inline-flex items-center gap-1 ${b.direction === 'up' ? 'text-bull' : 'text-bear'}`}>
-                      {b.direction === 'up' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
-                      {b.direction.toUpperCase()}
+                    <span className={`inline-flex items-center gap-1 ${
+                      b.position === 'bull' ? 'text-bull' : 'text-bear'
+                    }`}>
+                      {b.position === 'bull' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+                      {b.position.toUpperCase()}
                     </span>
                   </td>
-                  <td className="px-2 py-2.5 text-right font-mono text-txt-0">{fmtUSD(b.amount)}</td>
+                  <td className="px-2 py-2.5 text-right font-mono text-txt-0">{fmtSol(b.amount)}</td>
                   <td className="px-2 py-2.5 text-center">
                     {pending ? <span className="text-yellow">Live</span>
                       : won ? <span className="text-bull">Won</span>
-                      : b.payout === b.amount ? <span className="text-yellow">Tie</span>
+                      : tie ? <span className="text-yellow">Tie</span>
                       : <span className="text-bear">Lost</span>}
                   </td>
-                  <td className="px-5 py-2.5 text-right font-mono">
-                    {pending ? '—'
-                      : won ? <span className="text-bull">+{fmtUSD(b.payout - b.amount)}</span>
-                      : b.payout === b.amount ? <span className="text-yellow">Refund</span>
-                      : <span className="text-bear">-{fmtUSD(b.amount)}</span>}
+                  <td className="px-5 py-2.5 text-right">
+                    {won && !b.claimed ? (
+                      <button onClick={() => onClaim(b.epoch)}
+                        className="text-[10px] font-bold text-bull bg-bull/10 hover:bg-bull/20 px-2 py-1 rounded-lg transition-colors">
+                        Collect
+                      </button>
+                    ) : b.claimed ? (
+                      <span className="text-[10px] text-bull">Collected</span>
+                    ) : pending ? (
+                      <span className="text-[10px] text-txt-3">—</span>
+                    ) : (
+                      <span className="text-[10px] text-bear">-{fmtSol(b.amount)}</span>
+                    )}
                   </td>
                 </tr>
               );
