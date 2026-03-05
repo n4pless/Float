@@ -115,14 +115,22 @@ pub mod prediction {
 
     /// Operator: close round N, lock round N+1, create round N+2.
     pub fn execute_round(ctx: Context<ExecuteRound>, close_epoch: u64, price: i64) -> Result<()> {
-        let g = &mut ctx.accounts.game;
-        require!(g.genesis_start_once && g.genesis_lock_once, PredError::GenesisNotComplete);
-        require!(!g.paused, PredError::Paused);
+        // Read game fields first (immutable borrows released immediately)
+        require!(
+            ctx.accounts.game.genesis_start_once && ctx.accounts.game.genesis_lock_once,
+            PredError::GenesisNotComplete
+        );
+        require!(!ctx.accounts.game.paused, PredError::Paused);
         require!(price > 0, PredError::InvalidPrice);
-        require!(close_epoch + 1 == g.current_epoch, PredError::InvalidEpoch);
+        require!(close_epoch + 1 == ctx.accounts.game.current_epoch, PredError::InvalidEpoch);
 
         let ts = Clock::get()?.unix_timestamp;
-        let iv = g.interval_seconds as i64;
+        let iv = ctx.accounts.game.interval_seconds as i64;
+        let treasury_fee = ctx.accounts.game.treasury_fee;
+
+        // Grab AccountInfo clones BEFORE mutable borrows (for lamport manipulation)
+        let game_ai = ctx.accounts.game.to_account_info();
+        let treasury_ai = ctx.accounts.treasury.to_account_info();
 
         // ── 1. Close the expiring round ──
         let c = &mut ctx.accounts.closing_round;
@@ -137,18 +145,16 @@ pub mod prediction {
         let refund = c.lock_price == price || c.bull_amount == 0 || c.bear_amount == 0;
 
         if total > 0 && !refund {
-            let fee = (total as u128 * g.treasury_fee as u128 / 10000) as u64;
+            let fee = (total as u128 * treasury_fee as u128 / 10000) as u64;
             c.treasury_amount = fee;
             c.reward_amount = total.checked_sub(fee).unwrap();
 
             if fee > 0 {
-                let gi = ctx.accounts.game.to_account_info();
-                let ti = ctx.accounts.treasury.to_account_info();
-                **gi.try_borrow_mut_lamports()? = gi
+                **game_ai.try_borrow_mut_lamports()? = game_ai
                     .lamports()
                     .checked_sub(fee)
                     .ok_or(error!(PredError::InsufficientFunds))?;
-                **ti.try_borrow_mut_lamports()? = ti
+                **treasury_ai.try_borrow_mut_lamports()? = treasury_ai
                     .lamports()
                     .checked_add(fee)
                     .ok_or(error!(PredError::Overflow))?;
@@ -166,7 +172,7 @@ pub mod prediction {
 
         // ── 3. Create the next round ──
         let new_epoch = close_epoch + 2;
-        g.current_epoch = new_epoch;
+        ctx.accounts.game.current_epoch = new_epoch;
 
         let nxt = &mut ctx.accounts.next_round;
         nxt.epoch = new_epoch;
