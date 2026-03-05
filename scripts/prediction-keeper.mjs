@@ -250,8 +250,19 @@ async function main() {
   }
 
   if (!game.genesisLock) {
-    console.log(`Waiting ${INTERVAL}s for genesis lock...`);
-    await sleep(INTERVAL * 1000);
+    // Read round 1 to get its lock_timestamp – wait only the remaining time
+    const [r1Pub] = roundPDA(1);
+    const r1Info = await conn.getAccountInfo(r1Pub);
+    if (!r1Info) throw new Error('Round 1 not found after genesis start');
+    const r1 = parseRound(r1Info.data);
+    const now = Math.floor(Date.now() / 1000);
+    const waitSec = Math.max(0, r1.lockTimestamp - now);
+    if (waitSec > 0) {
+      console.log(`Waiting ${waitSec}s for genesis lock (lock_ts=${r1.lockTimestamp})...`);
+      await sleep(waitSec * 1000 + 2000); // +2s buffer
+    } else {
+      console.log('Lock timestamp already passed, locking immediately...');
+    }
     const price = await getSolPrice();
     if (!price) throw new Error('Cannot fetch price for genesis lock');
     console.log(`Genesis lock (price=${price / PRICE_PRECISION})...`);
