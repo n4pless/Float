@@ -7,7 +7,7 @@ import {
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import { PhantomWalletAdapter } from '@solana/wallet-adapter-wallets';
 import { Toaster } from 'sonner';
-import { BarChart2, BookOpen, ArrowRightLeft, Wallet as WalletIcon, Shield, TrendingUp, List } from 'lucide-react';
+import { BarChart2, BookOpen, ArrowRightLeft, Wallet as WalletIcon, Shield, TrendingUp, List, Timer } from 'lucide-react';
 import DRIFT_CONFIG from './config';
 import { useDriftStore } from './stores/useDriftStore';
 import { useSetupDrift } from './hooks/useSetupDrift';
@@ -27,6 +27,7 @@ import { AccountPanel } from './components/AccountPanel';
 import { BottomPanel } from './components/BottomPanel';
 import { TickerBar } from './components/TickerBar';
 import { UserManagement } from './components/UserManagement';
+import { PredictionPage } from './pages/PredictionPage';
 import '@solana/wallet-adapter-react-ui/styles.css';
 
 /* ─── URL ↔ Market sync helpers ─── */
@@ -124,6 +125,8 @@ function TradingApp() {
 
       {currentPage === 'learn' ? (
         <InfoPage onBack={() => setCurrentPage('trade')} />
+      ) : currentPage === 'prediction' ? (
+        <PredictionPage onBack={() => setCurrentPage('trade')} />
       ) : currentPage === 'insurance' ? (
         <InsuranceFundPage onBack={() => setCurrentPage('trade')} />
       ) : currentPage === 'positions' ? (
@@ -244,6 +247,7 @@ function TradingApp() {
       <nav className="sm:hidden shrink-0 flex items-center border-t border-drift-border bg-drift-panel">
         {([
           { page: 'trade' as Page, label: 'Trade', icon: ArrowRightLeft },
+          { page: 'prediction' as Page, label: 'Predict', icon: Timer },
           { page: 'positions' as Page, label: 'Positions', icon: BarChart2 },
           { page: 'insurance' as Page, label: 'Insurance', icon: Shield },
           { page: 'user' as Page, label: 'Account', icon: WalletIcon },
