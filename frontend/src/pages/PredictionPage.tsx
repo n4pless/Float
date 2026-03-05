@@ -719,10 +719,10 @@ const HistoryPanel: React.FC<{
                       : <span className="text-bear">Lost</span>}
                   </td>
                   <td className="px-5 py-2.5 text-right">
-                    {won && !b.claimed ? (
+                    {(won || tie) && !b.claimed ? (
                       <button onClick={() => onClaim(b.epoch)}
                         className="text-[10px] font-bold text-bull bg-bull/10 hover:bg-bull/20 px-2 py-1 rounded-lg transition-colors">
-                        Collect
+                        {tie ? 'Refund' : 'Collect'}
                       </button>
                     ) : b.claimed ? (
                       <span className="text-[10px] text-bull">Collected</span>
