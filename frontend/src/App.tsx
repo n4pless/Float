@@ -7,7 +7,7 @@ import {
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import { PhantomWalletAdapter } from '@solana/wallet-adapter-wallets';
 import { Toaster } from 'sonner';
-import { BarChart2, BookOpen, ArrowRightLeft, Wallet as WalletIcon, Shield, TrendingUp, List, Timer } from 'lucide-react';
+import { BarChart2, BookOpen, ArrowRightLeft, Wallet as WalletIcon, Shield, TrendingUp, List } from 'lucide-react';
 import DRIFT_CONFIG from './config';
 import { useDriftStore } from './stores/useDriftStore';
 import { useSetupDrift } from './hooks/useSetupDrift';
@@ -28,6 +28,7 @@ import { BottomPanel } from './components/BottomPanel';
 import { TickerBar } from './components/TickerBar';
 import { UserManagement } from './components/UserManagement';
 import { PredictionPage } from './pages/PredictionPage';
+import { LandingPage } from './pages/LandingPage';
 import '@solana/wallet-adapter-react-ui/styles.css';
 
 /* ─── URL ↔ Market sync helpers ─── */
@@ -38,15 +39,24 @@ for (const [idx, m] of Object.entries(DRIFT_CONFIG.markets)) {
   INDEX_TO_SYMBOL[+idx] = m.symbol;
 }
 
-function marketFromPath(): number | null {
+function pageFromPath(): { page: Page | null; market: number | null } {
   const path = window.location.pathname.replace(/^\/+/, '').toUpperCase();
-  if (!path) return null;
-  return SYMBOL_TO_INDEX[path] ?? null;
+  if (!path) return { page: null, market: null };
+  if (path === 'PREDICTION' || path === 'PREDICT') return { page: 'prediction', market: null };
+  const mkt = SYMBOL_TO_INDEX[path] ?? null;
+  if (mkt !== null) return { page: 'trade', market: mkt };
+  return { page: null, market: null };
 }
 
-function pushMarketUrl(idx: number) {
-  const sym = INDEX_TO_SYMBOL[idx];
-  if (sym) window.history.pushState(null, '', `/${sym}`);
+function pushPageUrl(page: Page, marketIdx?: number) {
+  if (page === 'prediction') {
+    window.history.pushState(null, '', '/prediction');
+  } else if (page === 'home') {
+    window.history.pushState(null, '', '/');
+  } else if (page === 'trade' && marketIdx !== undefined) {
+    const sym = INDEX_TO_SYMBOL[marketIdx];
+    if (sym) window.history.pushState(null, '', `/${sym}`);
+  }
 }
 
 function TradingApp() {
@@ -68,33 +78,55 @@ function TradingApp() {
   const client = useDriftStore((s) => s.client);
   const isUserInitialized = useDriftStore((s) => s.isUserInitialized);
 
-  const [currentPage, setCurrentPage] = useState<Page>('trade');
+  const [currentPage, setCurrentPage] = useState<Page>('home');
   const [limitPrice, setLimitPrice] = useState<number | undefined>(undefined);
 
-  // URL ↔ market sync: parse initial path and listen for browser back/forward
+  // URL ↔ page/market sync
   const selectedMarket = useDriftStore((s) => s.selectedMarket);
   const setSelectedMarket = useDriftStore((s) => s.setSelectedMarket);
 
-  useEffect(() => {
-    const initial = marketFromPath();
-    if (initial != null && initial !== useDriftStore.getState().selectedMarket) {
-      setSelectedMarket(initial);
-    } else if (initial == null) {
-      // No market in URL → set URL to current market
-      pushMarketUrl(useDriftStore.getState().selectedMarket);
+  // Custom navigate function that also updates URL
+  const navigateTo = useCallback((page: Page) => {
+    setCurrentPage(page);
+    if (page === 'trade') {
+      pushPageUrl('trade', useDriftStore.getState().selectedMarket);
+    } else {
+      pushPageUrl(page);
     }
+  }, []);
+
+  useEffect(() => {
+    const { page, market } = pageFromPath();
+    if (page === 'prediction') {
+      setCurrentPage('prediction');
+    } else if (page === 'trade' && market !== null) {
+      setCurrentPage('trade');
+      if (market !== useDriftStore.getState().selectedMarket) {
+        setSelectedMarket(market);
+      }
+    }
+    // If URL is just '/' → stay on 'home'
     const handlePopState = () => {
-      const mi = marketFromPath();
-      if (mi != null) setSelectedMarket(mi);
+      const parsed = pageFromPath();
+      if (parsed.page === 'prediction') {
+        setCurrentPage('prediction');
+      } else if (parsed.page === 'trade' && parsed.market !== null) {
+        setCurrentPage('trade');
+        setSelectedMarket(parsed.market);
+      } else {
+        setCurrentPage('home');
+      }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // When market changes (via MarketBar picker), update URL
+  // When market changes (via MarketBar picker), update URL (only while on trade page)
   useEffect(() => {
-    pushMarketUrl(selectedMarket);
-  }, [selectedMarket]);
+    if (currentPage === 'trade') {
+      pushPageUrl('trade', selectedMarket);
+    }
+  }, [selectedMarket, currentPage]);
 
   // Mobile view tab: which panel to show on small screens
   type MobileView = 'chart' | 'book' | 'trade' | 'account';
@@ -119,22 +151,27 @@ function TradingApp() {
     <div className="h-screen w-screen max-w-[100vw] flex flex-col overflow-x-hidden bg-drift-bg">
       <Header
         currentPage={currentPage}
-        onNavigate={setCurrentPage}
+        onNavigate={navigateTo}
         onSwitchAccount={handleSwitchAccount}
       />
 
-      {currentPage === 'learn' ? (
-        <InfoPage onBack={() => setCurrentPage('trade')} />
+      {currentPage === 'home' ? (
+        <LandingPage
+          onSelectPerps={() => navigateTo('trade')}
+          onSelectPrediction={() => navigateTo('prediction')}
+        />
+      ) : currentPage === 'learn' ? (
+        <InfoPage onBack={() => navigateTo('trade')} />
       ) : currentPage === 'prediction' ? (
-        <PredictionPage onBack={() => setCurrentPage('trade')} />
+        <PredictionPage onBack={() => navigateTo('home')} />
       ) : currentPage === 'insurance' ? (
-        <InsuranceFundPage onBack={() => setCurrentPage('trade')} />
+        <InsuranceFundPage onBack={() => navigateTo('trade')} />
       ) : currentPage === 'positions' ? (
-        <LivePositionsPage onBack={() => setCurrentPage('trade')} />
+        <LivePositionsPage onBack={() => navigateTo('trade')} />
       ) : currentPage === 'user' ? (
         <UserManagement
           forceRefresh={forceRefresh}
-          onBack={() => setCurrentPage('trade')}
+          onBack={() => navigateTo('trade')}
           trading={trading}
         />
       ) : (
@@ -227,7 +264,7 @@ function TradingApp() {
                 <TradeForm
                   trading={trading}
                   initialLimitPrice={limitPrice}
-                  onSwitchToAccount={() => setCurrentPage('user')}
+                  onSwitchToAccount={() => navigateTo('user')}
                 />
               </div>
             </div>
@@ -247,7 +284,6 @@ function TradingApp() {
       <nav className="sm:hidden shrink-0 flex items-center border-t border-drift-border bg-drift-panel">
         {([
           { page: 'trade' as Page, label: 'Trade', icon: ArrowRightLeft },
-          { page: 'prediction' as Page, label: 'Predict', icon: Timer },
           { page: 'positions' as Page, label: 'Positions', icon: BarChart2 },
           { page: 'insurance' as Page, label: 'Insurance', icon: Shield },
           { page: 'user' as Page, label: 'Account', icon: WalletIcon },
@@ -258,7 +294,7 @@ function TradingApp() {
           return (
             <button
               key={t.page}
-              onClick={() => setCurrentPage(t.page)}
+              onClick={() => navigateTo(t.page)}
               className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors ${
                 active ? 'text-accent' : 'text-txt-3'
               }`}
