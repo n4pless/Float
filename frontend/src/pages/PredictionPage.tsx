@@ -163,7 +163,7 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
 
   return (
     <div
-      className={`w-[340px] sm:w-[370px] shrink-0 rounded-2xl overflow-hidden snap-center flex flex-col transition-all duration-300 ${
+      className={`w-[300px] sm:w-[370px] shrink-0 rounded-2xl overflow-hidden snap-center flex flex-col transition-all duration-300 ${
         isLiveGlow
           ? liveGlowClass
           : isNext
@@ -719,8 +719,8 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
             </div>
           </div>
 
-          {/* Centre: Nav Arrows */}
-          <div className="flex items-center gap-3">
+          {/* Centre: Nav Arrows (hidden on mobile — swipe instead) */}
+          <div className="hidden sm:flex items-center gap-3">
             <button
               onClick={() => scroll('left')}
               className="w-9 h-9 rounded-full flex items-center justify-center text-[#8C8CA1] hover:text-[#F4EEFF] transition-all hover:scale-105"
@@ -753,7 +753,7 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
                 <span className="text-[14px] font-bold font-mono tabular-nums" style={{ color: C.text }}>
                   {fmt(timeRemainingMs)}
                 </span>
-                <span className="text-[10px] font-semibold text-[#8C8CA1]">
+                <span className="text-[10px] font-semibold text-[#8C8CA1] hidden sm:inline">
                   {Math.floor((game?.intervalSeconds ?? 300) / 60)}m
                 </span>
               </div>
@@ -831,7 +831,7 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
             </div>
           ) : (
             <>
-              <div className="shrink-0 w-[calc(50vw-170px)] sm:w-[calc(50vw-185px)]" aria-hidden />
+              <div className="shrink-0 w-[calc(50vw-150px)] sm:w-[calc(50vw-185px)]" aria-hidden />
               {rounds.map(r => (
                 <RoundCard
                   key={r.epoch}
@@ -848,7 +848,7 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
               {/* ── Upcoming empty card ── */}
               {rounds.length > 0 && (
                 <div
-                  className="w-[340px] sm:w-[370px] shrink-0 rounded-2xl overflow-hidden snap-center flex flex-col border border-white/[0.06] opacity-40"
+                  className="w-[300px] sm:w-[370px] shrink-0 rounded-2xl overflow-hidden snap-center flex flex-col border border-white/[0.06] opacity-40"
                   style={{ background: C.cardDark }}
                 >
                   {/* UP banner placeholder */}
@@ -882,7 +882,7 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
                 </div>
               )}
 
-              <div className="shrink-0 w-[calc(50vw-170px)] sm:w-[calc(50vw-185px)]" aria-hidden />
+              <div className="shrink-0 w-[calc(50vw-150px)] sm:w-[calc(50vw-185px)]" aria-hidden />
             </>
           )}
         </div>
@@ -893,9 +893,9 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
         {showHistory ? (
           <HistoryPanel rounds={rounds} bets={myBets} onClaim={handleClaim} />
         ) : (
-          <div className="flex items-center justify-between px-5 sm:px-6 py-3">
+          <div className="flex items-center justify-between px-3 sm:px-6 py-3">
             {/* Left: Stats */}
-            <div className="flex items-center gap-6 sm:gap-8">
+            <div className="flex items-center gap-3 sm:gap-8 overflow-x-auto scrollbar-hide">
               <StatPill label="Rounds" value={String(myBets.length)} />
               <StatPill label="W / L" value={`${wins} / ${losses}`} color={wins > losses ? C.up : losses > wins ? C.down : undefined} />
               <StatPill label="Wagered" value={totalBetSol > 0 ? `${fmtSol(totalBetSol)} SOL` : '—'} />
