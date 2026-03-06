@@ -1,19 +1,19 @@
 /**
- * PredictionPage — Premium on-chain SOL/USD prediction market.
+ * PredictionPage — PancakeSwap-style SOL/USD prediction market.
  *
- * Immersive full-screen experience with:
- *   - Glassmorphism top bar with back navigation, live price, countdown
- *   - PancakeSwap-style horizontal card carousel
- *   - Polished card design with glow effects and smooth transitions
- *   - Stats dashboard in bottom bar
- *   - Slide-up history panel
+ * Matches PancakeSwap's BNB Prediction UI with:
+ *   - Dark purple/blue gradient background (#27262C → #1E1D2B)
+ *   - Horizontal scrollable card carousel with snap
+ *   - Teal UP (#31D0AA) / Pink DOWN (#ED4B9E) colour scheme
+ *   - Purple glowing LIVE card border (#7645D9)
+ *   - Real-time SOL price, countdown, oracle badge
  */
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import {
   ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Clock,
   Trophy, Lock, CheckCircle2, XCircle, Loader2,
-  History, Flame, ArrowLeft, Zap, TrendingUp, Award, Timer,
-  Home, Wallet, CircleDollarSign, BarChart3,
+  History, Flame, ArrowLeft, Zap, TrendingUp, Timer,
+  HelpCircle, Settings, CircleDollarSign, BarChart3,
 } from 'lucide-react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
@@ -21,22 +21,48 @@ import { usePredictionStore, type DisplayRound, type DisplayBet, type RoundStatu
 import { PRICE_PRECISION } from '../prediction/client';
 import { toast } from 'sonner';
 
-/* ─── Solana Logo ─────────────────────────────────── */
+/* ═══ PancakeSwap Colour Palette ═══ */
+const C = {
+  up: '#31D0AA',
+  upDark: '#1a7a65',
+  down: '#ED4B9E',
+  downDark: '#8a2d5e',
+  purple: '#7645D9',
+  bg: '#27262C',
+  bgDark: '#1E1D2B',
+  card: '#353547',
+  cardDark: '#27262C',
+  text: '#F4EEFF',
+  muted: '#8C8CA1',
+  mutedDark: '#666680',
+  yellow: '#F0B90B',
+} as const;
+
+/* ─── Solana Logo ─── */
 const SolanaLogo: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
   <svg className={className} viewBox="0 0 397.7 311.7" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <linearGradient id="sol-grad" x1="360.879" y1="-37.455" x2="141.213" y2="383.294" gradientUnits="userSpaceOnUse">
+      <linearGradient id="sol-grad-ps" x1="360.879" y1="-37.455" x2="141.213" y2="383.294" gradientUnits="userSpaceOnUse">
         <stop offset="0" stopColor="#00FFA3" />
         <stop offset="1" stopColor="#DC1FFF" />
       </linearGradient>
     </defs>
-    <path d="M64.6 237.9c2.4-2.4 5.7-3.8 9.2-3.8h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1l62.7-62.7z" fill="url(#sol-grad)" />
-    <path d="M64.6 3.8C67.1 1.4 70.4 0 73.8 0h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1L64.6 3.8z" fill="url(#sol-grad)" />
-    <path d="M333.1 120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8 0-8.7 7-4.6 11.1l62.7 62.7c2.4 2.4 5.7 3.8 9.2 3.8h317.4c5.8 0 8.7-7 4.6-11.1l-62.7-62.7z" fill="url(#sol-grad)" />
+    <path d="M64.6 237.9c2.4-2.4 5.7-3.8 9.2-3.8h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1l62.7-62.7z" fill="url(#sol-grad-ps)" />
+    <path d="M64.6 3.8C67.1 1.4 70.4 0 73.8 0h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1L64.6 3.8z" fill="url(#sol-grad-ps)" />
+    <path d="M333.1 120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8 0-8.7 7-4.6 11.1l62.7 62.7c2.4 2.4 5.7 3.8 9.2 3.8h317.4c5.8 0 8.7-7 4.6-11.1l-62.7-62.7z" fill="url(#sol-grad-ps)" />
   </svg>
 );
 
-/* ─── Helpers ────────────────────────────────────── */
+/* ─── Pyth Logo (simple) ─── */
+const PythLogo: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
+  <svg className={className} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="32" height="32" rx="16" fill="#242235" />
+    <path d="M16 6L22 12L16 18L10 12L16 6Z" fill="#E6DAFE" />
+    <path d="M16 18L22 12V20L16 26L10 20V12L16 18Z" fill="#BB86FC" fillOpacity="0.6" />
+  </svg>
+);
+
+/* ─── Helpers ─── */
 
 function fmt(ms: number): string {
   const s = Math.max(0, Math.floor(ms / 1000));
@@ -55,28 +81,8 @@ function fmtSol(n: number): string {
 
 function priceDelta(current: number, locked: number) {
   const d = current - locked;
-  return { value: `${d >= 0 ? '+' : ''}$${Math.abs(d).toFixed(4)}`, up: d >= 0 };
+  return { value: `$${Math.abs(d).toFixed(4)}`, up: d >= 0 };
 }
-
-/* ─── Animated Progress Ring ─────────────────────── */
-
-const ProgressRing: React.FC<{ pct: number; size?: number; stroke?: number }> = ({
-  pct, size = 56, stroke = 3,
-}) => {
-  const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
-  const offset = c * (1 - Math.min(1, Math.max(0, pct)));
-  const color = pct > 0.5 ? '#4C8BF5' : pct > 0.2 ? '#f59e0b' : '#FF4D6A';
-  return (
-    <svg width={size} height={size} className="rotate-[-90deg]">
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={stroke} />
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke}
-        strokeDasharray={c} strokeDashoffset={offset} strokeLinecap="round"
-        className="transition-[stroke-dashoffset] duration-1000 ease-linear"
-        style={{ filter: `drop-shadow(0 0 6px ${color}40)` }} />
-    </svg>
-  );
-};
 
 /* ═══════════════════════════════════════════════════
    ROUND CARD — PancakeSwap Style
@@ -102,16 +108,15 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
   const isNext = status === 'next';
   const isExpired = status === 'expired';
   const isLater = status === 'later';
+  const isCalc = status === 'calculating';
+
+  const total = round.bullAmount + round.bearAmount;
+  const upMulti = total > 0 && round.bullAmount > 0 ? (total / round.bullAmount) : 0;
+  const downMulti = total > 0 && round.bearAmount > 0 ? (total / round.bearAmount) : 0;
 
   const liveDelta = isLive && round.lockPrice > 0 ? priceDelta(livePrice, round.lockPrice) : null;
   const expDelta = isExpired && round.lockPrice > 0 && round.closePrice > 0 ? priceDelta(round.closePrice, round.lockPrice) : null;
-
-  const bullPayout = round.result === 'bull' && round.payoutMultiplier ? round.payoutMultiplier.toFixed(2) : null;
-  const bearPayout = round.result === 'bear' && round.payoutMultiplier ? round.payoutMultiplier.toFixed(2) : null;
-
-  const total = round.bullAmount + round.bearAmount;
-  const bullPct = total > 0 ? Math.round((round.bullAmount / total) * 100) : 50;
-  const bearPct = 100 - bullPct;
+  const liveDir = liveDelta ? (liveDelta.up ? 'bull' : 'bear') : null;
 
   const userWon = isExpired && bet && round.result && (
     (round.result === 'bull' && bet.position === 'bull') ||
@@ -135,346 +140,341 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
     }
   };
 
-  /* Card glow / border styling based on status */
-  const cardGlow = isLive
-    ? 'shadow-[0_0_30px_rgba(76,139,245,0.12)] border-accent/50'
-    : isNext
-    ? 'shadow-[0_0_20px_rgba(155,125,255,0.08)] border-purple/40'
-    : isExpired && round.result === 'bull'
-    ? 'border-bull/25'
-    : isExpired && round.result === 'bear'
-    ? 'border-bear/25'
-    : 'border-white/[0.06]';
+  /* UP & DOWN banner highlights */
+  const upHighlight = (isExpired && round.result === 'bull') || (isLive && liveDir === 'bull');
+  const downHighlight = (isExpired && round.result === 'bear') || (isLive && liveDir === 'bear');
 
-  /* Status pill */
-  const statusConfigs: Record<string, { bg: string; text: string; label: string; Icon: React.FC<{ className?: string }>; dot: boolean }> = {
-    live: { bg: 'bg-accent/15', text: 'text-accent', label: 'LIVE', Icon: Flame, dot: true },
-    next: { bg: 'bg-purple/15', text: 'text-purple', label: 'NEXT', Icon: Zap, dot: false },
-    expired: { bg: 'bg-white/5', text: 'text-txt-3', label: 'CLOSED', Icon: CheckCircle2, dot: false },
-    calculating: { bg: 'bg-amber-400/10', text: 'text-amber-400', label: 'CALCULATING', Icon: Loader2, dot: false },
-    later: { bg: 'bg-white/5', text: 'text-txt-3', label: 'LATER', Icon: Clock, dot: false },
-  };
-  const statusConfig = statusConfigs[status] ?? statusConfigs.later;
+  /* Card classes */
+  const isLiveGlow = isLive;
+  const isMuted = isExpired || isLater;
 
   return (
-    <div className={`w-[310px] sm:w-[330px] shrink-0 rounded-2xl border ${cardGlow} bg-gradient-to-b from-[#181820] to-[#12121a] overflow-hidden transition-all duration-300 snap-center flex flex-col hover:scale-[1.01] hover:shadow-xl`}>
+    <div
+      className={`w-[290px] sm:w-[310px] shrink-0 rounded-2xl overflow-hidden snap-center flex flex-col transition-all duration-300 ${
+        isLiveGlow
+          ? 'live-card-glow border-2'
+          : isNext
+          ? 'border border-[#7645D9]/30'
+          : 'border border-white/[0.08]'
+      } ${isMuted ? 'opacity-70 hover:opacity-90' : ''}`}
+      style={{ background: C.cardDark }}
+    >
 
-      {/* ═══ UP (BULL) Section ═══ */}
-      <div className={`relative px-4 py-3 ${
-        isExpired && round.result === 'bull'
-          ? 'bg-gradient-to-r from-bull/15 to-bull/5'
-          : 'bg-gradient-to-r from-bull/8 to-transparent'
-      }`}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
-              isExpired && round.result === 'bull' ? 'bg-bull shadow-lg shadow-bull/30' : 'bg-bull/15'
-            }`}>
-              <ArrowUp className={`w-4 h-4 ${isExpired && round.result === 'bull' ? 'text-white' : 'text-bull'}`} />
-            </div>
-            <span className="text-[13px] font-bold text-bull tracking-wide">UP</span>
-            {bullPayout && (
-              <span className="text-[11px] font-bold text-bull bg-bull/10 px-2.5 py-0.5 rounded-full border border-bull/20">
-                {bullPayout}x
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {total > 0 && (
-              <span className="text-[11px] text-txt-3/70 font-mono">{bullPct}%</span>
-            )}
-            {bet?.position === 'bull' && (
-              <div className="w-5 h-5 rounded-full bg-bull flex items-center justify-center shadow-lg shadow-bull/40">
-                <CheckCircle2 className="w-3 h-3 text-white" />
-              </div>
-            )}
-          </div>
+      {/* ═══ UP (BULL) BANNER ═══ */}
+      <div
+        className={`px-4 py-2.5 flex items-center justify-between transition-colors duration-300 ${
+          upHighlight ? '' : ''
+        }`}
+        style={{
+          background: upHighlight ? C.up : C.card,
+        }}
+      >
+        <div className="flex items-center gap-2">
+          <ArrowUp className={`w-4 h-4 ${upHighlight ? 'text-[#1E1D2B]' : 'text-[#31D0AA]'}`} />
+          <span className={`text-[13px] font-bold ${upHighlight ? 'text-[#1E1D2B]' : 'text-[#31D0AA]'}`}>UP</span>
+          {bet?.position === 'bull' && (
+            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+              upHighlight ? 'bg-[#1E1D2B]/20 text-[#1E1D2B]' : 'bg-[#31D0AA]/15 text-[#31D0AA]'
+            }`}>ENTERED</span>
+          )}
         </div>
-        {/* Pool split bar */}
-        {total > 0 && (
-          <div className="mt-2 h-1 rounded-full bg-white/[0.04] overflow-hidden">
-            <div className="h-full rounded-full bg-gradient-to-r from-bull/60 to-bull/30 transition-all duration-500"
-              style={{ width: `${bullPct}%` }} />
-          </div>
-        )}
+        <span className={`text-[12px] font-semibold ${upHighlight ? 'text-[#1E1D2B]/80' : 'text-[#8C8CA1]'}`}>
+          {upMulti > 0 ? `${upMulti.toFixed(2)}x` : '-'} Payout
+        </span>
       </div>
 
-      {/* ═══ Middle Section (Round Info) ═══ */}
-      <div className="px-4 py-3.5 flex-1 min-h-[130px] flex flex-col justify-center border-y border-white/[0.04]">
+      {/* ═══ MIDDLE CONTENT ═══ */}
+      <div className="px-4 py-4 flex-1 min-h-[160px] flex flex-col" style={{ background: C.cardDark }}>
+
         {/* Status header */}
         <div className="flex items-center justify-between mb-3">
-          <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg ${statusConfig.bg}`}>
-            {statusConfig.dot && <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />}
-            <statusConfig.Icon className={`w-3 h-3 ${statusConfig.text}`} />
-            <span className={`text-[10px] font-bold tracking-widest ${statusConfig.text}`}>
-              {statusConfig.label}
+          <div className="flex items-center gap-1.5">
+            {isLive && <div className="w-2 h-2 rounded-full bg-[#31D0AA] animate-pulse" />}
+            {isNext && <div className="w-2 h-2 rounded-full bg-[#7645D9] animate-pulse" />}
+            {isCalc && <Loader2 className="w-3.5 h-3.5 text-[#F0B90B] animate-spin" />}
+            {isLater && <div className="w-2 h-2 rounded-full bg-[#8C8CA1]/40" />}
+            {isExpired && <CheckCircle2 className="w-3.5 h-3.5 text-[#8C8CA1]/40" />}
+            <span className={`text-[12px] font-bold tracking-wide ${
+              isLive ? 'text-[#31D0AA]' :
+              isNext ? 'text-[#7645D9]' :
+              isCalc ? 'text-[#F0B90B]' :
+              'text-[#8C8CA1]'
+            }`}>
+              {isLive ? 'LIVE' : isNext ? 'Next' : isCalc ? 'Calculating' : isExpired ? 'Expired' : 'Later'}
             </span>
           </div>
-          <span className="text-[10px] text-txt-3/50 font-mono bg-white/[0.03] px-2 py-0.5 rounded">#{epoch}</span>
+          <span className="text-[11px] text-[#8C8CA1]/50 font-mono">#{epoch}</span>
         </div>
 
-        {/* LIVE: current price & locked price */}
+        {/* ── LIVE Content ── */}
         {isLive && (
-          <div className="space-y-2.5">
+          <div className="flex-1 flex flex-col justify-center space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] text-txt-3/70 uppercase tracking-wider font-medium">Last Price</span>
+              <span className="text-[10px] text-[#8C8CA1] uppercase tracking-wider font-medium">Last Price</span>
               {liveDelta && (
-                <span className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded ${
-                  liveDelta.up ? 'text-bull bg-bull/10' : 'text-bear bg-bear/10'
+                <span className={`text-[11px] font-bold font-mono px-2 py-0.5 rounded-md ${
+                  liveDelta.up ? 'text-[#31D0AA] bg-[#31D0AA]/10' : 'text-[#ED4B9E] bg-[#ED4B9E]/10'
                 }`}>
-                  {liveDelta.value}
+                  {liveDelta.up ? '↑' : '↓'} {liveDelta.value}
                 </span>
               )}
             </div>
-            <div className={`text-[26px] font-extrabold font-mono tabular-nums leading-none tracking-tight ${
-              liveDelta?.up ? 'text-bull' : liveDelta && !liveDelta.up ? 'text-bear' : 'text-txt-0'
+            <div className={`text-[28px] font-extrabold font-mono tabular-nums leading-none tracking-tight transition-colors ${
+              liveDelta?.up ? 'text-[#31D0AA]' : liveDelta && !liveDelta.up ? 'text-[#ED4B9E]' : 'text-[#F4EEFF]'
             }`}>
               {fmtPrice(livePrice, 4)}
             </div>
-            <div className="flex items-center justify-between text-[10px] mt-1">
-              <span className="text-txt-3/60">Locked Price</span>
-              <span className="text-txt-2/80 font-mono">{fmtPrice(round.lockPrice, 4)}</span>
+            <div className="space-y-1.5 pt-2">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-[#8C8CA1]">Locked Price</span>
+                <span className="text-[#F4EEFF]/70 font-mono">{fmtPrice(round.lockPrice, 4)}</span>
+              </div>
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-[#8C8CA1]">Prize Pool</span>
+                <span className="text-[#F4EEFF] font-mono font-semibold">{fmtSol(round.totalAmount)} SOL</span>
+              </div>
             </div>
-            <div className="flex items-center justify-between pt-2 border-t border-white/[0.04]">
-              <span className="text-[10px] text-txt-3/60 flex items-center gap-1">
-                <CircleDollarSign className="w-3 h-3" /> Prize Pool
-              </span>
-              <span className="text-[13px] font-bold text-txt-0 font-mono">{fmtSol(round.totalAmount)} SOL</span>
-            </div>
-          </div>
-        )}
-
-        {/* EXPIRED: closed/locked prices */}
-        {isExpired && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-[10px]">
-              <span className="text-txt-3/60">Closed Price</span>
-              <span className={`font-mono font-bold text-[13px] ${
-                round.result === 'bull' ? 'text-bull' : round.result === 'bear' ? 'text-bear' : 'text-txt-1'
-              }`}>{fmtPrice(round.closePrice, 4)}</span>
-            </div>
-            <div className="flex items-center justify-between text-[10px]">
-              <span className="text-txt-3/60">Locked Price</span>
-              <span className="text-txt-2/70 font-mono">{fmtPrice(round.lockPrice, 4)}</span>
-            </div>
-            {expDelta && (
-              <div className={`text-center text-[13px] font-bold mt-1 py-1.5 rounded-lg ${
-                expDelta.up ? 'text-bull bg-bull/8' : 'text-bear bg-bear/8'
+            {/* User bet indicator */}
+            {bet && (
+              <div className={`mt-1 flex items-center justify-between p-2.5 rounded-xl border ${
+                bet.position === 'bull' ? 'border-[#31D0AA]/15 bg-[#31D0AA]/5' : 'border-[#ED4B9E]/15 bg-[#ED4B9E]/5'
               }`}>
-                {expDelta.value}
-              </div>
-            )}
-            <div className="flex items-center justify-between pt-2 border-t border-white/[0.04]">
-              <span className="text-[10px] text-txt-3/60 flex items-center gap-1">
-                <CircleDollarSign className="w-3 h-3" /> Prize Pool
-              </span>
-              <span className="text-[12px] font-bold text-txt-0 font-mono">{fmtSol(round.totalAmount)} SOL</span>
-            </div>
-          </div>
-        )}
-
-        {/* NEXT: accepting bets — direction chooser */}
-        {isNext && !betDir && !bet && (
-          <div className="text-center space-y-3 py-1">
-            <div className="w-10 h-10 rounded-xl bg-purple/10 border border-purple/20 flex items-center justify-center mx-auto">
-              <Lock className="w-5 h-5 text-purple/60" />
-            </div>
-            <p className="text-[12px] text-purple font-semibold">Place your prediction</p>
-            <div className="flex gap-2.5">
-              <button onClick={() => setBetDir('bull')}
-                className="flex-1 py-3 rounded-xl bg-bull/8 hover:bg-bull/15 border border-bull/15 hover:border-bull/40 text-bull font-bold text-[13px] transition-all flex items-center justify-center gap-2 active:scale-[0.97] group">
-                <ArrowUp className="w-4 h-4 group-hover:translate-y-[-1px] transition-transform" /> UP
-              </button>
-              <button onClick={() => setBetDir('bear')}
-                className="flex-1 py-3 rounded-xl bg-bear/8 hover:bg-bear/15 border border-bear/15 hover:border-bear/40 text-bear font-bold text-[13px] transition-all flex items-center justify-center gap-2 active:scale-[0.97] group">
-                <ArrowDown className="w-4 h-4 group-hover:translate-y-[1px] transition-transform" /> DOWN
-              </button>
-            </div>
-            {round.totalAmount > 0 && (
-              <div className="text-[10px] text-txt-3/60">
-                Prize Pool: <span className="text-txt-1 font-mono font-bold">{fmtSol(round.totalAmount)} SOL</span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* NEXT: bet amount form */}
-        {isNext && betDir && !bet && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${
-                  betDir === 'bull' ? 'bg-bull/15' : 'bg-bear/15'
-                }`}>
-                  {betDir === 'bull'
-                    ? <ArrowUp className="w-3.5 h-3.5 text-bull" />
-                    : <ArrowDown className="w-3.5 h-3.5 text-bear" />}
+                <div className="flex items-center gap-2">
+                  {bet.position === 'bull'
+                    ? <ArrowUp className="w-3.5 h-3.5 text-[#31D0AA]" />
+                    : <ArrowDown className="w-3.5 h-3.5 text-[#ED4B9E]" />}
+                  <span className="text-[12px] font-semibold text-[#F4EEFF]">{fmtSol(bet.amount)} SOL</span>
                 </div>
-                <span className={`text-[12px] font-bold ${betDir === 'bull' ? 'text-bull' : 'text-bear'}`}>
-                  {betDir === 'bull' ? 'Predict UP' : 'Predict DOWN'}
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  liveDelta
+                    ? (bet.position === 'bull'
+                      ? (liveDelta.up ? 'text-[#31D0AA] bg-[#31D0AA]/10' : 'text-[#ED4B9E] bg-[#ED4B9E]/10')
+                      : (liveDelta.up ? 'text-[#ED4B9E] bg-[#ED4B9E]/10' : 'text-[#31D0AA] bg-[#31D0AA]/10'))
+                    : 'text-[#8C8CA1]'
+                }`}>
+                  {liveDelta ? ((bet.position === 'bull' ? liveDelta.up : !liveDelta.up) ? 'Winning ✓' : 'Losing') : '...'}
                 </span>
               </div>
-              <button onClick={() => setBetDir(null)}
-                className="w-6 h-6 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] flex items-center justify-center text-txt-3 hover:text-txt-1 transition-colors text-[11px]">
+            )}
+          </div>
+        )}
+
+        {/* ── EXPIRED Content ── */}
+        {isExpired && (
+          <div className="flex-1 flex flex-col justify-center space-y-2">
+            <div className="text-[10px] text-[#8C8CA1] uppercase tracking-wider font-medium">Closed Price</div>
+            <div className={`text-[24px] font-extrabold font-mono tabular-nums leading-none ${
+              round.result === 'bull' ? 'text-[#31D0AA]' : round.result === 'bear' ? 'text-[#ED4B9E]' : 'text-[#F4EEFF]'
+            }`}>
+              {fmtPrice(round.closePrice, 4)}
+            </div>
+            {expDelta && (
+              <span className={`inline-flex self-start text-[11px] font-bold font-mono px-2 py-0.5 rounded-md ${
+                expDelta.up ? 'text-[#31D0AA] bg-[#31D0AA]/10' : 'text-[#ED4B9E] bg-[#ED4B9E]/10'
+              }`}>
+                {expDelta.up ? '↑' : '↓'} {expDelta.value}
+              </span>
+            )}
+            <div className="space-y-1.5 pt-1">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-[#8C8CA1]">Locked Price</span>
+                <span className="text-[#F4EEFF]/60 font-mono">{fmtPrice(round.lockPrice, 4)}</span>
+              </div>
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-[#8C8CA1]">Prize Pool</span>
+                <span className="text-[#F4EEFF]/60 font-mono">{fmtSol(round.totalAmount)} SOL</span>
+              </div>
+            </div>
+            {/* Collect / Lost / Collected badges */}
+            {claimable && (
+              <button onClick={() => onClaim(epoch)}
+                className="mt-1 w-full py-2.5 rounded-xl text-white font-bold text-[13px] flex items-center justify-center gap-2 hover:brightness-110 active:scale-[0.97] transition-all"
+                style={{ background: C.up }}>
+                <Trophy className="w-4 h-4" /> Collect {fmtSol(bet!.payout)} SOL
+              </button>
+            )}
+            {userLost && !bet?.claimed && (
+              <div className="mt-1 flex items-center justify-center gap-2 p-2 rounded-xl bg-[#ED4B9E]/5 border border-[#ED4B9E]/10">
+                <XCircle className="w-3.5 h-3.5 text-[#ED4B9E]/60" />
+                <span className="text-[11px] text-[#ED4B9E]/80">-{fmtSol(bet!.amount)} SOL</span>
+              </div>
+            )}
+            {bet?.claimed && (
+              <div className="mt-1 flex items-center justify-center gap-2 p-2 rounded-xl bg-[#31D0AA]/5 border border-[#31D0AA]/10">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#31D0AA]/70" />
+                <span className="text-[11px] text-[#31D0AA]/80">Collected</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── NEXT Content — Direction Chooser ── */}
+        {isNext && !betDir && !bet && (
+          <div className="flex-1 flex flex-col justify-center space-y-3">
+            <div className="text-center">
+              <div className="text-[11px] text-[#8C8CA1] mb-1">Prize Pool</div>
+              <div className="text-[20px] font-bold text-[#F4EEFF] font-mono">{fmtSol(round.totalAmount)} SOL</div>
+            </div>
+            <button
+              onClick={() => setBetDir('bull')}
+              className="w-full py-3.5 rounded-xl font-bold text-[14px] text-white transition-all active:scale-[0.97] hover:brightness-110 flex items-center justify-center gap-2"
+              style={{ background: C.up }}
+            >
+              Enter UP <ArrowUp className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setBetDir('bear')}
+              className="w-full py-3.5 rounded-xl font-bold text-[14px] text-white transition-all active:scale-[0.97] hover:brightness-110 flex items-center justify-center gap-2"
+              style={{ background: C.down }}
+            >
+              Enter DOWN <ArrowDown className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* ── NEXT Content — Bet Amount Form ── */}
+        {isNext && betDir && !bet && (
+          <div className="flex-1 flex flex-col justify-center space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {betDir === 'bull'
+                  ? <ArrowUp className="w-4 h-4 text-[#31D0AA]" />
+                  : <ArrowDown className="w-4 h-4 text-[#ED4B9E]" />}
+                <span className={`text-[13px] font-bold ${betDir === 'bull' ? 'text-[#31D0AA]' : 'text-[#ED4B9E]'}`}>
+                  Enter {betDir === 'bull' ? 'UP' : 'DOWN'}
+                </span>
+              </div>
+              <button
+                onClick={() => setBetDir(null)}
+                className="w-6 h-6 rounded-lg flex items-center justify-center text-[#8C8CA1] hover:text-[#F4EEFF] transition-colors text-[12px]"
+                style={{ background: 'rgba(255,255,255,0.06)' }}
+              >
                 ✕
               </button>
             </div>
 
             <div className="relative">
-              <input type="number" value={betAmt} onChange={e => setBetAmt(e.target.value)}
+              <input
+                type="number" value={betAmt} onChange={e => setBetAmt(e.target.value)}
                 placeholder="0.0" autoFocus step="0.01" min="0.001"
                 onKeyDown={e => { if (e.key === 'Enter') submit(betDir); }}
-                className="w-full pl-3 pr-14 py-3 bg-white/[0.03] border border-white/[0.08] rounded-xl text-[15px] text-txt-0 font-mono outline-none focus:border-accent/40 focus:bg-white/[0.05] placeholder:text-txt-3/30 transition-all" />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-txt-3/60 font-bold bg-white/[0.04] px-2 py-0.5 rounded">SOL</span>
+                className="w-full pl-3 pr-14 py-3 rounded-xl text-[15px] font-mono outline-none transition-all placeholder:text-[#8C8CA1]/30"
+                style={{
+                  background: C.bgDark,
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  color: C.text,
+                }}
+              />
+              <span
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold px-2 py-0.5 rounded"
+                style={{ background: 'rgba(255,255,255,0.04)', color: C.muted }}
+              >
+                SOL
+              </span>
             </div>
 
             <div className="flex gap-1.5">
               {[0.01, 0.05, 0.1, 0.25, 0.5, 1].map(a => (
-                <button key={a} onClick={() => setBetAmt(a.toString())}
-                  className={`flex-1 py-1.5 rounded-lg text-[9px] font-semibold transition-all ${
+                <button
+                  key={a}
+                  onClick={() => setBetAmt(a.toString())}
+                  className={`flex-1 py-1.5 rounded-lg text-[9px] font-semibold transition-all border ${
                     betAmt === a.toString()
-                      ? 'bg-accent/15 text-accent border border-accent/25 shadow-sm shadow-accent/10'
-                      : 'bg-white/[0.03] text-txt-3/60 hover:text-txt-1 hover:bg-white/[0.06] border border-transparent'
-                  }`}>
+                      ? 'border-[#7645D9] text-[#F4EEFF]'
+                      : 'border-transparent text-[#8C8CA1] hover:text-[#F4EEFF]'
+                  }`}
+                  style={{
+                    background: betAmt === a.toString() ? 'rgba(118,69,217,0.15)' : 'rgba(255,255,255,0.04)',
+                  }}
+                >
                   {a}
                 </button>
               ))}
             </div>
 
-            <button onClick={() => submit(betDir)} disabled={placing || !betAmt || parseFloat(betAmt) <= 0}
-              className={`w-full py-3 rounded-xl font-bold text-[13px] text-white transition-all disabled:opacity-25 active:scale-[0.97] ${
-                betDir === 'bull'
-                  ? 'bg-gradient-to-r from-bull to-green-500/80 hover:shadow-lg hover:shadow-bull/25'
-                  : 'bg-gradient-to-r from-bear to-rose-500/80 hover:shadow-lg hover:shadow-bear/25'
-              }`}>
+            <button
+              onClick={() => submit(betDir)}
+              disabled={placing || !betAmt || parseFloat(betAmt) <= 0}
+              className="w-full py-3 rounded-xl font-bold text-[14px] text-white transition-all disabled:opacity-30 active:scale-[0.97] hover:brightness-110"
+              style={{ background: betDir === 'bull' ? C.up : C.down }}
+            >
               {placing ? (
                 <span className="flex items-center justify-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin" /> Placing...
                 </span>
-              ) : !walletConnected ? 'Connect Wallet' : `Predict ${betDir.toUpperCase()}`}
+              ) : !walletConnected ? 'Connect Wallet' : `Confirm ${betDir === 'bull' ? 'UP' : 'DOWN'}`}
             </button>
           </div>
         )}
 
-        {/* NEXT: already bet */}
+        {/* ── NEXT Content — Already Entered ── */}
         {isNext && bet && (
-          <div className="text-center space-y-2.5 py-2">
-            <div className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl border ${
-              bet.position === 'bull' ? 'bg-bull/5 border-bull/15' : 'bg-bear/5 border-bear/15'
+          <div className="flex-1 flex flex-col items-center justify-center space-y-2">
+            <div className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border ${
+              bet.position === 'bull' ? 'border-[#31D0AA]/20 bg-[#31D0AA]/5' : 'border-[#ED4B9E]/20 bg-[#ED4B9E]/5'
             }`}>
               {bet.position === 'bull'
-                ? <ArrowUp className="w-4 h-4 text-bull" />
-                : <ArrowDown className="w-4 h-4 text-bear" />}
-              <span className="text-[13px] font-bold text-txt-0">
-                {bet.position.toUpperCase()} — {fmtSol(bet.amount)} SOL
+                ? <ArrowUp className="w-4 h-4 text-[#31D0AA]" />
+                : <ArrowDown className="w-4 h-4 text-[#ED4B9E]" />}
+              <span className="text-[13px] font-bold text-[#F4EEFF]">
+                {bet.position === 'bull' ? 'UP' : 'DOWN'} — {fmtSol(bet.amount)} SOL
               </span>
             </div>
-            <p className="text-[10px] text-accent font-medium flex items-center justify-center gap-1">
-              <CheckCircle2 className="w-3 h-3" /> Prediction placed
-            </p>
-          </div>
-        )}
-
-        {/* LIVE: user bet indicator */}
-        {isLive && bet && (
-          <div className={`mt-2.5 flex items-center justify-between p-3 rounded-xl border backdrop-blur-sm ${
-            bet.position === 'bull' ? 'bg-bull/5 border-bull/15' : 'bg-bear/5 border-bear/15'
-          }`}>
-            <div className="flex items-center gap-2">
-              {bet.position === 'bull'
-                ? <ArrowUp className="w-3.5 h-3.5 text-bull" />
-                : <ArrowDown className="w-3.5 h-3.5 text-bear" />}
-              <span className="text-[12px] font-semibold text-txt-0">{fmtSol(bet.amount)} SOL</span>
+            <div className="flex items-center gap-1 text-[#31D0AA] text-[11px] font-semibold">
+              <CheckCircle2 className="w-3 h-3" /> ENTERED
             </div>
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-              liveDelta
-                ? (bet.position === 'bull' ? (liveDelta.up ? 'text-bull bg-bull/10' : 'text-bear bg-bear/10') : (liveDelta.up ? 'text-bear bg-bear/10' : 'text-bull bg-bull/10'))
-                : 'text-txt-3'
-            }`}>
-              {liveDelta ? ((bet.position === 'bull' ? liveDelta.up : !liveDelta.up) ? 'Winning' : 'Losing') : '...'}
-            </span>
           </div>
         )}
 
-        {/* EXPIRED: claim / result */}
-        {isExpired && claimable && (
-          <div className="mt-2.5">
-            <button onClick={() => onClaim(epoch)}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-bull via-emerald-500 to-bull text-white font-bold text-[13px] flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-bull/25 active:scale-[0.97] transition-all">
-              <Trophy className="w-4 h-4" />
-              Collect {fmtSol(bet!.payout)} SOL
-            </button>
-          </div>
-        )}
-        {isExpired && userLost && !bet?.claimed && (
-          <div className="mt-2.5 flex items-center justify-center gap-2 p-2.5 rounded-xl bg-bear/5 border border-bear/10">
-            <XCircle className="w-3.5 h-3.5 text-bear/60" />
-            <span className="text-[11px] text-bear/80">Lost {fmtSol(bet!.amount)} SOL</span>
-          </div>
-        )}
-        {isExpired && bet?.claimed && (
-          <div className="mt-2.5 flex items-center justify-center gap-2 p-2.5 rounded-xl bg-bull/5 border border-bull/10">
-            <CheckCircle2 className="w-3.5 h-3.5 text-bull/70" />
-            <span className="text-[11px] text-bull/80">Collected</span>
+        {/* ── CALCULATING Content ── */}
+        {isCalc && (
+          <div className="flex-1 flex flex-col items-center justify-center space-y-3">
+            <Loader2 className="w-8 h-8 animate-spin" style={{ color: C.yellow }} />
+            <p className="text-[13px] font-semibold" style={{ color: C.yellow }}>Calculating...</p>
           </div>
         )}
 
-        {/* LATER */}
+        {/* ── LATER Content ── */}
         {isLater && (
-          <div className="text-center py-8">
-            <div className="w-10 h-10 rounded-xl bg-white/[0.03] border border-white/[0.05] flex items-center justify-center mx-auto mb-2">
-              <Clock className="w-5 h-5 text-txt-3/30" />
+          <div className="flex-1 flex flex-col items-center justify-center space-y-2 text-center">
+            <Clock className="w-8 h-8 text-[#8C8CA1]/25" />
+            <div>
+              <p className="text-[12px] text-[#8C8CA1]/50 font-medium">Entry starts</p>
+              <p className="text-[16px] text-[#8C8CA1] font-mono font-bold mt-0.5">
+                ~{fmt(Math.max(0, round.lockTimestamp * 1000 - Date.now()))}
+              </p>
             </div>
-            <p className="text-[11px] text-txt-3/40">Upcoming</p>
           </div>
         )}
       </div>
 
-      {/* ═══ DOWN (BEAR) Section ═══ */}
-      <div className={`relative px-4 py-3 ${
-        isExpired && round.result === 'bear'
-          ? 'bg-gradient-to-r from-bear/15 to-bear/5'
-          : 'bg-gradient-to-r from-bear/8 to-transparent'
-      }`}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
-              isExpired && round.result === 'bear' ? 'bg-bear shadow-lg shadow-bear/30' : 'bg-bear/15'
-            }`}>
-              <ArrowDown className={`w-4 h-4 ${isExpired && round.result === 'bear' ? 'text-white' : 'text-bear'}`} />
-            </div>
-            <span className="text-[13px] font-bold text-bear tracking-wide">DOWN</span>
-            {bearPayout && (
-              <span className="text-[11px] font-bold text-bear bg-bear/10 px-2.5 py-0.5 rounded-full border border-bear/20">
-                {bearPayout}x
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {total > 0 && (
-              <span className="text-[11px] text-txt-3/70 font-mono">{bearPct}%</span>
-            )}
-            {bet?.position === 'bear' && (
-              <div className="w-5 h-5 rounded-full bg-bear flex items-center justify-center shadow-lg shadow-bear/40">
-                <CheckCircle2 className="w-3 h-3 text-white" />
-              </div>
-            )}
-          </div>
+      {/* ═══ DOWN (BEAR) BANNER ═══ */}
+      <div
+        className="px-4 py-2.5 flex items-center justify-between transition-colors duration-300"
+        style={{
+          background: downHighlight ? C.down : C.card,
+        }}
+      >
+        <div className="flex items-center gap-2">
+          <ArrowDown className={`w-4 h-4 ${downHighlight ? 'text-white' : 'text-[#ED4B9E]'}`} />
+          <span className={`text-[13px] font-bold ${downHighlight ? 'text-white' : 'text-[#ED4B9E]'}`}>DOWN</span>
+          {bet?.position === 'bear' && (
+            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+              downHighlight ? 'bg-white/20 text-white' : 'bg-[#ED4B9E]/15 text-[#ED4B9E]'
+            }`}>ENTERED</span>
+          )}
         </div>
-        {/* Pool split bar */}
-        {total > 0 && (
-          <div className="mt-2 h-1 rounded-full bg-white/[0.04] overflow-hidden flex justify-end">
-            <div className="h-full rounded-full bg-gradient-to-l from-bear/60 to-bear/30 transition-all duration-500"
-              style={{ width: `${bearPct}%` }} />
-          </div>
-        )}
+        <span className={`text-[12px] font-semibold ${downHighlight ? 'text-white/80' : 'text-[#8C8CA1]'}`}>
+          {downMulti > 0 ? `${downMulti.toFixed(2)}x` : '-'} Payout
+        </span>
       </div>
     </div>
   );
 };
 
+
 /* ═══════════════════════════════════════════════════
-   PREDICTION PAGE
+   PREDICTION PAGE — Main Layout
    ═══════════════════════════════════════════════════ */
 
 interface Props { onBack?: () => void; }
@@ -535,8 +535,8 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
     if (!scrollRef.current || rounds.length === 0) return;
     const idx = rounds.findIndex(r => r.status === 'live');
     if (idx < 0) return;
-    const gap = 20; // gap-5 = 1.25rem = 20px
-    const cardW = window.innerWidth >= 640 ? 330 : 310; // sm:w-[330px] / w-[310px]
+    const gap = 16;
+    const cardW = window.innerWidth >= 640 ? 310 : 290;
     const containerW = scrollRef.current.offsetWidth;
     const scrollLeft = idx * (cardW + gap) - (containerW / 2) + (cardW / 2);
     scrollRef.current.scrollTo({ left: Math.max(0, scrollLeft), behavior });
@@ -547,7 +547,6 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
     const liveEpoch = rounds.find(r => r.status === 'live')?.epoch ?? null;
     if (liveEpoch !== null && liveEpoch !== lastCenteredEpoch.current) {
       lastCenteredEpoch.current = liveEpoch;
-      // Small delay to let DOM render new cards
       requestAnimationFrame(() => scrollToLive('smooth'));
     }
   }, [rounds, scrollToLive]);
@@ -560,7 +559,7 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
   }, [rounds.length > 0]);
 
   const scroll = (d: 'left' | 'right') => {
-    scrollRef.current?.scrollBy({ left: d === 'left' ? -350 : 350, behavior: 'smooth' });
+    scrollRef.current?.scrollBy({ left: d === 'left' ? -330 : 330, behavior: 'smooth' });
   };
 
   const handleBet = useCallback(async (epoch: number, dir: 'bull' | 'bear', sol: number) => {
@@ -599,76 +598,127 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
   const intervalMs = (game?.intervalSeconds ?? 300) * 1000;
   const pct = liveRound ? Math.max(0, (liveRound.closeTimestamp * 1000 - Date.now()) / intervalMs) : 0;
 
-  // Not initialized yet
   const notReady = !game || !game.genesisStart;
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 bg-drift-bg overflow-hidden relative">
+    <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.bgDark} 100%)` }}>
 
-      {/* ═══ Background gradient accents ═══ */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-0 left-1/4 w-[500px] h-[300px] bg-accent/[0.03] rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 right-1/4 w-[400px] h-[250px] bg-purple/[0.03] rounded-full blur-[100px]" />
-      </div>
+      {/* ═══ Inject LIVE glow animation ═══ */}
+      <style>{`
+        @keyframes live-glow {
+          0%, 100% { box-shadow: 0 0 15px rgba(118,69,217,0.4), 0 0 30px rgba(118,69,217,0.15); border-color: #7645D9; }
+          50% { box-shadow: 0 0 25px rgba(118,69,217,0.6), 0 0 50px rgba(118,69,217,0.25); border-color: #9a6ef5; }
+        }
+        .live-card-glow {
+          animation: live-glow 2s ease-in-out infinite;
+          border-color: #7645D9;
+        }
+        .price-flash {
+          animation: price-flash 0.3s ease-out;
+        }
+        @keyframes price-flash {
+          0% { background: rgba(244,238,255,0.08); }
+          100% { background: transparent; }
+        }
+      `}</style>
 
       {/* ═══ TOP BAR ═══ */}
-      <div className="shrink-0 relative z-10 border-b border-white/[0.06] bg-drift-panel/60 backdrop-blur-xl">
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5">
-          {/* Left: Back + Branding */}
+      <div className="shrink-0 relative z-10 border-b border-white/[0.06]" style={{ background: `${C.cardDark}e6` }}>
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3">
+
+          {/* Left: Back + SOL Price Ticker */}
           <div className="flex items-center gap-3">
             {onBack && (
-              <button onClick={onBack}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] text-txt-2 hover:text-txt-0 transition-all group">
-                <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+              <button
+                onClick={onBack}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl hover:brightness-125 transition-all text-[#8C8CA1] hover:text-[#F4EEFF]"
+                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
+              >
+                <ArrowLeft className="w-4 h-4" />
                 <span className="text-[12px] font-medium hidden sm:inline">Home</span>
               </button>
             )}
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#9945FF]/20 to-[#14F195]/20 border border-white/[0.08] flex items-center justify-center shadow-lg shadow-[#9945FF]/15">
-                <SolanaLogo className="w-5 h-5" />
-              </div>
-              <div>
-                <h1 className="text-[15px] font-bold text-txt-0 flex items-center gap-2">
-                  SOL Prediction
-                  <span className="text-[8px] bg-bull/10 text-bull px-1.5 py-0.5 rounded font-bold uppercase tracking-wider border border-bull/15">Live</span>
-                </h1>
-                <p className="text-[10px] text-txt-3/60 mt-0.5">Predict SOL price — win from the pool</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Right: SOL Price + Timer + History + Wallet */}
-          <div className="flex items-center gap-2.5">
-            {/* SOL Price Pill */}
-            <div className="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+            {/* SOL Price Ticker */}
+            <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
               <SolanaLogo className="w-5 h-5" />
-              <span className="text-[15px] font-bold text-txt-0 font-mono tabular-nums">
+              <span className="text-[15px] font-bold font-mono tabular-nums" style={{ color: C.text }}>
                 {livePrice > 0 ? `$${livePrice.toFixed(2)}` : '—'}
               </span>
             </div>
+          </div>
 
-            {/* Timer ring */}
+          {/* Centre: Nav Arrows */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => scroll('left')}
+              className="w-9 h-9 rounded-full flex items-center justify-center text-[#8C8CA1] hover:text-[#F4EEFF] transition-all hover:scale-105"
+              style={{ background: 'rgba(255,255,255,0.06)' }}
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => scrollToLive('smooth')}
+              className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:scale-105"
+              style={{ background: 'rgba(118,69,217,0.15)', color: C.purple }}
+            >
+              <Flame className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => scroll('right')}
+              className="w-9 h-9 rounded-full flex items-center justify-center text-[#8C8CA1] hover:text-[#F4EEFF] transition-all hover:scale-105"
+              style={{ background: 'rgba(255,255,255,0.06)' }}
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Right: Timer + Icons + Wallet */}
+          <div className="flex items-center gap-2">
+            {/* Countdown Timer */}
             {liveRound && timeRemainingMs > 0 && (
-              <div className="relative flex items-center justify-center">
-                <ProgressRing pct={pct} />
-                <span className="absolute text-[11px] font-bold font-mono tabular-nums text-txt-0">
+              <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <Timer className="w-3.5 h-3.5 text-[#8C8CA1]" />
+                <span className="text-[14px] font-bold font-mono tabular-nums" style={{ color: C.text }}>
                   {fmt(timeRemainingMs)}
+                </span>
+                <span className="text-[10px] font-semibold text-[#8C8CA1]">
+                  {Math.floor((game?.intervalSeconds ?? 300) / 60)}m
                 </span>
               </div>
             )}
 
-            {/* History toggle */}
-            <button onClick={() => setShowHistory(!showHistory)}
-              className={`p-2.5 rounded-xl transition-all border ${
-                showHistory
-                  ? 'bg-accent/10 text-accent border-accent/20'
-                  : 'bg-white/[0.04] text-txt-3 hover:text-txt-0 border-white/[0.06] hover:border-white/[0.1]'
-              }`}>
+            {/* History */}
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              className={`p-2.5 rounded-xl transition-all ${
+                showHistory ? 'text-[#7645D9]' : 'text-[#8C8CA1] hover:text-[#F4EEFF]'
+              }`}
+              style={{
+                background: showHistory ? 'rgba(118,69,217,0.1)' : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${showHistory ? 'rgba(118,69,217,0.2)' : 'rgba(255,255,255,0.06)'}`,
+              }}
+            >
               <History className="w-4 h-4" />
             </button>
 
-            {/* Wallet button */}
-            <div className="[&_.wallet-adapter-button]:!h-9 [&_.wallet-adapter-button]:!rounded-xl [&_.wallet-adapter-button]:!text-[12px] [&_.wallet-adapter-button]:!font-semibold [&_.wallet-adapter-button]:!bg-accent/15 [&_.wallet-adapter-button]:!border [&_.wallet-adapter-button]:!border-accent/20 [&_.wallet-adapter-button]:hover:!bg-accent/25 [&_.wallet-adapter-button]:!px-3">
+            {/* Trophy / Leaderboard */}
+            <button
+              className="hidden sm:flex p-2.5 rounded-xl text-[#8C8CA1] hover:text-[#F4EEFF] transition-all"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
+            >
+              <Trophy className="w-4 h-4" />
+            </button>
+
+            {/* Help */}
+            <button
+              className="hidden sm:flex p-2.5 rounded-xl text-[#8C8CA1] hover:text-[#F4EEFF] transition-all"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
+            >
+              <HelpCircle className="w-4 h-4" />
+            </button>
+
+            {/* Wallet */}
+            <div className="[&_.wallet-adapter-button]:!h-9 [&_.wallet-adapter-button]:!rounded-xl [&_.wallet-adapter-button]:!text-[12px] [&_.wallet-adapter-button]:!font-semibold [&_.wallet-adapter-button]:!bg-[#7645D9]/20 [&_.wallet-adapter-button]:!border [&_.wallet-adapter-button]:!border-[#7645D9]/30 [&_.wallet-adapter-button]:hover:!bg-[#7645D9]/30 [&_.wallet-adapter-button]:!px-3">
               <WalletMultiButton />
             </div>
           </div>
@@ -677,47 +727,34 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
 
       {/* ═══ CARDS CAROUSEL ═══ */}
       <div className="flex-1 flex flex-col min-h-0 relative z-10">
-        {/* Scroll arrows */}
-        <button onClick={() => scroll('left')}
-          className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-drift-panel/80 backdrop-blur-xl border border-white/[0.08] flex items-center justify-center text-txt-3 hover:text-txt-0 hover:border-white/[0.15] transition-all shadow-xl hover:shadow-2xl group">
-          <ChevronLeft className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
-        </button>
-        <button onClick={() => scroll('right')}
-          className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-drift-panel/80 backdrop-blur-xl border border-white/[0.08] flex items-center justify-center text-txt-3 hover:text-txt-0 hover:border-white/[0.15] transition-all shadow-xl hover:shadow-2xl group">
-          <ChevronRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
-        </button>
 
-        {/* Re-center on LIVE button */}
-        <button onClick={() => scrollToLive('smooth')}
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/15 backdrop-blur-xl border border-accent/20 text-accent text-[11px] font-semibold hover:bg-accent/25 transition-all shadow-lg">
-          <Flame className="w-3 h-3" /> LIVE
-        </button>
-
-        <div ref={scrollRef}
-          className="flex-1 flex items-center gap-5 px-16 overflow-x-auto scrollbar-hide snap-x snap-mandatory"
-          style={{ scrollBehavior: 'smooth' }}>
+        <div
+          ref={scrollRef}
+          className="flex-1 flex items-center gap-4 px-8 sm:px-16 overflow-x-auto scrollbar-hide snap-x snap-mandatory"
+          style={{ scrollBehavior: 'smooth' }}
+        >
 
           {notReady ? (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center space-y-4">
-                <div className="w-16 h-16 rounded-2xl bg-accent/10 border border-accent/15 flex items-center justify-center mx-auto">
-                  <Loader2 className="w-7 h-7 text-accent/50 animate-spin" />
+                <div className="w-16 h-16 rounded-2xl border flex items-center justify-center mx-auto" style={{ background: 'rgba(118,69,217,0.1)', borderColor: 'rgba(118,69,217,0.15)' }}>
+                  <Loader2 className="w-7 h-7 animate-spin" style={{ color: 'rgba(118,69,217,0.5)' }} />
                 </div>
                 <div>
-                  <p className="text-[14px] text-txt-2 font-medium">
+                  <p className="text-[14px] font-medium" style={{ color: C.muted }}>
                     {error || 'Connecting to prediction game...'}
                   </p>
-                  <p className="text-[11px] text-txt-3/40 mt-1">On-chain data loading</p>
+                  <p className="text-[11px] mt-1" style={{ color: 'rgba(140,140,161,0.4)' }}>On-chain data loading</p>
                 </div>
               </div>
             </div>
           ) : rounds.length === 0 ? (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center space-y-4">
-                <div className="w-16 h-16 rounded-2xl bg-purple/10 border border-purple/15 flex items-center justify-center mx-auto">
-                  <Loader2 className="w-7 h-7 text-purple/50 animate-spin" />
+                <div className="w-16 h-16 rounded-2xl border flex items-center justify-center mx-auto" style={{ background: 'rgba(118,69,217,0.1)', borderColor: 'rgba(118,69,217,0.15)' }}>
+                  <Loader2 className="w-7 h-7 animate-spin" style={{ color: 'rgba(118,69,217,0.5)' }} />
                 </div>
-                <p className="text-[14px] text-txt-2 font-medium">Loading rounds...</p>
+                <p className="text-[14px] font-medium" style={{ color: C.muted }}>Loading rounds...</p>
               </div>
             </div>
           ) : (
@@ -738,27 +775,32 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
       </div>
 
       {/* ═══ BOTTOM BAR ═══ */}
-      <div className="shrink-0 relative z-10 border-t border-white/[0.06] bg-drift-panel/60 backdrop-blur-xl">
+      <div className="shrink-0 relative z-10 border-t border-white/[0.06]" style={{ background: `${C.cardDark}e6` }}>
         {showHistory ? (
           <HistoryPanel rounds={rounds} bets={myBets} onClaim={handleClaim} />
         ) : (
-          <div className="flex items-center justify-between px-5 sm:px-6 py-3.5">
-            <div className="flex items-center gap-5 sm:gap-8">
-              <StatPill icon={BarChart3} label="Rounds" value={String(myBets.length)} />
-              <StatPill icon={Trophy} label="W / L" value={`${wins} / ${losses}`}
-                color={wins > losses ? 'text-bull' : losses > wins ? 'text-bear' : undefined} />
-              <StatPill icon={CircleDollarSign} label="Wagered" value={totalBetSol > 0 ? `${fmtSol(totalBetSol)} SOL` : '—'} />
-              <StatPill icon={TrendingUp} label="P&L" value={`${net >= 0 ? '+' : ''}${fmtSol(Math.abs(net))} SOL`}
-                color={net >= 0 ? 'text-bull' : 'text-bear'} />
+          <div className="flex items-center justify-between px-5 sm:px-6 py-3">
+            {/* Left: Stats */}
+            <div className="flex items-center gap-6 sm:gap-8">
+              <StatPill label="Rounds" value={String(myBets.length)} />
+              <StatPill label="W / L" value={`${wins} / ${losses}`} color={wins > losses ? C.up : losses > wins ? C.down : undefined} />
+              <StatPill label="Wagered" value={totalBetSol > 0 ? `${fmtSol(totalBetSol)} SOL` : '—'} />
+              <StatPill label="P&L" value={`${net >= 0 ? '+' : ''}${fmtSol(Math.abs(net))} SOL`} color={net >= 0 ? C.up : C.down} />
             </div>
-            <div className="hidden sm:flex items-center gap-3 text-[10px] text-txt-3/50">
+
+            {/* Right: Oracle Badge */}
+            <div className="hidden sm:flex items-center gap-2 text-[10px]" style={{ color: 'rgba(140,140,161,0.5)' }}>
               <span className="flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-bull animate-pulse" /> On-chain
+                <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: C.up }} />
+                On-chain
               </span>
-              <span className="w-px h-3 bg-white/[0.06]" />
-              <span>{game?.intervalSeconds ?? 300}s rounds</span>
-              <span className="w-px h-3 bg-white/[0.06]" />
-              <span>{((game?.treasuryFee ?? 300) / 100).toFixed(1)}% fee</span>
+              <span className="w-px h-3" style={{ background: 'rgba(255,255,255,0.06)' }} />
+              <span>{(game?.intervalSeconds ?? 300)}s rounds</span>
+              <span className="w-px h-3" style={{ background: 'rgba(255,255,255,0.06)' }} />
+              <div className="flex items-center gap-1">
+                <PythLogo className="w-3.5 h-3.5" />
+                <span className="font-medium">Pyth Oracle</span>
+              </div>
             </div>
           </div>
         )}
@@ -767,24 +809,20 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
   );
 };
 
-/* ─── Sub-components ─────────────────────────────── */
+
+/* ═══ Sub-components ═══ */
 
 const StatPill: React.FC<{
-  icon: React.FC<{ className?: string }>;
   label: string;
   value: string;
   color?: string;
-}> = ({ icon: Icon, label, value, color }) => (
-  <div className="flex items-center gap-2.5">
-    <div className="w-7 h-7 rounded-lg bg-white/[0.03] border border-white/[0.05] flex items-center justify-center hidden sm:flex">
-      <Icon className="w-3.5 h-3.5 text-txt-3/50" />
-    </div>
-    <div>
-      <div className="text-[9px] text-txt-3/50 uppercase tracking-widest font-medium">{label}</div>
-      <div className={`text-[14px] font-bold font-mono tabular-nums ${color ?? 'text-txt-0'}`}>{value}</div>
-    </div>
+}> = ({ label, value, color }) => (
+  <div>
+    <div className="text-[9px] uppercase tracking-widest font-medium" style={{ color: 'rgba(140,140,161,0.5)' }}>{label}</div>
+    <div className="text-[14px] font-bold font-mono tabular-nums" style={{ color: color ?? C.text }}>{value}</div>
   </div>
 );
+
 
 const HistoryPanel: React.FC<{
   rounds: DisplayRound[];
@@ -797,16 +835,16 @@ const HistoryPanel: React.FC<{
     <div className="max-h-[220px] overflow-y-auto">
       {sorted.length === 0 ? (
         <div className="text-center py-10">
-          <div className="w-12 h-12 rounded-xl bg-white/[0.03] border border-white/[0.05] flex items-center justify-center mx-auto mb-3">
-            <History className="w-5 h-5 text-txt-3/20" />
+          <div className="w-12 h-12 rounded-xl border flex items-center justify-center mx-auto mb-3" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.05)' }}>
+            <History className="w-5 h-5" style={{ color: 'rgba(140,140,161,0.2)' }} />
           </div>
-          <p className="text-[12px] text-txt-3/40">No predictions yet</p>
-          <p className="text-[10px] text-txt-3/25 mt-1">Place your first prediction to see history</p>
+          <p className="text-[12px]" style={{ color: 'rgba(140,140,161,0.4)' }}>No predictions yet</p>
+          <p className="text-[10px] mt-1" style={{ color: 'rgba(140,140,161,0.25)' }}>Place your first prediction to see history</p>
         </div>
       ) : (
         <table className="w-full text-[11px]">
-          <thead className="sticky top-0 bg-drift-panel/95 backdrop-blur-lg">
-            <tr className="text-txt-3/50 border-b border-white/[0.06]">
+          <thead className="sticky top-0" style={{ background: `${C.cardDark}f0` }}>
+            <tr style={{ color: 'rgba(140,140,161,0.5)' }} className="border-b border-white/[0.06]">
               <th className="text-left px-5 py-2.5 font-medium">Round</th>
               <th className="text-left px-2 py-2.5 font-medium">Position</th>
               <th className="text-right px-2 py-2.5 font-medium">Amount</th>
@@ -822,41 +860,44 @@ const HistoryPanel: React.FC<{
               const tie = b.payout === b.amount && b.payout > 0;
               return (
                 <tr key={b.epoch} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
-                  <td className="px-5 py-3 font-mono text-txt-2">#{b.epoch}</td>
+                  <td className="px-5 py-3 font-mono" style={{ color: C.muted }}>#{b.epoch}</td>
                   <td className="px-2 py-3">
                     <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md ${
-                      b.position === 'bull' ? 'text-bull bg-bull/8' : 'text-bear bg-bear/8'
+                      b.position === 'bull' ? 'bg-[#31D0AA]/8 text-[#31D0AA]' : 'bg-[#ED4B9E]/8 text-[#ED4B9E]'
                     }`}>
                       {b.position === 'bull' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
-                      {b.position.toUpperCase()}
+                      {b.position === 'bull' ? 'UP' : 'DOWN'}
                     </span>
                   </td>
-                  <td className="px-2 py-3 text-right font-mono text-txt-0">{fmtSol(b.amount)}</td>
+                  <td className="px-2 py-3 text-right font-mono" style={{ color: C.text }}>{fmtSol(b.amount)}</td>
                   <td className="px-2 py-3 text-center">
                     {pending ? (
-                      <span className="text-amber-400/80 bg-amber-400/10 px-2 py-0.5 rounded-md text-[10px] font-medium">Live</span>
+                      <span className="text-[#F0B90B] bg-[#F0B90B]/10 px-2 py-0.5 rounded-md text-[10px] font-medium">Live</span>
                     ) : won ? (
-                      <span className="text-bull bg-bull/10 px-2 py-0.5 rounded-md text-[10px] font-medium">Won</span>
+                      <span className="text-[#31D0AA] bg-[#31D0AA]/10 px-2 py-0.5 rounded-md text-[10px] font-medium">Won</span>
                     ) : tie ? (
-                      <span className="text-amber-400/80 bg-amber-400/10 px-2 py-0.5 rounded-md text-[10px] font-medium">Tie</span>
+                      <span className="text-[#F0B90B] bg-[#F0B90B]/10 px-2 py-0.5 rounded-md text-[10px] font-medium">Tie</span>
                     ) : (
-                      <span className="text-bear bg-bear/10 px-2 py-0.5 rounded-md text-[10px] font-medium">Lost</span>
+                      <span className="text-[#ED4B9E] bg-[#ED4B9E]/10 px-2 py-0.5 rounded-md text-[10px] font-medium">Lost</span>
                     )}
                   </td>
                   <td className="px-5 py-3 text-right">
                     {(won || tie) && !b.claimed ? (
-                      <button onClick={() => onClaim(b.epoch)}
-                        className="text-[10px] font-bold text-bull bg-bull/10 hover:bg-bull/20 px-3 py-1.5 rounded-lg transition-all hover:shadow-sm hover:shadow-bull/10 border border-bull/15">
+                      <button
+                        onClick={() => onClaim(b.epoch)}
+                        className="text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all hover:brightness-110 border"
+                        style={{ color: C.up, background: 'rgba(49,208,170,0.1)', borderColor: 'rgba(49,208,170,0.15)' }}
+                      >
                         {tie ? 'Refund' : 'Collect'}
                       </button>
                     ) : b.claimed ? (
-                      <span className="text-[10px] text-bull/60 flex items-center justify-end gap-1">
+                      <span className="text-[10px] flex items-center justify-end gap-1" style={{ color: 'rgba(49,208,170,0.6)' }}>
                         <CheckCircle2 className="w-3 h-3" /> Done
                       </span>
                     ) : pending ? (
-                      <span className="text-[10px] text-txt-3/30">—</span>
+                      <span className="text-[10px]" style={{ color: 'rgba(140,140,161,0.3)' }}>—</span>
                     ) : (
-                      <span className="text-[10px] text-bear/50">-{fmtSol(b.amount)}</span>
+                      <span className="text-[10px]" style={{ color: 'rgba(237,75,158,0.5)' }}>-{fmtSol(b.amount)}</span>
                     )}
                   </td>
                 </tr>
@@ -868,5 +909,6 @@ const HistoryPanel: React.FC<{
     </div>
   );
 };
+
 
 export default PredictionPage;
