@@ -150,7 +150,7 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
 
   return (
     <div
-      className={`w-[290px] sm:w-[310px] shrink-0 rounded-2xl overflow-hidden snap-center flex flex-col transition-all duration-300 ${
+      className={`w-[340px] sm:w-[370px] shrink-0 rounded-2xl overflow-hidden snap-center flex flex-col transition-all duration-300 ${
         isLiveGlow
           ? 'live-card-glow border-2'
           : isNext
@@ -184,7 +184,7 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
       </div>
 
       {/* ═══ MIDDLE CONTENT ═══ */}
-      <div className="px-4 py-4 flex-1 min-h-[160px] flex flex-col" style={{ background: C.cardDark }}>
+      <div className="px-4 py-4 flex-1 min-h-[200px] flex flex-col" style={{ background: C.cardDark }}>
 
         {/* Status header */}
         <div className="flex items-center justify-between mb-3">
@@ -535,8 +535,8 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
     if (!scrollRef.current || rounds.length === 0) return;
     const idx = rounds.findIndex(r => r.status === 'live');
     if (idx < 0) return;
-    const gap = 16;
-    const cardW = window.innerWidth >= 640 ? 310 : 290;
+    const gap = 20; // gap-5 = 1.25rem = 20px
+    const cardW = window.innerWidth >= 640 ? 370 : 340;
     const containerW = scrollRef.current.offsetWidth;
     const scrollLeft = idx * (cardW + gap) - (containerW / 2) + (cardW / 2);
     scrollRef.current.scrollTo({ left: Math.max(0, scrollLeft), behavior });
@@ -730,7 +730,7 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
 
         <div
           ref={scrollRef}
-          className="flex-1 flex items-center gap-4 px-8 sm:px-16 overflow-x-auto scrollbar-hide snap-x snap-mandatory"
+          className="flex-1 flex items-center gap-5 px-8 sm:px-16 overflow-x-auto scrollbar-hide snap-x snap-mandatory"
           style={{ scrollBehavior: 'smooth' }}
         >
 
