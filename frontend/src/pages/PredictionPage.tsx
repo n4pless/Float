@@ -480,7 +480,7 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
 interface Props { onBack?: () => void; }
 
 export const PredictionPage: React.FC<Props> = ({ onBack }) => {
-  const { publicKey, sendTransaction } = useWallet();
+  const { publicKey, signTransaction } = useWallet();
   const { connection } = useConnection();
   const walletStr = publicKey?.toBase58() ?? null;
 
@@ -563,28 +563,28 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
   };
 
   const handleBet = useCallback(async (epoch: number, dir: 'bull' | 'bear', sol: number) => {
-    if (!publicKey) { toast.error('Connect wallet'); return; }
+    if (!publicKey || !signTransaction) { toast.error('Connect wallet'); return; }
     try {
       toast.loading('Placing prediction...', { id: 'bet' });
-      await placeBet(publicKey, epoch, dir, sol, sendTransaction);
+      await placeBet(publicKey, epoch, dir, sol, signTransaction);
       toast.success(`${dir.toUpperCase()} — ${sol} SOL`, { id: 'bet' });
     } catch (err: any) {
       console.error(err);
       toast.error(err?.message?.slice(0, 80) || 'Prediction failed', { id: 'bet' });
     }
-  }, [publicKey, placeBet, sendTransaction]);
+  }, [publicKey, placeBet, signTransaction]);
 
   const handleClaim = useCallback(async (epoch: number) => {
-    if (!publicKey) return;
+    if (!publicKey || !signTransaction) return;
     try {
       toast.loading('Claiming winnings...', { id: 'claim' });
-      await claimWinnings(publicKey, epoch, sendTransaction);
+      await claimWinnings(publicKey, epoch, signTransaction);
       toast.success('Winnings collected!', { id: 'claim' });
     } catch (err: any) {
       console.error(err);
       toast.error(err?.message?.slice(0, 80) || 'Claim failed', { id: 'claim' });
     }
-  }, [publicKey, claimWinnings, sendTransaction]);
+  }, [publicKey, claimWinnings, signTransaction]);
 
   // Stats
   const myBets = useMemo(() => Array.from(userBets.values()), [userBets]);

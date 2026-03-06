@@ -73,12 +73,12 @@ interface PredictionStore {
     epoch: number,
     direction: 'bull' | 'bear',
     amountSol: number,
-    sendTransaction: (tx: Transaction, connection: Connection) => Promise<string>,
+    signTransaction: (tx: Transaction) => Promise<Transaction>,
   ) => Promise<string>;
   claimWinnings: (
     wallet: PublicKey,
     epoch: number,
-    sendTransaction: (tx: Transaction, connection: Connection) => Promise<string>,
+    signTransaction: (tx: Transaction) => Promise<Transaction>,
   ) => Promise<string>;
 }
 
@@ -228,7 +228,7 @@ export const usePredictionStore = create<PredictionStore>((set, get) => ({
     }
   },
 
-  placeBet: async (wallet, epoch, direction, amountSol, sendTransaction) => {
+  placeBet: async (wallet, epoch, direction, amountSol, signTransaction) => {
     const conn = get().connection;
     if (!conn) throw new Error('No connection');
 
@@ -239,27 +239,48 @@ export const usePredictionStore = create<PredictionStore>((set, get) => ({
 
     const tx = new Transaction().add(ix);
     tx.feePayer = wallet;
-    tx.recentBlockhash = (await conn.getLatestBlockhash()).blockhash;
+    const { blockhash, lastValidBlockHeight } = await conn.getLatestBlockhash('confirmed');
+    tx.recentBlockhash = blockhash;
 
-    const sig = await sendTransaction(tx, conn);
-    await conn.confirmTransaction(sig, 'confirmed');
+    // Sign via wallet, then send through our own RPC connection
+    const signed = await signTransaction(tx);
+    const sig = await conn.sendRawTransaction(signed.serialize(), {
+      skipPreflight: false,
+      preflightCommitment: 'confirmed',
+      maxRetries: 3,
+    });
+
+    await conn.confirmTransaction(
+      { signature: sig, blockhash, lastValidBlockHeight },
+      'confirmed',
+    );
 
     // Refresh after bet
     await get().refresh(wallet);
     return sig;
   },
 
-  claimWinnings: async (wallet, epoch, sendTransaction) => {
+  claimWinnings: async (wallet, epoch, signTransaction) => {
     const conn = get().connection;
     if (!conn) throw new Error('No connection');
 
     const ix = buildClaimIx(wallet, epoch);
     const tx = new Transaction().add(ix);
     tx.feePayer = wallet;
-    tx.recentBlockhash = (await conn.getLatestBlockhash()).blockhash;
+    const { blockhash, lastValidBlockHeight } = await conn.getLatestBlockhash('confirmed');
+    tx.recentBlockhash = blockhash;
 
-    const sig = await sendTransaction(tx, conn);
-    await conn.confirmTransaction(sig, 'confirmed');
+    const signed = await signTransaction(tx);
+    const sig = await conn.sendRawTransaction(signed.serialize(), {
+      skipPreflight: false,
+      preflightCommitment: 'confirmed',
+      maxRetries: 3,
+    });
+
+    await conn.confirmTransaction(
+      { signature: sig, blockhash, lastValidBlockHeight },
+      'confirmed',
+    );
 
     await get().refresh(wallet);
     return sig;
