@@ -149,11 +149,13 @@ function TradingApp() {
 
   return (
     <div className="h-screen w-screen max-w-[100vw] flex flex-col overflow-x-hidden bg-drift-bg">
-      <Header
-        currentPage={currentPage}
-        onNavigate={navigateTo}
-        onSwitchAccount={handleSwitchAccount}
-      />
+      {currentPage !== 'prediction' && (
+        <Header
+          currentPage={currentPage}
+          onNavigate={navigateTo}
+          onSwitchAccount={handleSwitchAccount}
+        />
+      )}
 
       {currentPage === 'home' ? (
         <LandingPage
@@ -281,30 +283,32 @@ function TradingApp() {
       )}
 
       {/* ── Mobile bottom page nav ── */}
-      <nav className="sm:hidden shrink-0 flex items-center border-t border-drift-border bg-drift-panel">
-        {([
-          { page: 'trade' as Page, label: 'Trade', icon: ArrowRightLeft },
-          { page: 'positions' as Page, label: 'Positions', icon: BarChart2 },
-          { page: 'insurance' as Page, label: 'Insurance', icon: Shield },
-          { page: 'user' as Page, label: 'Account', icon: WalletIcon },
-          { page: 'learn' as Page, label: 'Learn', icon: BookOpen },
-        ]).map(t => {
-          const Icon = t.icon;
-          const active = currentPage === t.page;
-          return (
-            <button
-              key={t.page}
-              onClick={() => navigateTo(t.page)}
-              className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors ${
-                active ? 'text-accent' : 'text-txt-3'
-              }`}
-            >
-              <Icon className="w-[18px] h-[18px]" />
-              <span>{t.label}</span>
-            </button>
-          );
-        })}
-      </nav>
+      {currentPage !== 'prediction' && (
+        <nav className="sm:hidden shrink-0 flex items-center border-t border-drift-border bg-drift-panel">
+          {([
+            { page: 'trade' as Page, label: 'Trade', icon: ArrowRightLeft },
+            { page: 'positions' as Page, label: 'Positions', icon: BarChart2 },
+            { page: 'insurance' as Page, label: 'Insurance', icon: Shield },
+            { page: 'user' as Page, label: 'Account', icon: WalletIcon },
+            { page: 'learn' as Page, label: 'Learn', icon: BookOpen },
+          ]).map(t => {
+            const Icon = t.icon;
+            const active = currentPage === t.page;
+            return (
+              <button
+                key={t.page}
+                onClick={() => navigateTo(t.page)}
+                className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors ${
+                  active ? 'text-accent' : 'text-txt-3'
+                }`}
+              >
+                <Icon className="w-[18px] h-[18px]" />
+                <span>{t.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+      )}
 
       {/* Sonner toast notifications — matches drift-ui-template */}
       <Toaster position="bottom-right" theme="dark" richColors />
