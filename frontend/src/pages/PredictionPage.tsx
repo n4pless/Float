@@ -118,6 +118,12 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
   const expDelta = isExpired && round.lockPrice > 0 && round.closePrice > 0 ? priceDelta(round.closePrice, round.lockPrice) : null;
   const liveDir = liveDelta ? (liveDelta.up ? 'bull' : 'bear') : null;
 
+  // Payout calculation based on user's deposit
+  const inputAmt = parseFloat(betAmt) || 0;
+  const depositSol = bet ? bet.amount : (isNext ? inputAmt : 0);
+  const upPayoutSol = depositSol > 0 && upMulti > 0 ? depositSol * upMulti : 0;
+  const downPayoutSol = depositSol > 0 && downMulti > 0 ? depositSol * downMulti : 0;
+
   const userWon = isExpired && bet && round.result && (
     (round.result === 'bull' && bet.position === 'bull') ||
     (round.result === 'bear' && bet.position === 'bear') ||
@@ -160,27 +166,40 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
       style={{ background: C.cardDark }}
     >
 
-      {/* ═══ UP (BULL) BANNER ═══ */}
+      {/* ═══ UP (BULL) ARROW ═══ */}
       <div
-        className={`px-4 py-2.5 flex items-center justify-between transition-colors duration-300 ${
-          upHighlight ? '' : ''
-        }`}
-        style={{
-          background: upHighlight ? C.up : C.card,
-        }}
+        className="relative px-4 py-3 flex items-center justify-between transition-all duration-500 overflow-hidden"
+        style={{ background: upHighlight ? C.up : C.card }}
       >
-        <div className="flex items-center gap-2">
-          <ArrowUp className={`w-4 h-4 ${upHighlight ? 'text-[#1E1D2B]' : 'text-[#31D0AA]'}`} />
-          <span className={`text-[13px] font-bold ${upHighlight ? 'text-[#1E1D2B]' : 'text-[#31D0AA]'}`}>UP</span>
-          {bet?.position === 'bull' && (
-            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-              upHighlight ? 'bg-[#1E1D2B]/20 text-[#1E1D2B]' : 'bg-[#31D0AA]/15 text-[#31D0AA]'
-            }`}>ENTERED</span>
+        {upHighlight && (
+          <div className="absolute inset-0 bg-gradient-to-r from-[#31D0AA]/20 via-[#31D0AA]/5 to-[#31D0AA]/20 animate-pulse" />
+        )}
+        <div className="flex items-center gap-3 relative z-10">
+          {/* Thick UP Arrow */}
+          <div className={`transition-all duration-500 ${upHighlight ? 'arrow-glow-up' : 'opacity-20'}`}>
+            <svg viewBox="0 0 44 36" className="w-12 h-10">
+              <path d="M22 2 L42 32 H2 Z" fill={upHighlight ? '#1E1D2B' : '#31D0AA'} />
+            </svg>
+          </div>
+          <div>
+            <div className={`text-[15px] font-extrabold leading-none ${upHighlight ? 'text-[#1E1D2B]' : 'text-[#31D0AA]'}`}>UP</div>
+            {bet?.position === 'bull' && (
+              <span className={`text-[8px] font-bold mt-0.5 inline-block px-1.5 py-0.5 rounded ${
+                upHighlight ? 'bg-[#1E1D2B]/20 text-[#1E1D2B]' : 'bg-[#31D0AA]/15 text-[#31D0AA]'
+              }`}>ENTERED</span>
+            )}
+          </div>
+        </div>
+        <div className="text-right relative z-10">
+          <div className={`text-[13px] font-bold ${upHighlight ? 'text-[#1E1D2B]' : 'text-[#8C8CA1]'}`}>
+            {upMulti > 0 ? `${upMulti.toFixed(2)}x` : '-'} Payout
+          </div>
+          {upPayoutSol > 0 && (
+            <div className={`text-[11px] font-mono font-semibold ${upHighlight ? 'text-[#1E1D2B]/70' : 'text-[#31D0AA]/50'}`}>
+              → {fmtSol(upPayoutSol)} SOL
+            </div>
           )}
         </div>
-        <span className={`text-[12px] font-semibold ${upHighlight ? 'text-[#1E1D2B]/80' : 'text-[#8C8CA1]'}`}>
-          {upMulti > 0 ? `${upMulti.toFixed(2)}x` : '-'} Payout
-        </span>
       </div>
 
       {/* ═══ MIDDLE CONTENT ═══ */}
@@ -448,25 +467,40 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
         )}
       </div>
 
-      {/* ═══ DOWN (BEAR) BANNER ═══ */}
+      {/* ═══ DOWN (BEAR) ARROW ═══ */}
       <div
-        className="px-4 py-2.5 flex items-center justify-between transition-colors duration-300"
-        style={{
-          background: downHighlight ? C.down : C.card,
-        }}
+        className="relative px-4 py-3 flex items-center justify-between transition-all duration-500 overflow-hidden"
+        style={{ background: downHighlight ? C.down : C.card }}
       >
-        <div className="flex items-center gap-2">
-          <ArrowDown className={`w-4 h-4 ${downHighlight ? 'text-white' : 'text-[#ED4B9E]'}`} />
-          <span className={`text-[13px] font-bold ${downHighlight ? 'text-white' : 'text-[#ED4B9E]'}`}>DOWN</span>
-          {bet?.position === 'bear' && (
-            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-              downHighlight ? 'bg-white/20 text-white' : 'bg-[#ED4B9E]/15 text-[#ED4B9E]'
-            }`}>ENTERED</span>
+        {downHighlight && (
+          <div className="absolute inset-0 bg-gradient-to-r from-[#ED4B9E]/20 via-[#ED4B9E]/5 to-[#ED4B9E]/20 animate-pulse" />
+        )}
+        <div className="flex items-center gap-3 relative z-10">
+          {/* Thick DOWN Arrow */}
+          <div className={`transition-all duration-500 ${downHighlight ? 'arrow-glow-down' : 'opacity-20'}`}>
+            <svg viewBox="0 0 44 36" className="w-12 h-10">
+              <path d="M2 4 H42 L22 34 Z" fill={downHighlight ? '#fff' : '#ED4B9E'} />
+            </svg>
+          </div>
+          <div>
+            <div className={`text-[15px] font-extrabold leading-none ${downHighlight ? 'text-white' : 'text-[#ED4B9E]'}`}>DOWN</div>
+            {bet?.position === 'bear' && (
+              <span className={`text-[8px] font-bold mt-0.5 inline-block px-1.5 py-0.5 rounded ${
+                downHighlight ? 'bg-white/20 text-white' : 'bg-[#ED4B9E]/15 text-[#ED4B9E]'
+              }`}>ENTERED</span>
+            )}
+          </div>
+        </div>
+        <div className="text-right relative z-10">
+          <div className={`text-[13px] font-bold ${downHighlight ? 'text-white/90' : 'text-[#8C8CA1]'}`}>
+            {downMulti > 0 ? `${downMulti.toFixed(2)}x` : '-'} Payout
+          </div>
+          {downPayoutSol > 0 && (
+            <div className={`text-[11px] font-mono font-semibold ${downHighlight ? 'text-white/70' : 'text-[#ED4B9E]/50'}`}>
+              → {fmtSol(downPayoutSol)} SOL
+            </div>
           )}
         </div>
-        <span className={`text-[12px] font-semibold ${downHighlight ? 'text-white/80' : 'text-[#8C8CA1]'}`}>
-          {downMulti > 0 ? `${downMulti.toFixed(2)}x` : '-'} Payout
-        </span>
       </div>
     </div>
   );
@@ -535,10 +569,11 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
     if (!scrollRef.current || rounds.length === 0) return;
     const idx = rounds.findIndex(r => r.status === 'live');
     if (idx < 0) return;
-    const gap = 20; // gap-5 = 1.25rem = 20px
-    const cardW = window.innerWidth >= 640 ? 370 : 340;
+    // +1 to skip the leading spacer div
+    const cardEl = scrollRef.current.children[idx + 1] as HTMLElement | undefined;
+    if (!cardEl) return;
     const containerW = scrollRef.current.offsetWidth;
-    const scrollLeft = idx * (cardW + gap) - (containerW / 2) + (cardW / 2);
+    const scrollLeft = cardEl.offsetLeft - (containerW / 2) + (cardEl.offsetWidth / 2);
     scrollRef.current.scrollTo({ left: Math.max(0, scrollLeft), behavior });
   }, [rounds]);
 
@@ -619,6 +654,20 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
         @keyframes price-flash {
           0% { background: rgba(244,238,255,0.08); }
           100% { background: transparent; }
+        }
+        .arrow-glow-up {
+          animation: arrow-pulse-up 1.5s ease-in-out infinite;
+        }
+        .arrow-glow-down {
+          animation: arrow-pulse-down 1.5s ease-in-out infinite;
+        }
+        @keyframes arrow-pulse-up {
+          0%, 100% { filter: drop-shadow(0 0 6px rgba(49,208,170,0.5)) drop-shadow(0 0 15px rgba(49,208,170,0.3)); transform: scale(1); }
+          50% { filter: drop-shadow(0 0 14px rgba(49,208,170,0.9)) drop-shadow(0 0 30px rgba(49,208,170,0.5)); transform: scale(1.08); }
+        }
+        @keyframes arrow-pulse-down {
+          0%, 100% { filter: drop-shadow(0 0 6px rgba(237,75,158,0.5)) drop-shadow(0 0 15px rgba(237,75,158,0.3)); transform: scale(1); }
+          50% { filter: drop-shadow(0 0 14px rgba(237,75,158,0.9)) drop-shadow(0 0 30px rgba(237,75,158,0.5)); transform: scale(1.08); }
         }
       `}</style>
 
@@ -730,7 +779,7 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
 
         <div
           ref={scrollRef}
-          className="flex-1 flex items-center gap-5 px-8 sm:px-16 overflow-x-auto scrollbar-hide snap-x snap-mandatory"
+          className="flex-1 flex items-center gap-5 overflow-x-auto scrollbar-hide snap-x snap-mandatory"
           style={{ scrollBehavior: 'smooth' }}
         >
 
@@ -758,18 +807,22 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
               </div>
             </div>
           ) : (
-            rounds.map(r => (
-              <RoundCard
-                key={r.epoch}
-                round={r}
-                bet={userBets.get(r.epoch)}
-                livePrice={livePrice}
-                intervalSec={game?.intervalSeconds ?? 300}
-                onBet={handleBet}
-                onClaim={handleClaim}
-                walletConnected={!!publicKey}
-              />
-            ))
+            <>
+              <div className="shrink-0 w-[calc(50vw-170px)] sm:w-[calc(50vw-185px)]" aria-hidden />
+              {rounds.map(r => (
+                <RoundCard
+                  key={r.epoch}
+                  round={r}
+                  bet={userBets.get(r.epoch)}
+                  livePrice={livePrice}
+                  intervalSec={game?.intervalSeconds ?? 300}
+                  onBet={handleBet}
+                  onClaim={handleClaim}
+                  walletConnected={!!publicKey}
+                />
+              ))}
+              <div className="shrink-0 w-[calc(50vw-170px)] sm:w-[calc(50vw-185px)]" aria-hidden />
+            </>
           )}
         </div>
       </div>
