@@ -1,4 +1,4 @@
-# Value Exchange
+# Float Exchange
 
 A perpetual futures exchange built on Solana, forked from [Drift Protocol](https://github.com/drift-labs/protocol-v2).
 

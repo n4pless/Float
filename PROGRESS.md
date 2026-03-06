@@ -1,4 +1,4 @@
-# Value Exchange — Progress Report
+# Float Exchange — Progress Report
 
 **Last updated:** February 27, 2026  
 **Network:** Solana Devnet  

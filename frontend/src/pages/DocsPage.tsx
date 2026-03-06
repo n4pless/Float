@@ -69,7 +69,7 @@ const SIDEBAR: SidebarGroup[] = [
     items: [{ id: 'home', label: 'Home & Roadmap' }],
   },
   {
-    title: 'How Value Works',
+    title: 'How Float Works',
     icon: BookOpen,
     items: [
       { id: 'how-it-works', label: 'Overview' },
@@ -318,7 +318,7 @@ function HomeSection() {
           The Decentralized Perpetual Futures Exchange
         </h1>
         <p className="text-[13px] text-txt-2 leading-relaxed max-w-2xl mb-4">
-          Value is a fully on-chain perpetual futures DEX built on Solana.
+          Float is a fully on-chain perpetual futures DEX built on Solana.
           Sub-second execution, decentralized order matching, and community-powered liquidity.
         </p>
         <div className="flex flex-wrap gap-2">
@@ -337,11 +337,11 @@ function HomeSection() {
         <StatCard icon={Bot} label="Keeper Bots" value="2" sub="Filler · Liquidator" />
       </div>
 
-      {/* ── Why Value ── */}
-      <H2>Why Value?</H2>
+      {/* ── Why Float ── */}
+      <H2>Why Float?</H2>
       <P>
         Centralized exchanges hold your funds, control your data, and can freeze accounts at will.
-        Value puts you in control — every trade settles directly on the Solana blockchain.
+        Float puts you in control — every trade settles directly on the Solana blockchain.
       </P>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
@@ -394,7 +394,7 @@ function HomeSection() {
       {/* ── How it fits together (mini architecture) ── */}
       <H2>Architecture at a Glance</H2>
       <P>
-        Value's stack is composed of modular, independently-operable components:
+        Float's stack is composed of modular, independently-operable components:
       </P>
       <div className="my-4 p-5 rounded-xl border border-drift-border/40 bg-drift-surface/10 overflow-x-auto">
         <div className="flex flex-col gap-3 text-[12px] font-mono min-w-[400px]">
@@ -404,7 +404,7 @@ function HomeSection() {
             <ArrowRight className="w-3 h-3 text-txt-3" />
             <span className="px-3 py-1.5 rounded-lg bg-accent/10 text-accent border border-accent/20">Frontend UI</span>
             <ArrowRight className="w-3 h-3 text-txt-3" />
-            <span className="px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">Value Program</span>
+            <span className="px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">Float Program</span>
           </div>
           {/* Oracle row */}
           <div className="flex items-center gap-2">
@@ -412,7 +412,7 @@ function HomeSection() {
             <ArrowRight className="w-3 h-3 text-txt-3" />
             <span className="px-3 py-1.5 rounded-lg bg-yellow/10 text-yellow border border-yellow/20">Oracle Updater</span>
             <ArrowRight className="w-3 h-3 text-txt-3" />
-            <span className="px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">Value Program</span>
+            <span className="px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">Float Program</span>
           </div>
           {/* Keeper row */}
           <div className="flex items-center gap-2">
@@ -420,7 +420,7 @@ function HomeSection() {
             <ArrowRight className="w-3 h-3 text-txt-3" />
             <span className="px-3 py-1.5 rounded-lg bg-bull/10 text-bull border border-bull/20">Keeper Bots</span>
             <ArrowRight className="w-3 h-3 text-txt-3" />
-            <span className="px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">Value Program</span>
+            <span className="px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">Float Program</span>
           </div>
           {/* Validator */}
           <div className="flex items-center gap-2 pt-2 border-t border-drift-border mt-1">
@@ -453,7 +453,7 @@ function HomeSection() {
       {/* ── Roadmap ── */}
       <H2>Roadmap</H2>
       <P>
-        Value is being built in public. Here's where we are and where we're headed.
+        Float is being built in public. Here's where we are and where we're headed.
         Each milestone is tracked with individual tasks so you can see exactly what's done and what's next.
       </P>
 
@@ -482,7 +482,7 @@ function HomeSection() {
           eta="Completed Feb 2026"
           items={[
             { text: 'Custom Solana validator deployment on Hetzner dedicated server', done: true },
-            { text: 'Value Protocol smart contract deployment and initialization', done: true },
+            { text: 'Float Protocol smart contract deployment and initialization', done: true },
             { text: 'SOL-PERP perpetual futures market (10x max leverage)', done: true },
             { text: 'Real-time Binance oracle price feed (~10s refresh)', done: true },
             { text: 'DLOB (Decentralized Limit Order Book) server with REST + WebSocket API', done: true },
@@ -561,7 +561,7 @@ function HomeSection() {
           <div>
             <h3 className="text-base font-bold text-txt-0 mb-1">Get Involved</h3>
             <p className="text-[13px] text-txt-2 leading-relaxed mb-3">
-              Value is community-powered. The easiest way to contribute is to run a keeper bot —
+              Float is community-powered. The easiest way to contribute is to run a keeper bot —
               you'll earn fees while helping provide liquidity to every trader on the exchange.
               No coding required, just follow the setup guide.
             </p>
@@ -591,10 +591,10 @@ function HomeSection() {
 function HowItWorksOverview() {
   return (
     <div>
-      <H1>How Value Works</H1>
+      <H1>How Float Works</H1>
       <P>
-        Value is a perpetual futures decentralized exchange (DEX) running entirely on the Solana blockchain.
-        Unlike centralized exchanges, Value has no custodians, no intermediaries, and no central point of failure.
+        Float is a perpetual futures decentralized exchange (DEX) running entirely on the Solana blockchain.
+        Unlike centralized exchanges, Float has no custodians, no intermediaries, and no central point of failure.
         Trades are matched, executed, and settled on-chain through a system of smart contracts and keeper bots.
       </P>
 
@@ -606,7 +606,7 @@ function HowItWorksOverview() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 my-6">
         <FeatureCard
           icon={Layers}
-          title="Value Protocol (On-Chain)"
+          title="Float Protocol (On-Chain)"
           desc="The core smart contract that manages positions, collateral, liquidations, and settlement. All state lives on-chain."
         />
         <FeatureCard
@@ -631,7 +631,7 @@ function HowItWorksOverview() {
         <ol className="space-y-4 text-[13px] text-txt-1">
           <li className="flex gap-3">
             <span className="shrink-0 w-6 h-6 rounded-full bg-accent/10 flex items-center justify-center text-xs font-bold text-accent">1</span>
-            <div><strong className="text-txt-0">Place Order</strong> — You submit a market or limit order through the UI. The order is sent to the Value smart contract on Solana.</div>
+            <div><strong className="text-txt-0">Place Order</strong> — You submit a market or limit order through the UI. The order is sent to the Float smart contract on Solana.</div>
           </li>
           <li className="flex gap-3">
             <span className="shrink-0 w-6 h-6 rounded-full bg-accent/10 flex items-center justify-center text-xs font-bold text-accent">2</span>
@@ -660,7 +660,7 @@ function HowTrading() {
     <div>
       <H1>Trading Mechanics</H1>
       <P>
-        Value supports perpetual futures trading with up to 20x leverage. Unlike traditional futures contracts
+        Float supports perpetual futures trading with up to 20x leverage. Unlike traditional futures contracts
         that expire, perpetual futures have no expiration date and use a funding rate mechanism to keep prices
         anchored to the underlying spot price.
       </P>
@@ -682,7 +682,7 @@ function HowTrading() {
 
       <H2>Leverage & Margin</H2>
       <P>
-        Value uses a cross-margin system where your entire account balance is used as collateral for all positions.
+        Float uses a cross-margin system where your entire account balance is used as collateral for all positions.
         The maximum leverage is 20x, meaning you can open a position worth 20 times your collateral.
       </P>
       <Callout type="warning">
@@ -715,14 +715,14 @@ function HowOrderbook() {
     <div>
       <H1>Decentralized Orderbook</H1>
       <P>
-        The DLOB (Decentralized Limit Order Book) is the backbone of Value's order matching system. Unlike
-        centralized exchanges where the orderbook lives on a private server, Value's orders are stored on-chain
+        The DLOB (Decentralized Limit Order Book) is the backbone of Float's order matching system. Unlike
+        centralized exchanges where the orderbook lives on a private server, Float's orders are stored on-chain
         and indexed by a public server that anyone can run.
       </P>
 
       <H2>How the DLOB Works</H2>
       <P>
-        When you place a limit order, the order is written to the Solana blockchain via the Value smart contract.
+        When you place a limit order, the order is written to the Solana blockchain via the Float smart contract.
         The DLOB server subscribes to on-chain events and maintains a real-time mirror of all open orders,
         sorted by price and time priority. This enables fast lookups for the UI while keeping all state on-chain.
       </P>
@@ -754,7 +754,7 @@ function HowOracle() {
     <div>
       <H1>Oracle System</H1>
       <P>
-        Oracles are the bridge between real-world market data and the on-chain smart contracts. Value uses an
+        Oracles are the bridge between real-world market data and the on-chain smart contracts. Float uses an
         oracle system that feeds real-time prices from centralized exchanges (like Binance) into the Solana
         blockchain, enabling accurate pricing for trades, margin calculations, and liquidations.
       </P>
@@ -763,7 +763,7 @@ function HowOracle() {
       <P>
         An oracle updater service fetches the current SOL/USD price from Binance every 10 seconds and pushes
         it to an on-chain price account via the <code className="text-accent bg-drift-surface px-1.5 py-0.5 rounded text-[12px]">updatePrelaunchOracle</code> instruction.
-        The Value smart contract reads this oracle account to determine current prices for:
+        The Float smart contract reads this oracle account to determine current prices for:
       </P>
       <ul className="list-disc space-y-1.5 text-[13.5px] text-txt-1 pl-5 mb-4">
         <li>Mark price for position PnL calculation</li>
@@ -793,7 +793,7 @@ function HowLiquidation() {
       <H1>Liquidation Engine</H1>
       <P>
         Liquidation is the process of closing positions that no longer have sufficient collateral to maintain
-        their margin requirements. Value's liquidation engine is decentralized — anyone can run a liquidator bot
+        their margin requirements. Float's liquidation engine is decentralized — anyone can run a liquidator bot
         to earn rewards for keeping the protocol healthy.
       </P>
 
@@ -836,13 +836,13 @@ function KeeperOverview() {
     <div>
       <H1>What Are Keeper Bots?</H1>
       <P>
-        Keeper bots are the backbone of Value's decentralized trading infrastructure. They are automated programs
+        Keeper bots are the backbone of Float's decentralized trading infrastructure. They are automated programs
         that perform essential exchange operations — matching orders, liquidating bankrupt accounts, and providing
         liquidity. In return, they earn a portion of trading fees.
       </P>
 
       <Callout type="tip">
-        Running a keeper bot is the best way to earn passive income while contributing to Value's liquidity
+        Running a keeper bot is the best way to earn passive income while contributing to Float's liquidity
         and health. No trading capital at risk (for filler bots) — you earn fees simply by matching orders.
       </Callout>
 
@@ -877,7 +877,7 @@ function KeeperOverview() {
         </li>
         <li className="flex items-start gap-3">
           <Globe className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-          <div><strong className="text-txt-0">Support the Exchange</strong> — Every keeper bot adds to Value's liquidity and reliability, making it a better exchange for everyone.</div>
+          <div><strong className="text-txt-0">Support the Exchange</strong> — Every keeper bot adds to Float's liquidity and reliability, making it a better exchange for everyone.</div>
         </li>
         <li className="flex items-start gap-3">
           <Cpu className="w-4 h-4 text-purple shrink-0 mt-0.5" />
@@ -902,7 +902,7 @@ function KeeperFiller() {
       <P>
         The filler bot maintains a local copy of the DLOB (Decentralized Limit Order Book) by subscribing to
         on-chain account updates. Every polling interval (typically 6 seconds), it checks for orders that cross
-        and can be filled. When it finds a match, it submits a fill transaction to the Value smart contract.
+        and can be filled. When it finds a match, it submits a fill transaction to the Float smart contract.
       </P>
 
       <H3>What Gets Filled</H3>
@@ -971,7 +971,7 @@ function KeeperLiquidator() {
 
       <H2>Capital Requirements</H2>
       <P>
-        Unlike the filler bot, the liquidator requires collateral deposited into a Value account. This collateral
+        Unlike the filler bot, the liquidator requires collateral deposited into a Float account. This collateral
         is used to take over liquidated positions. The <code className="text-accent bg-drift-surface px-1.5 py-0.5 rounded text-[12px]">maxPositionTakeoverPctOfCollateral</code> setting
         controls how much of the liquidator's collateral can be used per liquidation (default 50%).
       </P>
@@ -1026,7 +1026,7 @@ function KeeperSetup() {
     <div>
       <H1>Keeper Bot Setup Guide</H1>
       <P>
-        This guide walks you through setting up and running keeper bots for the Value exchange. You'll be
+        This guide walks you through setting up and running keeper bots for the Float exchange. You'll be
         earning fees in no time.
       </P>
 
@@ -1039,8 +1039,8 @@ function KeeperSetup() {
       </ul>
 
       <H2>Step 1: Clone the Repository</H2>
-      <CodeBlock code={`git clone https://github.com/your-org/value-keeper-bots.git
-cd value-keeper-bots`} />
+      <CodeBlock code={`git clone https://github.com/your-org/float-keeper-bots.git
+cd float-keeper-bots`} />
 
       <H2>Step 2: Install Dependencies</H2>
       <CodeBlock code={`yarn install
@@ -1059,7 +1059,7 @@ solana address -k keys/keeper-keypair.json`} />
 solana transfer <KEEPER_PUBKEY> 2 --from <FUNDING_KEYPAIR> -u <RPC_URL>
 
 # For liquidator/JIT bots, also deposit USDC collateral
-# Contact the Value team for devnet USDC`} />
+# Contact the Float team for devnet USDC`} />
 
       <H2>Step 5: Create Config File</H2>
       <P>
@@ -1072,8 +1072,8 @@ solana transfer <KEEPER_PUBKEY> 2 --from <FUNDING_KEYPAIR> -u <RPC_URL>
         lang="yaml"
         code={`global:
   driftEnv: devnet
-  endpoint: http://<VALUE_RPC_URL>:8899
-  wsEndpoint: ws://<VALUE_RPC_URL>:8900
+  endpoint: http://<FLOAT_RPC_URL>:8899
+  wsEndpoint: ws://<FLOAT_RPC_URL>:8900
   keeperPrivateKey: # set KEEPER_PRIVATE_KEY env var
   initUser: true
   websocket: true
@@ -1101,8 +1101,8 @@ botConfigs:
         lang="yaml"
         code={`global:
   driftEnv: devnet
-  endpoint: http://<VALUE_RPC_URL>:8899
-  wsEndpoint: ws://<VALUE_RPC_URL>:8900
+  endpoint: http://<FLOAT_RPC_URL>:8899
+  wsEndpoint: ws://<FLOAT_RPC_URL>:8900
   keeperPrivateKey: # set KEEPER_PRIVATE_KEY env var
   initUser: true
   websocket: true
@@ -1140,7 +1140,7 @@ export USDC_MINT=G1RCxqcc1DpLUnprWdxdZ9DsstmYmxhekZffJKNi5ths`} />
       <H2>Step 7: Initialize User Account</H2>
       <P>
         The first time you run the bot, set <code className="text-accent bg-drift-surface px-1.5 py-0.5 rounded text-[12px]">initUser: true</code> in
-        your config. This creates a Value user account for your keypair. After the first run, you can set it to false.
+        your config. This creates a Float user account for your keypair. After the first run, you can set it to false.
       </P>
 
       <H2>Step 8: Deposit Collateral (Liquidator/JIT Only)</H2>
@@ -1174,7 +1174,7 @@ function KeeperConfig() {
           { field: 'global.endpoint', type: 'string', desc: 'RPC endpoint URL', def: '—' },
           { field: 'global.wsEndpoint', type: 'string', desc: 'WebSocket endpoint URL', def: 'derived from endpoint' },
           { field: 'global.keeperPrivateKey', type: 'string', desc: 'Path to keypair JSON or comma-separated bytes', def: 'KEEPER_PRIVATE_KEY env' },
-          { field: 'global.initUser', type: 'bool', desc: 'Initialize Value user account on first run', def: 'false' },
+          { field: 'global.initUser', type: 'bool', desc: 'Initialize Float user account on first run', def: 'false' },
           { field: 'global.websocket', type: 'bool', desc: 'Use WebSocket for account updates', def: 'false' },
           { field: 'global.debug', type: 'bool', desc: 'Enable debug-level logging', def: 'false' },
           { field: 'global.subaccounts', type: 'number[]', desc: 'Which sub-account IDs to load', def: '[0]' },
@@ -1243,10 +1243,10 @@ function KeeperRunning() {
 npm install -g pm2
 
 # Start your filler bot
-pm2 start lib/index.js --name value-filler -- --config-file=filler.config.yaml
+pm2 start lib/index.js --name float-filler -- --config-file=filler.config.yaml
 
 # Start your liquidator bot
-pm2 start lib/index.js --name value-liquidator -- --config-file=liquidator.config.yaml
+pm2 start lib/index.js --name float-liquidator -- --config-file=liquidator.config.yaml
 
 # Save the process list (auto-restore on server reboot)
 pm2 save
@@ -1257,17 +1257,17 @@ pm2 startup`} />
 pm2 list
 
 # View real-time logs
-pm2 logs value-filler
-pm2 logs value-liquidator
+pm2 logs float-filler
+pm2 logs float-liquidator
 
 # Monitor CPU/memory
 pm2 monit
 
 # Restart a bot
-pm2 restart value-filler
+pm2 restart float-filler
 
 # Stop a bot
-pm2 stop value-filler`} />
+pm2 stop float-filler`} />
 
       <H2>Prometheus Metrics</H2>
       <P>
@@ -1309,7 +1309,7 @@ function KeeperRewards() {
     <div>
       <H1>Rewards & Incentives</H1>
       <P>
-        Value's keeper bot ecosystem is designed to reward participants who contribute to the exchange's
+        Float's keeper bot ecosystem is designed to reward participants who contribute to the exchange's
         liquidity and reliability. Here's how each bot type generates revenue.
       </P>
 
@@ -1337,7 +1337,7 @@ function KeeperRewards() {
         </p>
       </div>
       <ul className="list-disc space-y-1.5 text-[13.5px] text-txt-1 pl-5 mb-4">
-        <li>Requires USDC collateral deposited into your Value account</li>
+        <li>Requires USDC collateral deposited into your Float account</li>
         <li>Revenue is event-driven — more liquidations during volatile markets</li>
         <li>Auto-derisking minimizes holding risk</li>
         <li>Recommended starting capital: $10,000+ USDC</li>
@@ -1367,7 +1367,7 @@ function KeeperRewards() {
             'Fund the bot wallet with 2+ SOL for transaction fees',
             'Create a YAML config file for your chosen bot type',
             'Set environment variables (KEEPER_PRIVATE_KEY, DRIFT_PROGRAM_ID)',
-            'Run with --init-user on first start to create the Value account',
+            'Run with --init-user on first start to create the Float account',
             'For liquidator/JIT: deposit USDC collateral via --force-deposit',
             'Start the bot with PM2 for production reliability',
             'Monitor logs and metrics to ensure healthy operation',
@@ -1396,7 +1396,7 @@ export const DocsPage: React.FC<DocsPageProps> = ({ onBack, backLabel }) => {
   const [activeSection, setActiveSection] = useState<SectionId>('home');
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
     'Getting Started': true,
-    'How Value Works': true,
+    'How Float Works': true,
     'Keeper Bots': true,
   });
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -1479,7 +1479,7 @@ export const DocsPage: React.FC<DocsPageProps> = ({ onBack, backLabel }) => {
         <FileText className="w-3.5 h-3.5 text-accent" />
       </div>
       <div>
-        <span className="text-sm font-bold text-txt-0 block leading-tight">Value Docs</span>
+        <span className="text-sm font-bold text-txt-0 block leading-tight">Float Docs</span>
         <span className="text-[10px] text-txt-3">Documentation & Guides</span>
       </div>
     </div>
@@ -1518,7 +1518,7 @@ export const DocsPage: React.FC<DocsPageProps> = ({ onBack, backLabel }) => {
             <div className="flex items-center justify-between px-4 py-4 border-b border-drift-border shrink-0">
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-accent" />
-                <span className="text-sm font-semibold text-txt-0">Value Docs</span>
+                <span className="text-sm font-semibold text-txt-0">Float Docs</span>
               </div>
               <button
                 onClick={() => setMobileSidebarOpen(false)}

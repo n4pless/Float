@@ -32,7 +32,7 @@ export const InfoPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         <div className="mb-8">
           <h1 className="text-xl font-bold text-txt-0 mb-1">Knowledge Hub</h1>
           <p className="text-[13px] text-txt-2">
-            Documentation, guides, and upcoming features for Value Exchange.
+            Documentation, guides, and upcoming features for Float Exchange.
           </p>
         </div>
 
@@ -49,7 +49,7 @@ export const InfoPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             </div>
             <div className="px-4 py-4 space-y-3">
               <p className="text-[12px] text-txt-2 leading-relaxed">
-                How Value works &mdash; architecture, trading mechanics, oracle system, liquidation engine, and keeper bot guides.
+                How Float works &mdash; architecture, trading mechanics, oracle system, liquidation engine, and keeper bot guides.
               </p>
               <div className="flex items-center gap-4 text-[10px] text-txt-3">
                 <span><span className="text-txt-0 font-semibold">14</span> Topics</span>
@@ -75,7 +75,7 @@ export const InfoPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             </div>
             <div className="px-4 py-4 space-y-3">
               <p className="text-[12px] text-txt-2 leading-relaxed">
-                What sets Value apart &mdash; graduation perps, open market making, Arcium-powered private trades, and revenue sharing.
+                What sets Float apart &mdash; graduation perps, open market making, Arcium-powered private trades, and revenue sharing.
               </p>
               <div className="flex items-center gap-4 text-[10px] text-txt-3">
                 <span><span className="text-txt-0 font-semibold">7</span> Sections</span>
@@ -113,7 +113,7 @@ export const InfoPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         {/* Footer */}
         <div className="pt-6 border-t border-drift-border text-center">
           <p className="text-[10px] text-txt-3">
-            Value Exchange &mdash; Decentralized Perpetual Futures on Solana
+            Float Exchange &mdash; Decentralized Perpetual Futures on Solana
           </p>
         </div>
       </div>

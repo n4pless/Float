@@ -78,9 +78,9 @@ async function fetchCandles(tf: string, limit = 300, binanceSymbol = 'SOLUSDT', 
 
 /**
  * PriceChart — SOL/USD chart using external reference candles for history
- * + live Value oracle price overlay from the on-chain Drift protocol.
+ * + live Float oracle price overlay from the on-chain Drift protocol.
  * Historical candles sourced from Binance/CryptoCompare as reference data.
- * The live price (green/red close) always reflects Value's oracle.
+ * The live price (green/red close) always reflects Float's oracle.
  */
 export const PriceChart: React.FC = () => {
   const chartContainerRef = useRef<HTMLDivElement>(null);

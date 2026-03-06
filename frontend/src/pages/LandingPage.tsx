@@ -20,12 +20,10 @@ export const LandingPage: React.FC<Props> = ({ onSelectPerps, onSelectPrediction
       {/* Hero */}
       <div className="flex flex-col items-center justify-center pt-16 sm:pt-24 pb-8 px-4">
         <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-accent to-purple flex items-center justify-center shadow-lg shadow-accent/15 mb-6">
-          <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M2 4L12 22L22 4" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
+          <span className="text-white font-extrabold text-[32px] leading-none" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>F</span>
         </div>
         <h1 className="text-[28px] sm:text-[36px] font-extrabold text-txt-0 tracking-tight text-center">
-          Value Exchange
+          Float Exchange
         </h1>
         <p className="text-[14px] sm:text-[16px] text-txt-2 mt-2 text-center max-w-md">
           Choose your platform — trade perpetual futures or predict price movements.

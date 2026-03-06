@@ -139,7 +139,7 @@ export const TradeForm: React.FC<Props> = ({ trading, initialLimitPrice, onSwitc
         <AlertCircle className="w-8 h-8 text-accent mb-3" />
         <h3 className="text-[13px] font-semibold text-txt-0 mb-1">Account Setup Required</h3>
         <p className="text-[11px] text-txt-3 mb-4 leading-relaxed max-w-[220px]">
-          Create a Value trading account with USDC collateral to start trading.
+          Create a Float trading account with USDC collateral to start trading.
         </p>
         {onSwitchToAccount && (
           <button onClick={onSwitchToAccount}
