@@ -627,6 +627,27 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.bgDark} 100%)` }}>
 
+      {/* ═══ Background decorations ═══ */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Subtle grid */}
+        <div className="absolute inset-0 opacity-[0.025]" style={{
+          backgroundImage: 'linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px)',
+          backgroundSize: '80px 80px',
+        }} />
+        {/* Top-left teal glow */}
+        <div className="absolute -top-32 -left-32 w-[500px] h-[500px] opacity-[0.07]" style={{
+          background: 'radial-gradient(circle, rgba(49,208,170,0.6) 0%, transparent 70%)',
+        }} />
+        {/* Top-right pink glow */}
+        <div className="absolute -top-24 -right-24 w-[400px] h-[400px] opacity-[0.05]" style={{
+          background: 'radial-gradient(circle, rgba(237,75,158,0.6) 0%, transparent 70%)',
+        }} />
+        {/* Center purple glow */}
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[400px] opacity-[0.04]" style={{
+          background: 'radial-gradient(ellipse at center, rgba(118,69,217,0.8) 0%, transparent 70%)',
+        }} />
+      </div>
+
       {/* ═══ Inject LIVE glow animation ═══ */}
       <style>{`
         @keyframes live-glow {
