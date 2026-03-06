@@ -149,7 +149,7 @@ function TradingApp() {
 
   return (
     <div className="h-screen w-screen max-w-[100vw] flex flex-col overflow-x-hidden bg-drift-bg">
-      {currentPage !== 'prediction' && (
+      {currentPage !== 'prediction' && currentPage !== 'home' && (
         <Header
           currentPage={currentPage}
           onNavigate={navigateTo}
