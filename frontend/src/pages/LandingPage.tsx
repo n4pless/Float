@@ -4,8 +4,8 @@
 import React, { useState, useEffect } from 'react';
 import {
   TrendingUp, Timer, ArrowRight, Zap, Shield,
-  BarChart2, Target, Flame, LineChart, Activity,
-  ArrowUpRight, ArrowDownRight, Lock, Globe,
+  BarChart2, Target, LineChart, Activity,
+  ArrowUpRight, ArrowDownRight, Globe,
 } from 'lucide-react';
 
 interface Props {
@@ -57,7 +57,7 @@ export const LandingPage: React.FC<Props> = ({ onSelectPerps, onSelectPrediction
           <span className="bg-gradient-to-r from-[#2EECC2] to-[#9b7dff] bg-clip-text text-transparent"> Exchange</span>
         </h1>
         <p className="text-[14px] sm:text-[16px] mt-3 text-center max-w-lg leading-relaxed" style={{ color: '#6B6B80' }}>
-          Two products, one platform — trade perpetual futures or predict price movements, fully on-chain on Solana.
+          Trade perpetual futures or predict price movements — fully on-chain on Solana devnet.
         </p>
 
         {/* Live price ticker */}
@@ -103,14 +103,14 @@ export const LandingPage: React.FC<Props> = ({ onSelectPerps, onSelectPrediction
                 <LineChart className="w-7 h-7 text-accent" />
               </div>
               <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase" style={{ background: 'rgba(76,139,245,0.08)', color: '#4C8BF5' }}>
-                <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-                Live
+                <div className="w-1.5 h-1.5 rounded-full bg-accent" />
+                Devnet
               </div>
             </div>
 
             <h2 className="text-[22px] sm:text-[24px] font-extrabold text-white mb-2 tracking-tight">Perpetuals Exchange</h2>
             <p className="text-[13px] sm:text-[14px] leading-relaxed mb-6" style={{ color: '#6B6B80' }}>
-              Trade SOL, BTC, ETH perpetual futures with up to 20x leverage. Lightning-fast execution powered by Drift protocol.
+              Trade SOL, BTC, ETH perpetual futures with up to 20x leverage on Solana devnet.
             </p>
 
             {/* Stats row */}
@@ -134,10 +134,9 @@ export const LandingPage: React.FC<Props> = ({ onSelectPerps, onSelectPrediction
             {/* Feature pills */}
             <div className="flex flex-wrap gap-2 mb-6">
               {[
-                { icon: Zap, label: 'Low Latency' },
-                { icon: BarChart2, label: 'Deep Liquidity' },
+                { icon: Zap, label: 'Low Fees' },
+                { icon: BarChart2, label: 'Up to 20x' },
                 { icon: Shield, label: 'Non-Custodial' },
-                { icon: Lock, label: 'Fully On-chain' },
               ].map(f => (
                 <div key={f.label} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
                   <f.icon className="w-3 h-3 text-accent/60" />
@@ -185,14 +184,14 @@ export const LandingPage: React.FC<Props> = ({ onSelectPerps, onSelectPrediction
                 <Target className="w-7 h-7 text-[#2EECC2]" />
               </div>
               <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase" style={{ background: 'rgba(46,236,194,0.08)', color: '#2EECC2' }}>
-                <Flame className="w-3 h-3" />
-                Popular
+                <div className="w-1.5 h-1.5 rounded-full bg-[#2EECC2]" />
+                Devnet
               </div>
             </div>
 
             <h2 className="text-[22px] sm:text-[24px] font-extrabold text-white mb-2 tracking-tight">Price Predictions</h2>
             <p className="text-[13px] sm:text-[14px] leading-relaxed mb-6" style={{ color: '#6B6B80' }}>
-              Predict if SOL goes UP or DOWN each round. Simple, fun, and rewarding — PancakeSwap-style prediction game.
+              Predict if SOL goes UP or DOWN each round. Bet from the pool, winner takes all.
             </p>
 
             {/* UP / DOWN visual */}
@@ -223,7 +222,6 @@ export const LandingPage: React.FC<Props> = ({ onSelectPerps, onSelectPrediction
                 { icon: Timer, label: '5min Rounds' },
                 { icon: TrendingUp, label: 'SOL/USD' },
                 { icon: Globe, label: 'Pyth Oracle' },
-                { icon: Shield, label: 'On-chain' },
               ].map(f => (
                 <div key={f.label} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
                   <f.icon className="w-3 h-3 text-[#2EECC2]/60" />
