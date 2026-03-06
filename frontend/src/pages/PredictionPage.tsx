@@ -694,9 +694,7 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
                 onClick={onBack}
                 className="flex items-center gap-1.5 hover:brightness-125 transition-all"
               >
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#5c8ae6] to-[#a855f7] flex items-center justify-center shadow-lg shadow-purple-500/20">
-                  <span className="text-white font-extrabold text-[14px] leading-none" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>F</span>
-                </div>
+                <img src="/float-logo-v2.svg" alt="Float" className="w-7 h-7 rounded-lg shadow-lg shadow-purple-500/20" />
                 <span className="text-[14px] font-bold text-[#F4EEFF] hidden sm:inline">Float</span>
               </button>
             )}

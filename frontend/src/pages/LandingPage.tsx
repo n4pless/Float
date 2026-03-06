@@ -19,9 +19,7 @@ export const LandingPage: React.FC<Props> = ({ onSelectPerps, onSelectPrediction
     <div className="flex-1 flex flex-col min-h-0 bg-drift-bg overflow-auto">
       {/* Hero */}
       <div className="flex flex-col items-center justify-center pt-16 sm:pt-24 pb-8 px-4">
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-accent to-purple flex items-center justify-center shadow-lg shadow-accent/15 mb-6">
-          <span className="text-white font-extrabold text-[32px] leading-none" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>F</span>
-        </div>
+        <img src="/float-logo-v2.svg" alt="Float" className="w-14 h-14 rounded-2xl shadow-lg shadow-accent/15 mb-6" />
         <h1 className="text-[28px] sm:text-[36px] font-extrabold text-txt-0 tracking-tight text-center">
           Float Exchange
         </h1>

@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="teal" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2EECC2"/>
+      <stop offset="100%" stop-color="#1DE8A8"/>
+    </linearGradient>
+
+    <linearGradient id="pink" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FF5F94"/>
+      <stop offset="100%" stop-color="#E84393"/>
+    </linearGradient>
+
+    <linearGradient id="stem" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2EECC2"/>
+      <stop offset="50%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#FF5F94"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="88" ry="88" fill="#0C0D18"/>
+
+  <!-- Subtle grid lines - trading chart feel -->
+  <line x1="0" y1="128" x2="512" y2="128" stroke="#1a1b2e" stroke-width="0.75"/>
+  <line x1="0" y1="256" x2="512" y2="256" stroke="#1a1b2e" stroke-width="0.75"/>
+  <line x1="0" y1="384" x2="512" y2="384" stroke="#1a1b2e" stroke-width="0.75"/>
+  <line x1="128" y1="0" x2="128" y2="512" stroke="#1a1b2e" stroke-width="0.75"/>
+  <line x1="256" y1="0" x2="256" y2="512" stroke="#1a1b2e" stroke-width="0.75"/>
+  <line x1="384" y1="0" x2="384" y2="512" stroke="#1a1b2e" stroke-width="0.75"/>
+
+  <!-- Candlestick accents - left side, faint -->
+  <!-- Candle 1 - green -->
+  <rect x="52" y="300" width="12" height="50" rx="2" fill="#2EECC2" opacity="0.12"/>
+  <line x1="58" y1="290" x2="58" y2="360" stroke="#2EECC2" stroke-width="1.5" opacity="0.12"/>
+
+  <!-- Candle 2 - red -->
+  <rect x="72" y="280" width="12" height="60" rx="2" fill="#FF5F94" opacity="0.1"/>
+  <line x1="78" y1="270" x2="78" y2="350" stroke="#FF5F94" stroke-width="1.5" opacity="0.1"/>
+
+  <!-- Candle 3 - green -->
+  <rect x="92" y="260" width="12" height="40" rx="2" fill="#2EECC2" opacity="0.08"/>
+  <line x1="98" y1="248" x2="98" y2="310" stroke="#2EECC2" stroke-width="1.5" opacity="0.08"/>
+
+  <!-- THE F — geometric, split duality -->
+
+  <!-- Vertical stem - gradient from teal (top/long) to pink (bottom/short) -->
+  <rect x="132" y="96" width="60" height="320" rx="8" ry="8" fill="url(#stem)"/>
+
+  <!-- Top bar - LONG position / UP - teal -->
+  <rect x="192" y="96" width="200" height="56" rx="8" ry="8" fill="url(#teal)"/>
+
+  <!-- Arrow tip on top bar pointing right - signals direction/momentum -->
+  <polygon points="392,96 420,124 392,152" fill="url(#teal)"/>
+
+  <!-- Middle bar - SHORT position / DOWN - pink -->
+  <rect x="192" y="236" width="140" height="52" rx="8" ry="8" fill="url(#pink)"/>
+
+  <!-- Arrow tip on middle bar pointing left - opposite direction -->
+  <polygon points="192,236 164,262 192,288" fill="url(#pink)"/>
+
+  <!-- Leverage indicator accent - "∞" for perpetual -->
+  <text x="440" y="420" font-family="'Courier New', monospace" font-size="28" fill="#2a2d4a" font-weight="700" opacity="0.4">∞</text>
+
+  <!-- Bottom accent line - like a PnL line -->
+  <polyline points="132,440 200,430 260,438 320,415 380,425 420,408" fill="none" stroke="#2EECC2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.25"/>
+</svg>

@@ -109,9 +109,7 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         <div className="flex items-center gap-2 shrink-0">
-          <div className="w-6 h-6 rounded-md bg-gradient-to-br from-accent to-purple flex items-center justify-center">
-            <span className="text-white font-extrabold text-[14px] leading-none" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>F</span>
-          </div>
+          <img src="/float-logo-v2.svg" alt="Float" className="w-6 h-6 rounded-md" />
           <span className="font-semibold text-[16px] text-txt-0 hidden sm:inline">Float</span>
         </div>
 
