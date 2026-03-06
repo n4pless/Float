@@ -477,6 +477,7 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const lastCenteredEpoch = useRef<number | null>(null);
 
   // Set connection once
   useEffect(() => {
@@ -514,18 +515,32 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
     return () => clearInterval(iv);
   }, [rounds]);
 
-  // Auto-scroll to live card on load
+  // Center the live card whenever the live epoch changes or on first load
+  const scrollToLive = useCallback((behavior: ScrollBehavior = 'smooth') => {
+    if (!scrollRef.current || rounds.length === 0) return;
+    const idx = rounds.findIndex(r => r.status === 'live');
+    if (idx < 0) return;
+    const gap = 20; // gap-5 = 1.25rem = 20px
+    const cardW = window.innerWidth >= 640 ? 330 : 310; // sm:w-[330px] / w-[310px]
+    const containerW = scrollRef.current.offsetWidth;
+    const scrollLeft = idx * (cardW + gap) - (containerW / 2) + (cardW / 2);
+    scrollRef.current.scrollTo({ left: Math.max(0, scrollLeft), behavior });
+  }, [rounds]);
+
+  // Auto-center on live card whenever the live epoch changes
   useEffect(() => {
-    if (rounds.length > 0 && scrollRef.current) {
-      const idx = rounds.findIndex(r => r.status === 'live');
-      if (idx >= 0) {
-        const cw = 350;
-        const w = scrollRef.current.offsetWidth;
-        scrollRef.current.scrollTo({
-          left: Math.max(0, idx * cw - w / 2 + cw / 2),
-          behavior: 'smooth',
-        });
-      }
+    const liveEpoch = rounds.find(r => r.status === 'live')?.epoch ?? null;
+    if (liveEpoch !== null && liveEpoch !== lastCenteredEpoch.current) {
+      lastCenteredEpoch.current = liveEpoch;
+      // Small delay to let DOM render new cards
+      requestAnimationFrame(() => scrollToLive('smooth'));
+    }
+  }, [rounds, scrollToLive]);
+
+  // Also center on first load
+  useEffect(() => {
+    if (rounds.length > 0) {
+      requestAnimationFrame(() => scrollToLive('auto'));
     }
   }, [rounds.length > 0]);
 
@@ -657,6 +672,12 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
         <button onClick={() => scroll('right')}
           className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-drift-panel/80 backdrop-blur-xl border border-white/[0.08] flex items-center justify-center text-txt-3 hover:text-txt-0 hover:border-white/[0.15] transition-all shadow-xl hover:shadow-2xl group">
           <ChevronRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
+        </button>
+
+        {/* Re-center on LIVE button */}
+        <button onClick={() => scrollToLive('smooth')}
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/15 backdrop-blur-xl border border-accent/20 text-accent text-[11px] font-semibold hover:bg-accent/25 transition-all shadow-lg">
+          <Flame className="w-3 h-3" /> LIVE
         </button>
 
         <div ref={scrollRef}
