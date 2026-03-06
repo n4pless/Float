@@ -28,8 +28,8 @@ const C = {
   down: '#ED4B9E',
   downDark: '#8a2d5e',
   purple: '#7645D9',
-  bg: '#27262C',
-  bgDark: '#1E1D2B',
+  bg: '#1a1a23',
+  bgDark: '#13111C',
   card: '#353547',
   cardDark: '#27262C',
   text: '#F4EEFF',
@@ -153,12 +153,19 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
   /* Card classes */
   const isLiveGlow = isLive;
   const isMuted = isExpired || isLater;
+  const liveGlowClass = isLiveGlow
+    ? liveDir === 'bull'
+      ? 'live-card-glow-up border-2'
+      : liveDir === 'bear'
+      ? 'live-card-glow-down border-2'
+      : 'live-card-glow border-2'
+    : '';
 
   return (
     <div
       className={`w-[340px] sm:w-[370px] shrink-0 rounded-2xl overflow-hidden snap-center flex flex-col transition-all duration-300 ${
         isLiveGlow
-          ? 'live-card-glow border-2'
+          ? liveGlowClass
           : isNext
           ? 'border border-[#7645D9]/30'
           : 'border border-white/[0.08]'
@@ -647,6 +654,22 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
         .live-card-glow {
           animation: live-glow 2s ease-in-out infinite;
           border-color: #7645D9;
+        }
+        @keyframes live-glow-up {
+          0%, 100% { box-shadow: 0 0 18px rgba(49,208,170,0.45), 0 0 35px rgba(49,208,170,0.15); border-color: #31D0AA; }
+          50% { box-shadow: 0 0 30px rgba(49,208,170,0.7), 0 0 60px rgba(49,208,170,0.3); border-color: #5EECC4; }
+        }
+        .live-card-glow-up {
+          animation: live-glow-up 2s ease-in-out infinite;
+          border-color: #31D0AA;
+        }
+        @keyframes live-glow-down {
+          0%, 100% { box-shadow: 0 0 18px rgba(237,75,158,0.45), 0 0 35px rgba(237,75,158,0.15); border-color: #ED4B9E; }
+          50% { box-shadow: 0 0 30px rgba(237,75,158,0.7), 0 0 60px rgba(237,75,158,0.3); border-color: #F77FBC; }
+        }
+        .live-card-glow-down {
+          animation: live-glow-down 2s ease-in-out infinite;
+          border-color: #ED4B9E;
         }
         .price-flash {
           animation: price-flash 0.3s ease-out;
