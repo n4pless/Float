@@ -12,7 +12,7 @@ import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import {
   ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Clock,
   Trophy, Lock, CheckCircle2, XCircle, Loader2,
-  History, Flame, ArrowLeft, Zap, TrendingUp, Timer,
+  History, Flame, Zap, TrendingUp, Timer,
   HelpCircle, Settings, CircleDollarSign, BarChart3,
 } from 'lucide-react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
@@ -173,36 +173,46 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
       style={{ background: C.cardDark }}
     >
 
-      {/* ═══ UP (BULL) ARROW ═══ */}
+      {/* ═══ UP (BULL) BANNER ═══ */}
       <div
-        className="relative px-4 py-3 flex items-center justify-between transition-all duration-500 overflow-hidden"
-        style={{ background: upHighlight ? C.up : C.card }}
+        className="relative px-4 py-2.5 flex items-center justify-between transition-all duration-500 overflow-hidden"
+        style={{ background: upHighlight ? `linear-gradient(135deg, ${C.up}, #26b895)` : C.card }}
       >
+        {/* Animated shimmer on highlight */}
         {upHighlight && (
-          <div className="absolute inset-0 bg-gradient-to-r from-[#31D0AA]/20 via-[#31D0AA]/5 to-[#31D0AA]/20 animate-pulse" />
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.12] to-transparent animate-shimmer" />
+          </div>
         )}
-        <div className="flex items-center gap-3 relative z-10">
-          {/* Thick UP Arrow */}
-          <div className={`transition-all duration-500 ${upHighlight ? 'arrow-glow-up' : 'opacity-20'}`}>
-            <svg viewBox="0 0 44 36" className="w-12 h-10">
-              <path d="M22 2 L42 32 H2 Z" fill={upHighlight ? '#1E1D2B' : '#31D0AA'} />
+        <div className="flex items-center gap-2.5 relative z-10">
+          {/* Stacked chevrons UP */}
+          <div className={`flex flex-col items-center transition-all duration-500 ${upHighlight ? 'arrow-glow-up' : 'opacity-25'}`}>
+            <svg viewBox="0 0 40 28" className="w-9 h-5">
+              <defs>
+                <linearGradient id="upGrad" x1="0" y1="28" x2="0" y2="0">
+                  <stop offset="0%" stopColor={upHighlight ? '#1E1D2B' : '#31D0AA'} stopOpacity="0.3" />
+                  <stop offset="100%" stopColor={upHighlight ? '#1E1D2B' : '#31D0AA'} stopOpacity="1" />
+                </linearGradient>
+              </defs>
+              <path d="M20 2 L36 16 H28 L20 8 L12 16 H4 Z" fill="url(#upGrad)" />
+              <path d="M20 12 L36 26 H28 L20 18 L12 26 H4 Z" fill={upHighlight ? '#1E1D2B' : '#31D0AA'} opacity="0.35" />
             </svg>
           </div>
           <div>
-            <div className={`text-[15px] font-extrabold leading-none ${upHighlight ? 'text-[#1E1D2B]' : 'text-[#31D0AA]'}`}>UP</div>
+            <div className={`text-[14px] font-extrabold tracking-wide leading-none ${upHighlight ? 'text-[#1E1D2B]' : 'text-[#31D0AA]'}`}>UP</div>
             {bet?.position === 'bull' && (
-              <span className={`text-[8px] font-bold mt-0.5 inline-block px-1.5 py-0.5 rounded ${
+              <span className={`text-[8px] font-bold mt-0.5 inline-block px-1.5 py-0.5 rounded-sm ${
                 upHighlight ? 'bg-[#1E1D2B]/20 text-[#1E1D2B]' : 'bg-[#31D0AA]/15 text-[#31D0AA]'
               }`}>ENTERED</span>
             )}
           </div>
         </div>
         <div className="text-right relative z-10">
-          <div className={`text-[13px] font-bold ${upHighlight ? 'text-[#1E1D2B]' : 'text-[#8C8CA1]'}`}>
-            {upMulti > 0 ? `${upMulti.toFixed(2)}x` : '-'} Payout
+          <div className={`text-[12px] font-bold ${upHighlight ? 'text-[#1E1D2B]' : 'text-[#8C8CA1]'}`}>
+            {upMulti > 0 ? `${upMulti.toFixed(2)}x` : '—'} Payout
           </div>
           {upPayoutSol > 0 && (
-            <div className={`text-[11px] font-mono font-semibold ${upHighlight ? 'text-[#1E1D2B]/70' : 'text-[#31D0AA]/50'}`}>
+            <div className={`text-[10px] font-mono font-semibold ${upHighlight ? 'text-[#1E1D2B]/70' : 'text-[#31D0AA]/50'}`}>
               → {fmtSol(upPayoutSol)} SOL
             </div>
           )}
@@ -474,36 +484,46 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
         )}
       </div>
 
-      {/* ═══ DOWN (BEAR) ARROW ═══ */}
+      {/* ═══ DOWN (BEAR) BANNER ═══ */}
       <div
-        className="relative px-4 py-3 flex items-center justify-between transition-all duration-500 overflow-hidden"
-        style={{ background: downHighlight ? C.down : C.card }}
+        className="relative px-4 py-2.5 flex items-center justify-between transition-all duration-500 overflow-hidden"
+        style={{ background: downHighlight ? `linear-gradient(135deg, ${C.down}, #c93d82)` : C.card }}
       >
+        {/* Animated shimmer on highlight */}
         {downHighlight && (
-          <div className="absolute inset-0 bg-gradient-to-r from-[#ED4B9E]/20 via-[#ED4B9E]/5 to-[#ED4B9E]/20 animate-pulse" />
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.12] to-transparent animate-shimmer" />
+          </div>
         )}
-        <div className="flex items-center gap-3 relative z-10">
-          {/* Thick DOWN Arrow */}
-          <div className={`transition-all duration-500 ${downHighlight ? 'arrow-glow-down' : 'opacity-20'}`}>
-            <svg viewBox="0 0 44 36" className="w-12 h-10">
-              <path d="M2 4 H42 L22 34 Z" fill={downHighlight ? '#fff' : '#ED4B9E'} />
+        <div className="flex items-center gap-2.5 relative z-10">
+          {/* Stacked chevrons DOWN */}
+          <div className={`flex flex-col items-center transition-all duration-500 ${downHighlight ? 'arrow-glow-down' : 'opacity-25'}`}>
+            <svg viewBox="0 0 40 28" className="w-9 h-5">
+              <defs>
+                <linearGradient id="downGrad" x1="0" y1="0" x2="0" y2="28">
+                  <stop offset="0%" stopColor={downHighlight ? '#fff' : '#ED4B9E'} stopOpacity="0.3" />
+                  <stop offset="100%" stopColor={downHighlight ? '#fff' : '#ED4B9E'} stopOpacity="1" />
+                </linearGradient>
+              </defs>
+              <path d="M4 2 H12 L20 10 L28 2 H36 L20 18 Z" fill={downHighlight ? '#fff' : '#ED4B9E'} opacity="0.35" />
+              <path d="M4 12 H12 L20 20 L28 12 H36 L20 28 Z" fill="url(#downGrad)" />
             </svg>
           </div>
           <div>
-            <div className={`text-[15px] font-extrabold leading-none ${downHighlight ? 'text-white' : 'text-[#ED4B9E]'}`}>DOWN</div>
+            <div className={`text-[14px] font-extrabold tracking-wide leading-none ${downHighlight ? 'text-white' : 'text-[#ED4B9E]'}`}>DOWN</div>
             {bet?.position === 'bear' && (
-              <span className={`text-[8px] font-bold mt-0.5 inline-block px-1.5 py-0.5 rounded ${
+              <span className={`text-[8px] font-bold mt-0.5 inline-block px-1.5 py-0.5 rounded-sm ${
                 downHighlight ? 'bg-white/20 text-white' : 'bg-[#ED4B9E]/15 text-[#ED4B9E]'
               }`}>ENTERED</span>
             )}
           </div>
         </div>
         <div className="text-right relative z-10">
-          <div className={`text-[13px] font-bold ${downHighlight ? 'text-white/90' : 'text-[#8C8CA1]'}`}>
-            {downMulti > 0 ? `${downMulti.toFixed(2)}x` : '-'} Payout
+          <div className={`text-[12px] font-bold ${downHighlight ? 'text-white/90' : 'text-[#8C8CA1]'}`}>
+            {downMulti > 0 ? `${downMulti.toFixed(2)}x` : '—'} Payout
           </div>
           {downPayoutSol > 0 && (
-            <div className={`text-[11px] font-mono font-semibold ${downHighlight ? 'text-white/70' : 'text-[#ED4B9E]/50'}`}>
+            <div className={`text-[10px] font-mono font-semibold ${downHighlight ? 'text-white/70' : 'text-[#ED4B9E]/50'}`}>
               → {fmtSol(downPayoutSol)} SOL
             </div>
           )}
@@ -692,28 +712,38 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
           0%, 100% { filter: drop-shadow(0 0 6px rgba(237,75,158,0.5)) drop-shadow(0 0 15px rgba(237,75,158,0.3)); transform: scale(1); }
           50% { filter: drop-shadow(0 0 14px rgba(237,75,158,0.9)) drop-shadow(0 0 30px rgba(237,75,158,0.5)); transform: scale(1.08); }
         }
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+        .animate-shimmer {
+          animation: shimmer 2s ease-in-out infinite;
+        }
       `}</style>
 
       {/* ═══ TOP BAR ═══ */}
       <div className="shrink-0 relative z-10 border-b border-white/[0.06]" style={{ background: `${C.cardDark}e6` }}>
         <div className="flex items-center justify-between px-4 sm:px-6 py-3">
 
-          {/* Left: Back + SOL Price Ticker */}
-          <div className="flex items-center gap-3">
+          {/* Left: Logo + Back + SOL Price Ticker */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Float Logo */}
             {onBack && (
               <button
                 onClick={onBack}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl hover:brightness-125 transition-all text-[#8C8CA1] hover:text-[#F4EEFF]"
-                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
+                className="flex items-center gap-1.5 hover:brightness-125 transition-all"
               >
-                <ArrowLeft className="w-4 h-4" />
-                <span className="text-[12px] font-medium hidden sm:inline">Home</span>
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#5c8ae6] to-[#a855f7] flex items-center justify-center shadow-lg shadow-purple-500/20">
+                  <span className="text-white font-extrabold text-[14px] leading-none" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>F</span>
+                </div>
+                <span className="text-[14px] font-bold text-[#F4EEFF] hidden sm:inline">Float</span>
               </button>
             )}
+            <div className="w-px h-5 bg-white/[0.08] hidden sm:block" />
             {/* SOL Price Ticker */}
-            <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
-              <SolanaLogo className="w-5 h-5" />
-              <span className="text-[15px] font-bold font-mono tabular-nums" style={{ color: C.text }}>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <SolanaLogo className="w-4 h-4" />
+              <span className="text-[14px] font-bold font-mono tabular-nums" style={{ color: C.text }}>
                 {livePrice > 0 ? `$${livePrice.toFixed(2)}` : '—'}
               </span>
             </div>
@@ -852,10 +882,13 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
                   style={{ background: C.cardDark }}
                 >
                   {/* UP banner placeholder */}
-                  <div className="px-4 py-3 flex items-center justify-between" style={{ background: C.card }}>
-                    <div className="flex items-center gap-3">
-                      <svg viewBox="0 0 44 36" className="w-12 h-10 opacity-15"><path d="M22 2 L42 32 H2 Z" fill="#31D0AA" /></svg>
-                      <span className="text-[15px] font-extrabold text-[#31D0AA]/20">UP</span>
+                  <div className="px-4 py-2.5 flex items-center justify-between" style={{ background: C.card }}>
+                    <div className="flex items-center gap-2.5">
+                      <svg viewBox="0 0 40 28" className="w-9 h-5 opacity-15">
+                        <path d="M20 2 L36 16 H28 L20 8 L12 16 H4 Z" fill="#31D0AA" />
+                        <path d="M20 12 L36 26 H28 L20 18 L12 26 H4 Z" fill="#31D0AA" opacity="0.35" />
+                      </svg>
+                      <span className="text-[14px] font-extrabold text-[#31D0AA]/20">UP</span>
                     </div>
                     <span className="text-[12px] font-semibold text-[#8C8CA1]/30">— Payout</span>
                   </div>
@@ -872,10 +905,13 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
                   </div>
 
                   {/* DOWN banner placeholder */}
-                  <div className="px-4 py-3 flex items-center justify-between" style={{ background: C.card }}>
-                    <div className="flex items-center gap-3">
-                      <svg viewBox="0 0 44 36" className="w-12 h-10 opacity-15"><path d="M2 4 H42 L22 34 Z" fill="#ED4B9E" /></svg>
-                      <span className="text-[15px] font-extrabold text-[#ED4B9E]/20">DOWN</span>
+                  <div className="px-4 py-2.5 flex items-center justify-between" style={{ background: C.card }}>
+                    <div className="flex items-center gap-2.5">
+                      <svg viewBox="0 0 40 28" className="w-9 h-5 opacity-15">
+                        <path d="M4 2 H12 L20 10 L28 2 H36 L20 18 Z" fill="#ED4B9E" opacity="0.35" />
+                        <path d="M4 12 H12 L20 20 L28 12 H36 L20 28 Z" fill="#ED4B9E" />
+                      </svg>
+                      <span className="text-[14px] font-extrabold text-[#ED4B9E]/20">DOWN</span>
                     </div>
                     <span className="text-[12px] font-semibold text-[#8C8CA1]/30">— Payout</span>
                   </div>
