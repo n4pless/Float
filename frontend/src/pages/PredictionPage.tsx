@@ -21,6 +21,21 @@ import { usePredictionStore, type DisplayRound, type DisplayBet, type RoundStatu
 import { PRICE_PRECISION } from '../prediction/client';
 import { toast } from 'sonner';
 
+/* ─── Solana Logo ─────────────────────────────────── */
+const SolanaLogo: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
+  <svg className={className} viewBox="0 0 397.7 311.7" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="sol-grad" x1="360.879" y1="-37.455" x2="141.213" y2="383.294" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stopColor="#00FFA3" />
+        <stop offset="1" stopColor="#DC1FFF" />
+      </linearGradient>
+    </defs>
+    <path d="M64.6 237.9c2.4-2.4 5.7-3.8 9.2-3.8h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1l62.7-62.7z" fill="url(#sol-grad)" />
+    <path d="M64.6 3.8C67.1 1.4 70.4 0 73.8 0h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1L64.6 3.8z" fill="url(#sol-grad)" />
+    <path d="M333.1 120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8 0-8.7 7-4.6 11.1l62.7 62.7c2.4 2.4 5.7 3.8 9.2 3.8h317.4c5.8 0 8.7-7 4.6-11.1l-62.7-62.7z" fill="url(#sol-grad)" />
+  </svg>
+);
+
 /* ─── Helpers ────────────────────────────────────── */
 
 function fmt(ms: number): string {
@@ -609,8 +624,8 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
               </button>
             )}
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-accent to-purple flex items-center justify-center shadow-lg shadow-accent/15">
-                <TrendingUp className="w-5 h-5 text-white" />
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#9945FF]/20 to-[#14F195]/20 border border-white/[0.08] flex items-center justify-center shadow-lg shadow-[#9945FF]/15">
+                <SolanaLogo className="w-5 h-5" />
               </div>
               <div>
                 <h1 className="text-[15px] font-bold text-txt-0 flex items-center gap-2">
@@ -626,9 +641,7 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
           <div className="flex items-center gap-2.5">
             {/* SOL Price Pill */}
             <div className="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/[0.04] border border-white/[0.06]">
-              <div className="w-5 h-5 rounded-full bg-gradient-to-b from-[#9945FF] to-[#14F195] flex items-center justify-center">
-                <span className="text-[8px] font-bold text-white">S</span>
-              </div>
+              <SolanaLogo className="w-5 h-5" />
               <span className="text-[15px] font-bold text-txt-0 font-mono tabular-nums">
                 {livePrice > 0 ? `$${livePrice.toFixed(2)}` : '—'}
               </span>
