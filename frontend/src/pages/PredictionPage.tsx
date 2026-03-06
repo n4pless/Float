@@ -243,13 +243,13 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
               {fmtPrice(livePrice, 4)}
             </div>
             <div className="space-y-1.5 pt-2">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="text-[#8C8CA1]">Locked Price</span>
-                <span className="text-[#F4EEFF]/70 font-mono">{fmtPrice(round.lockPrice, 4)}</span>
+              <div className="flex items-center justify-between text-[13px]">
+                <span className="text-[#8C8CA1] font-bold">Locked Price</span>
+                <span className="text-[#F4EEFF]/70 font-mono font-bold">{fmtPrice(round.lockPrice, 4)}</span>
               </div>
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="text-[#8C8CA1]">Prize Pool</span>
-                <span className="text-[#F4EEFF] font-mono font-semibold">{fmtSol(round.totalAmount)} SOL</span>
+              <div className="flex items-center justify-between text-[13px]">
+                <span className="text-[#8C8CA1] font-bold">Prize Pool</span>
+                <span className="text-[#F4EEFF] font-mono font-bold">{fmtSol(round.totalAmount)} SOL</span>
               </div>
             </div>
             {/* User bet indicator */}
@@ -294,13 +294,13 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
               </span>
             )}
             <div className="space-y-1.5 pt-1">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="text-[#8C8CA1]">Locked Price</span>
-                <span className="text-[#F4EEFF]/60 font-mono">{fmtPrice(round.lockPrice, 4)}</span>
+              <div className="flex items-center justify-between text-[13px]">
+                <span className="text-[#8C8CA1] font-bold">Locked Price</span>
+                <span className="text-[#F4EEFF]/60 font-mono font-bold">{fmtPrice(round.lockPrice, 4)}</span>
               </div>
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="text-[#8C8CA1]">Prize Pool</span>
-                <span className="text-[#F4EEFF]/60 font-mono">{fmtSol(round.totalAmount)} SOL</span>
+              <div className="flex items-center justify-between text-[13px]">
+                <span className="text-[#8C8CA1] font-bold">Prize Pool</span>
+                <span className="text-[#F4EEFF]/60 font-mono font-bold">{fmtSol(round.totalAmount)} SOL</span>
               </div>
             </div>
             {/* Collect / Lost / Collected badges */}
@@ -330,8 +330,8 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
         {isNext && !betDir && !bet && (
           <div className="flex-1 flex flex-col justify-center space-y-3">
             <div className="text-center">
-              <div className="text-[11px] text-[#8C8CA1] mb-1">Prize Pool</div>
-              <div className="text-[20px] font-bold text-[#F4EEFF] font-mono">{fmtSol(round.totalAmount)} SOL</div>
+              <div className="text-[13px] text-[#8C8CA1] font-bold mb-1">Prize Pool</div>
+              <div className="text-[22px] font-extrabold text-[#F4EEFF] font-mono">{fmtSol(round.totalAmount)} SOL</div>
             </div>
             <button
               onClick={() => setBetDir('bull')}
