@@ -821,6 +821,44 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
                   walletConnected={!!publicKey}
                 />
               ))}
+
+              {/* ── Upcoming empty card ── */}
+              {rounds.length > 0 && (
+                <div
+                  className="w-[340px] sm:w-[370px] shrink-0 rounded-2xl overflow-hidden snap-center flex flex-col border border-white/[0.06] opacity-40"
+                  style={{ background: C.cardDark }}
+                >
+                  {/* UP banner placeholder */}
+                  <div className="px-4 py-3 flex items-center justify-between" style={{ background: C.card }}>
+                    <div className="flex items-center gap-3">
+                      <svg viewBox="0 0 44 36" className="w-12 h-10 opacity-15"><path d="M22 2 L42 32 H2 Z" fill="#31D0AA" /></svg>
+                      <span className="text-[15px] font-extrabold text-[#31D0AA]/20">UP</span>
+                    </div>
+                    <span className="text-[12px] font-semibold text-[#8C8CA1]/30">— Payout</span>
+                  </div>
+
+                  {/* Empty middle */}
+                  <div className="px-4 py-4 flex-1 min-h-[200px] flex flex-col items-center justify-center space-y-3" style={{ background: C.cardDark }}>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2 h-2 rounded-full bg-[#8C8CA1]/20" />
+                      <span className="text-[12px] font-bold tracking-wide text-[#8C8CA1]/40">Later</span>
+                    </div>
+                    <span className="text-[11px] text-[#8C8CA1]/25 font-mono">#{(rounds[rounds.length - 1]?.epoch ?? 0) + 1}</span>
+                    <Lock className="w-10 h-10 text-[#8C8CA1]/10" />
+                    <p className="text-[12px] text-[#8C8CA1]/30 font-medium">Upcoming</p>
+                  </div>
+
+                  {/* DOWN banner placeholder */}
+                  <div className="px-4 py-3 flex items-center justify-between" style={{ background: C.card }}>
+                    <div className="flex items-center gap-3">
+                      <svg viewBox="0 0 44 36" className="w-12 h-10 opacity-15"><path d="M2 4 H42 L22 34 Z" fill="#ED4B9E" /></svg>
+                      <span className="text-[15px] font-extrabold text-[#ED4B9E]/20">DOWN</span>
+                    </div>
+                    <span className="text-[12px] font-semibold text-[#8C8CA1]/30">— Payout</span>
+                  </div>
+                </div>
+              )}
+
               <div className="shrink-0 w-[calc(50vw-170px)] sm:w-[calc(50vw-185px)]" aria-hidden />
             </>
           )}
