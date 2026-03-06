@@ -173,75 +173,57 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
       style={{ background: C.cardDark }}
     >
 
-      {/* ═══ UP (BULL) BANNER ═══ */}
-      <div
-        className="relative px-4 py-2.5 flex items-center justify-between transition-all duration-500 overflow-hidden"
-        style={{ background: upHighlight ? `linear-gradient(135deg, ${C.up}, #26b895)` : C.card }}
-      >
-        {/* Animated shimmer on highlight */}
-        {upHighlight && (
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.12] to-transparent animate-shimmer" />
-          </div>
-        )}
-        <div className="flex items-center gap-2.5 relative z-10">
-          {/* Stacked chevrons UP */}
-          <div className={`flex flex-col items-center transition-all duration-500 ${upHighlight ? 'arrow-glow-up' : 'opacity-25'}`}>
-            <svg viewBox="0 0 40 28" className="w-9 h-5">
-              <defs>
-                <linearGradient id="upGrad" x1="0" y1="28" x2="0" y2="0">
-                  <stop offset="0%" stopColor={upHighlight ? '#1E1D2B' : '#31D0AA'} stopOpacity="0.3" />
-                  <stop offset="100%" stopColor={upHighlight ? '#1E1D2B' : '#31D0AA'} stopOpacity="1" />
-                </linearGradient>
-              </defs>
-              <path d="M20 2 L36 16 H28 L20 8 L12 16 H4 Z" fill="url(#upGrad)" />
-              <path d="M20 12 L36 26 H28 L20 18 L12 26 H4 Z" fill={upHighlight ? '#1E1D2B' : '#31D0AA'} opacity="0.35" />
-            </svg>
-          </div>
-          <div>
-            <div className={`text-[14px] font-extrabold tracking-wide leading-none ${upHighlight ? 'text-[#1E1D2B]' : 'text-[#31D0AA]'}`}>UP</div>
-            {bet?.position === 'bull' && (
-              <span className={`text-[8px] font-bold mt-0.5 inline-block px-1.5 py-0.5 rounded-sm ${
-                upHighlight ? 'bg-[#1E1D2B]/20 text-[#1E1D2B]' : 'bg-[#31D0AA]/15 text-[#31D0AA]'
-              }`}>ENTERED</span>
-            )}
-          </div>
+      {/* ═══ HEADER STRIP ═══ */}
+      <div className="flex items-center justify-between px-4 py-2" style={{ background: C.card }}>
+        <div className="flex items-center gap-1.5">
+          {isLive && <div className="w-2 h-2 rounded-full bg-[#31D0AA] animate-pulse" />}
+          {isNext && <div className="w-2 h-2 rounded-full bg-[#7645D9] animate-pulse" />}
+          {isCalc && <Loader2 className="w-3 h-3 text-[#F0B90B] animate-spin" />}
+          {isLater && <div className="w-2 h-2 rounded-full bg-[#8C8CA1]/40" />}
+          {isExpired && <CheckCircle2 className="w-3 h-3 text-[#8C8CA1]/40" />}
+          <span className={`text-[11px] font-bold tracking-wide ${
+            isLive ? 'text-[#31D0AA]' : isNext ? 'text-[#7645D9]' : isCalc ? 'text-[#F0B90B]' : 'text-[#8C8CA1]'
+          }`}>
+            {isLive ? 'LIVE' : isNext ? 'Next' : isCalc ? 'Calculating' : isExpired ? 'Expired' : 'Later'}
+          </span>
         </div>
-        <div className="text-right relative z-10">
-          <div className={`text-[12px] font-bold ${upHighlight ? 'text-[#1E1D2B]' : 'text-[#8C8CA1]'}`}>
+        <span className="text-[11px] text-[#8C8CA1]/50 font-mono">#{epoch}</span>
+      </div>
+
+      {/* ═══ UP SHIELD BANNER ═══ */}
+      <div className={`relative transition-all duration-500 ${upHighlight ? 'shield-glow-up' : ''}`} style={{ height: 72 }}>
+        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <path
+            d="M0,0 L100,0 L100,45 C100,52 97,58 92,63 L56,90 Q50,100 44,90 L8,63 C3,58 0,52 0,45 Z"
+            fill={upHighlight ? C.up : C.card}
+            className="transition-all duration-500"
+          />
+        </svg>
+        <div className="relative z-10 flex flex-col items-center justify-center h-full pb-2">
+          <span className={`text-[18px] font-extrabold tracking-wider transition-colors duration-500 ${
+            upHighlight ? 'text-[#1a1b2e]' : 'text-[#31D0AA]/60'
+          }`}>UP</span>
+          <span className={`text-[11px] font-bold transition-colors duration-500 ${
+            upHighlight ? 'text-[#1a1b2e]/70' : 'text-[#8C8CA1]/50'
+          }`}>
             {upMulti > 0 ? `${upMulti.toFixed(2)}x` : '—'} Payout
-          </div>
-          {upPayoutSol > 0 && (
-            <div className={`text-[10px] font-mono font-semibold ${upHighlight ? 'text-[#1E1D2B]/70' : 'text-[#31D0AA]/50'}`}>
-              → {fmtSol(upPayoutSol)} SOL
-            </div>
+          </span>
+          {bet?.position === 'bull' && (
+            <span className={`text-[8px] font-bold mt-0.5 px-1.5 py-0.5 rounded-sm ${
+              upHighlight ? 'bg-[#1a1b2e]/20 text-[#1a1b2e]' : 'bg-[#31D0AA]/15 text-[#31D0AA]'
+            }`}>ENTERED</span>
           )}
         </div>
       </div>
 
-      {/* ═══ MIDDLE CONTENT ═══ */}
-      <div className="px-4 py-4 flex-1 min-h-[200px] flex flex-col" style={{ background: C.cardDark }}>
-
-        {/* Status header */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-1.5">
-            {isLive && <div className="w-2 h-2 rounded-full bg-[#31D0AA] animate-pulse" />}
-            {isNext && <div className="w-2 h-2 rounded-full bg-[#7645D9] animate-pulse" />}
-            {isCalc && <Loader2 className="w-3.5 h-3.5 text-[#F0B90B] animate-spin" />}
-            {isLater && <div className="w-2 h-2 rounded-full bg-[#8C8CA1]/40" />}
-            {isExpired && <CheckCircle2 className="w-3.5 h-3.5 text-[#8C8CA1]/40" />}
-            <span className={`text-[12px] font-bold tracking-wide ${
-              isLive ? 'text-[#31D0AA]' :
-              isNext ? 'text-[#7645D9]' :
-              isCalc ? 'text-[#F0B90B]' :
-              'text-[#8C8CA1]'
-            }`}>
-              {isLive ? 'LIVE' : isNext ? 'Next' : isCalc ? 'Calculating' : isExpired ? 'Expired' : 'Later'}
-            </span>
-          </div>
-          <span className="text-[11px] text-[#8C8CA1]/50 font-mono">#{epoch}</span>
-        </div>
-
+      {/* ═══ MAIN INFO BOX ═══ */}
+      <div
+        className="mx-3 my-1 rounded-xl border-2 flex-1 min-h-[180px] flex flex-col transition-all duration-500 px-4 py-3"
+        style={{
+          borderColor: upHighlight ? C.up : downHighlight ? C.down : 'rgba(255,255,255,0.08)',
+          background: 'rgba(19,17,28,0.8)',
+        }}
+      >
         {/* ── LIVE Content ── */}
         {isLive && (
           <div className="flex-1 flex flex-col justify-center space-y-2">
@@ -484,48 +466,28 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
         )}
       </div>
 
-      {/* ═══ DOWN (BEAR) BANNER ═══ */}
-      <div
-        className="relative px-4 py-2.5 flex items-center justify-between transition-all duration-500 overflow-hidden"
-        style={{ background: downHighlight ? `linear-gradient(135deg, ${C.down}, #c93d82)` : C.card }}
-      >
-        {/* Animated shimmer on highlight */}
-        {downHighlight && (
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.12] to-transparent animate-shimmer" />
-          </div>
-        )}
-        <div className="flex items-center gap-2.5 relative z-10">
-          {/* Stacked chevrons DOWN */}
-          <div className={`flex flex-col items-center transition-all duration-500 ${downHighlight ? 'arrow-glow-down' : 'opacity-25'}`}>
-            <svg viewBox="0 0 40 28" className="w-9 h-5">
-              <defs>
-                <linearGradient id="downGrad" x1="0" y1="0" x2="0" y2="28">
-                  <stop offset="0%" stopColor={downHighlight ? '#fff' : '#ED4B9E'} stopOpacity="0.3" />
-                  <stop offset="100%" stopColor={downHighlight ? '#fff' : '#ED4B9E'} stopOpacity="1" />
-                </linearGradient>
-              </defs>
-              <path d="M4 2 H12 L20 10 L28 2 H36 L20 18 Z" fill={downHighlight ? '#fff' : '#ED4B9E'} opacity="0.35" />
-              <path d="M4 12 H12 L20 20 L28 12 H36 L20 28 Z" fill="url(#downGrad)" />
-            </svg>
-          </div>
-          <div>
-            <div className={`text-[14px] font-extrabold tracking-wide leading-none ${downHighlight ? 'text-white' : 'text-[#ED4B9E]'}`}>DOWN</div>
-            {bet?.position === 'bear' && (
-              <span className={`text-[8px] font-bold mt-0.5 inline-block px-1.5 py-0.5 rounded-sm ${
-                downHighlight ? 'bg-white/20 text-white' : 'bg-[#ED4B9E]/15 text-[#ED4B9E]'
-              }`}>ENTERED</span>
-            )}
-          </div>
-        </div>
-        <div className="text-right relative z-10">
-          <div className={`text-[12px] font-bold ${downHighlight ? 'text-white/90' : 'text-[#8C8CA1]'}`}>
+      {/* ═══ DOWN SHIELD BANNER ═══ */}
+      <div className={`relative transition-all duration-500 ${downHighlight ? 'shield-glow-down' : ''}`} style={{ height: 72 }}>
+        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <path
+            d="M44,10 Q50,0 56,10 L92,37 C97,42 100,48 100,55 L100,100 L0,100 L0,55 C0,48 3,42 8,37 L44,10 Z"
+            fill={downHighlight ? C.down : C.card}
+            className="transition-all duration-500"
+          />
+        </svg>
+        <div className="relative z-10 flex flex-col items-center justify-center h-full pt-2">
+          <span className={`text-[11px] font-bold transition-colors duration-500 ${
+            downHighlight ? 'text-white/80' : 'text-[#8C8CA1]/50'
+          }`}>
             {downMulti > 0 ? `${downMulti.toFixed(2)}x` : '—'} Payout
-          </div>
-          {downPayoutSol > 0 && (
-            <div className={`text-[10px] font-mono font-semibold ${downHighlight ? 'text-white/70' : 'text-[#ED4B9E]/50'}`}>
-              → {fmtSol(downPayoutSol)} SOL
-            </div>
+          </span>
+          <span className={`text-[18px] font-extrabold tracking-wider transition-colors duration-500 ${
+            downHighlight ? 'text-white' : 'text-[#ED4B9E]/60'
+          }`}>DOWN</span>
+          {bet?.position === 'bear' && (
+            <span className={`text-[8px] font-bold mt-0.5 px-1.5 py-0.5 rounded-sm ${
+              downHighlight ? 'bg-white/20 text-white' : 'bg-[#ED4B9E]/15 text-[#ED4B9E]'
+            }`}>ENTERED</span>
           )}
         </div>
       </div>
@@ -712,12 +674,11 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
           0%, 100% { filter: drop-shadow(0 0 6px rgba(237,75,158,0.5)) drop-shadow(0 0 15px rgba(237,75,158,0.3)); transform: scale(1); }
           50% { filter: drop-shadow(0 0 14px rgba(237,75,158,0.9)) drop-shadow(0 0 30px rgba(237,75,158,0.5)); transform: scale(1.08); }
         }
-        @keyframes shimmer {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
+        .shield-glow-up {
+          filter: drop-shadow(0 4px 12px rgba(49,208,170,0.35)) drop-shadow(0 2px 6px rgba(49,208,170,0.2));
         }
-        .animate-shimmer {
-          animation: shimmer 2s ease-in-out infinite;
+        .shield-glow-down {
+          filter: drop-shadow(0 -4px 12px rgba(237,75,158,0.35)) drop-shadow(0 -2px 6px rgba(237,75,158,0.2));
         }
       `}</style>
 
@@ -881,39 +842,41 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
                   className="w-[300px] sm:w-[370px] shrink-0 rounded-2xl overflow-hidden snap-center flex flex-col border border-white/[0.06] opacity-40"
                   style={{ background: C.cardDark }}
                 >
-                  {/* UP banner placeholder */}
-                  <div className="px-4 py-2.5 flex items-center justify-between" style={{ background: C.card }}>
-                    <div className="flex items-center gap-2.5">
-                      <svg viewBox="0 0 40 28" className="w-9 h-5 opacity-15">
-                        <path d="M20 2 L36 16 H28 L20 8 L12 16 H4 Z" fill="#31D0AA" />
-                        <path d="M20 12 L36 26 H28 L20 18 L12 26 H4 Z" fill="#31D0AA" opacity="0.35" />
-                      </svg>
-                      <span className="text-[14px] font-extrabold text-[#31D0AA]/20">UP</span>
+                  {/* Header placeholder */}
+                  <div className="flex items-center justify-between px-4 py-2" style={{ background: C.card }}>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2 h-2 rounded-full bg-[#8C8CA1]/20" />
+                      <span className="text-[11px] font-bold tracking-wide text-[#8C8CA1]/30">Later</span>
                     </div>
-                    <span className="text-[12px] font-semibold text-[#8C8CA1]/30">— Payout</span>
+                    <span className="text-[11px] text-[#8C8CA1]/25 font-mono">#{(rounds[rounds.length - 1]?.epoch ?? 0) + 1}</span>
+                  </div>
+
+                  {/* UP shield placeholder */}
+                  <div className="relative" style={{ height: 72 }}>
+                    <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                      <path d="M0,0 L100,0 L100,45 C100,52 97,58 92,63 L56,90 Q50,100 44,90 L8,63 C3,58 0,52 0,45 Z" fill={C.card} opacity="0.5" />
+                    </svg>
+                    <div className="relative z-10 flex flex-col items-center justify-center h-full pb-2">
+                      <span className="text-[18px] font-extrabold tracking-wider text-[#31D0AA]/15">UP</span>
+                      <span className="text-[11px] font-bold text-[#8C8CA1]/20">— Payout</span>
+                    </div>
                   </div>
 
                   {/* Empty middle */}
-                  <div className="px-4 py-4 flex-1 min-h-[200px] flex flex-col items-center justify-center space-y-3" style={{ background: C.cardDark }}>
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-2 h-2 rounded-full bg-[#8C8CA1]/20" />
-                      <span className="text-[12px] font-bold tracking-wide text-[#8C8CA1]/40">Later</span>
-                    </div>
-                    <span className="text-[11px] text-[#8C8CA1]/25 font-mono">#{(rounds[rounds.length - 1]?.epoch ?? 0) + 1}</span>
+                  <div className="mx-3 my-1 rounded-xl border-2 flex-1 min-h-[180px] flex flex-col items-center justify-center space-y-3" style={{ borderColor: 'rgba(255,255,255,0.04)', background: 'rgba(19,17,28,0.5)' }}>
                     <Lock className="w-10 h-10 text-[#8C8CA1]/10" />
                     <p className="text-[12px] text-[#8C8CA1]/30 font-medium">Upcoming</p>
                   </div>
 
-                  {/* DOWN banner placeholder */}
-                  <div className="px-4 py-2.5 flex items-center justify-between" style={{ background: C.card }}>
-                    <div className="flex items-center gap-2.5">
-                      <svg viewBox="0 0 40 28" className="w-9 h-5 opacity-15">
-                        <path d="M4 2 H12 L20 10 L28 2 H36 L20 18 Z" fill="#ED4B9E" opacity="0.35" />
-                        <path d="M4 12 H12 L20 20 L28 12 H36 L20 28 Z" fill="#ED4B9E" />
-                      </svg>
-                      <span className="text-[14px] font-extrabold text-[#ED4B9E]/20">DOWN</span>
+                  {/* DOWN shield placeholder */}
+                  <div className="relative" style={{ height: 72 }}>
+                    <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                      <path d="M44,10 Q50,0 56,10 L92,37 C97,42 100,48 100,55 L100,100 L0,100 L0,55 C0,48 3,42 8,37 L44,10 Z" fill={C.card} opacity="0.5" />
+                    </svg>
+                    <div className="relative z-10 flex flex-col items-center justify-center h-full pt-2">
+                      <span className="text-[11px] font-bold text-[#8C8CA1]/20">— Payout</span>
+                      <span className="text-[18px] font-extrabold tracking-wider text-[#ED4B9E]/15">DOWN</span>
                     </div>
-                    <span className="text-[12px] font-semibold text-[#8C8CA1]/30">— Payout</span>
                   </div>
                 </div>
               )}
