@@ -4,7 +4,7 @@ import os
 
 BASE = os.path.expanduser('~/Drift-Clone')
 OLD_HTTP = 'https://purple-purple-field.solana-devnet.quiknode.pro/a1fdb633f366155c13687a7d55daba5836aede55/'
-OLD_WSS  = 'wss://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966'
+OLD_WSS  = 'wss://purple-purple-field.solana-devnet.quiknode.pro/a1fdb633f366155c13687a7d55daba5836aede55/'
 NEW_HTTP = 'https://api.devnet.solana.com'
 NEW_WSS  = 'wss://api.devnet.solana.com'
 

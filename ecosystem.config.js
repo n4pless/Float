@@ -12,7 +12,7 @@ module.exports = {
       env: {
         PORT: '3001',
         NODE_ENV: 'production',
-        RPC_URL: 'https://api.devnet.solana.com',
+        RPC_URL: 'https://purple-purple-field.solana-devnet.quiknode.pro/a1fdb633f366155c13687a7d55daba5836aede55/',
       },
     },
     {
@@ -23,8 +23,8 @@ module.exports = {
       max_restarts: 10,
       restart_delay: 3000,
       env: {
-        ENDPOINT: 'https://api.devnet.solana.com',
-        WS_ENDPOINT: 'wss://api.devnet.solana.com',
+        ENDPOINT: 'https://purple-purple-field.solana-devnet.quiknode.pro/a1fdb633f366155c13687a7d55daba5836aede55/',
+        WS_ENDPOINT: 'wss://purple-purple-field.solana-devnet.quiknode.pro/a1fdb633f366155c13687a7d55daba5836aede55/',
         ENV: 'devnet',
         DRIFT_PROGRAM_ID: 'EvKyHhYjCgpu335GdKZtfRsfu4VoUyjHn3kF3wgA5eXE',
         PORT: '6969',
@@ -49,7 +49,7 @@ module.exports = {
       max_restarts: 10,
       restart_delay: 5000,
       env: {
-        RPC_URL: 'https://api.devnet.solana.com',
+        RPC_URL: 'https://purple-purple-field.solana-devnet.quiknode.pro/a1fdb633f366155c13687a7d55daba5836aede55/',
       },
     },
     {

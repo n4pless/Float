@@ -16,7 +16,7 @@ const {
 import fs from 'fs';
 
 const RPC = 'https://purple-purple-field.solana-devnet.quiknode.pro/a1fdb633f366155c13687a7d55daba5836aede55/';
-const WS = 'wss://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966';
+const WS = 'wss://purple-purple-field.solana-devnet.quiknode.pro/a1fdb633f366155c13687a7d55daba5836aede55/';
 const PROGRAM_ID = new PublicKey('EvKyHhYjCgpu335GdKZtfRsfu4VoUyjHn3kF3wgA5eXE');
 
 const conn = new Connection(RPC, { commitment: 'confirmed', wsEndpoint: WS });
