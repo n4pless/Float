@@ -4,7 +4,7 @@
 
 const heliusKey = import.meta.env.VITE_HELIUS_API_KEY ?? '';
 const rpcUrl = import.meta.env.VITE_RPC_URL
-  || 'https://lb.drpc.live/solana-devnet/AtMVHn4QFk9clJLtW0FvKh3psGPzGhMR8Z3vtuZZzRRv';
+  || 'https://api.devnet.solana.com';
 
 export const DRIFT_CONFIG = {
   // Network
