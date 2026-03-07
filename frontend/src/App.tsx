@@ -150,11 +150,21 @@ function TradingApp() {
   return (
     <div className="h-screen w-screen max-w-[100vw] flex flex-col overflow-x-hidden bg-drift-bg">
       {currentPage !== 'prediction' && currentPage !== 'home' && (
-        <Header
-          currentPage={currentPage}
-          onNavigate={navigateTo}
-          onSwitchAccount={handleSwitchAccount}
-        />
+        <>
+          {/* Devnet ribbon – top of page */}
+          <div className="w-full shrink-0 flex items-center justify-center gap-2 py-1.5 text-[11px] font-semibold tracking-wide"
+            style={{ background: 'linear-gradient(90deg, rgba(76,139,245,0.12) 0%, rgba(155,125,255,0.10) 50%, rgba(46,236,194,0.12) 100%)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#2EECC2] animate-pulse" />
+            <span style={{ color: '#8C8CA1' }}>You are trading on</span>
+            <span className="font-bold" style={{ color: '#E8E8ED' }}>Solana Devnet</span>
+            <span style={{ color: '#8C8CA1' }}>— tokens have no real value</span>
+          </div>
+          <Header
+            currentPage={currentPage}
+            onNavigate={navigateTo}
+            onSwitchAccount={handleSwitchAccount}
+          />
+        </>
       )}
 
       {currentPage === 'home' ? (
@@ -178,15 +188,6 @@ function TradingApp() {
         />
       ) : (
         <>
-          {/* Devnet ribbon */}
-          <div className="w-full shrink-0 flex items-center justify-center gap-2 py-1.5 text-[11px] font-semibold tracking-wide"
-            style={{ background: 'linear-gradient(90deg, rgba(76,139,245,0.12) 0%, rgba(155,125,255,0.10) 50%, rgba(46,236,194,0.12) 100%)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-            <span className="w-1.5 h-1.5 rounded-full bg-[#2EECC2] animate-pulse" />
-            <span style={{ color: '#8C8CA1' }}>You are trading on</span>
-            <span className="font-bold" style={{ color: '#E8E8ED' }}>Solana Devnet</span>
-            <span style={{ color: '#8C8CA1' }}>— tokens have no real value</span>
-          </div>
-
           <MarketBar />
 
           {/* ── Mobile trade sub-tabs (lg:hidden) ── */}
