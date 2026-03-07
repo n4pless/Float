@@ -163,7 +163,7 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
 
   return (
     <div
-      className={`w-[300px] sm:w-[370px] shrink-0 rounded-2xl overflow-hidden snap-center flex flex-col transition-all duration-300 ${
+      className={`w-[280px] sm:w-[370px] shrink-0 rounded-2xl overflow-hidden snap-center flex flex-col transition-all duration-300 ${
         isLiveGlow
           ? liveGlowClass
           : isNext
@@ -191,7 +191,7 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
       </div>
 
       {/* ═══ UP SHIELD BANNER ═══ */}
-      <div className={`relative transition-all duration-500 ${upHighlight ? 'shield-glow-up' : ''}`} style={{ height: 72 }}>
+      <div className={`relative transition-all duration-500 ${upHighlight ? 'shield-glow-up' : ''}`} style={{ height: 56 }}>
         <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
           <path
             d="M0,0 L100,0 L100,45 C100,52 97,58 92,63 L56,90 Q50,100 44,90 L8,63 C3,58 0,52 0,45 Z"
@@ -199,11 +199,11 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
             className="transition-all duration-500"
           />
         </svg>
-        <div className="relative z-10 flex flex-col items-center justify-center h-full pb-2">
-          <span className={`text-[18px] font-extrabold tracking-wider transition-colors duration-500 ${
+        <div className="relative z-10 flex flex-col items-center justify-center h-full pb-1">
+          <span className={`text-[15px] sm:text-[18px] font-extrabold tracking-wider transition-colors duration-500 ${
             upHighlight ? 'text-[#1a1b2e]' : 'text-[#31D0AA]/60'
           }`}>UP</span>
-          <span className={`text-[11px] font-bold transition-colors duration-500 ${
+          <span className={`text-[10px] sm:text-[11px] font-bold transition-colors duration-500 ${
             upHighlight ? 'text-[#1a1b2e]/70' : 'text-[#8C8CA1]/50'
           }`}>
             {upMulti > 0 ? `${upMulti.toFixed(2)}x` : '—'} Payout
@@ -218,7 +218,7 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
 
       {/* ═══ MAIN INFO BOX ═══ */}
       <div
-        className="mx-3 my-1 rounded-xl border-2 flex-1 min-h-[180px] flex flex-col transition-all duration-500 px-4 py-3"
+        className="mx-2 sm:mx-3 my-1 rounded-xl border-2 flex-1 min-h-[160px] sm:min-h-[180px] flex flex-col transition-all duration-500 px-3 sm:px-4 py-2.5 sm:py-3"
         style={{
           borderColor: upHighlight ? C.up : downHighlight ? C.down : 'rgba(255,255,255,0.08)',
           background: 'rgba(19,17,28,0.8)',
@@ -237,7 +237,7 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
                 </span>
               )}
             </div>
-            <div className={`text-[28px] font-extrabold font-mono tabular-nums leading-none tracking-tight transition-colors ${
+            <div className={`text-[22px] sm:text-[28px] font-extrabold font-mono tabular-nums leading-none tracking-tight transition-colors ${
               liveDelta?.up ? 'text-[#31D0AA]' : liveDelta && !liveDelta.up ? 'text-[#ED4B9E]' : 'text-[#F4EEFF]'
             }`}>
               {fmtPrice(livePrice, 4)}
@@ -281,7 +281,7 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
         {isExpired && (
           <div className="flex-1 flex flex-col justify-center space-y-2">
             <div className="text-[10px] text-[#8C8CA1] uppercase tracking-wider font-medium">Closed Price</div>
-            <div className={`text-[24px] font-extrabold font-mono tabular-nums leading-none ${
+            <div className={`text-[20px] sm:text-[24px] font-extrabold font-mono tabular-nums leading-none ${
               round.result === 'bull' ? 'text-[#31D0AA]' : round.result === 'bear' ? 'text-[#ED4B9E]' : 'text-[#F4EEFF]'
             }`}>
               {fmtPrice(round.closePrice, 4)}
@@ -331,18 +331,18 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
           <div className="flex-1 flex flex-col justify-center space-y-3">
             <div className="text-center">
               <div className="text-[13px] text-[#8C8CA1] font-bold mb-1">Prize Pool</div>
-              <div className="text-[22px] font-extrabold text-[#F4EEFF] font-mono">{fmtSol(round.totalAmount)} SOL</div>
+              <div className="text-[18px] sm:text-[22px] font-extrabold text-[#F4EEFF] font-mono">{fmtSol(round.totalAmount)} SOL</div>
             </div>
             <button
               onClick={() => setBetDir('bull')}
-              className="w-full py-3.5 rounded-xl font-bold text-[14px] text-white transition-all active:scale-[0.97] hover:brightness-110 flex items-center justify-center gap-2"
+              className="w-full py-3 sm:py-3.5 rounded-xl font-bold text-[13px] sm:text-[14px] text-white transition-all active:scale-[0.97] hover:brightness-110 flex items-center justify-center gap-2"
               style={{ background: C.up }}
             >
               Enter UP <ArrowUp className="w-4 h-4" />
             </button>
             <button
               onClick={() => setBetDir('bear')}
-              className="w-full py-3.5 rounded-xl font-bold text-[14px] text-white transition-all active:scale-[0.97] hover:brightness-110 flex items-center justify-center gap-2"
+              className="w-full py-3 sm:py-3.5 rounded-xl font-bold text-[13px] sm:text-[14px] text-white transition-all active:scale-[0.97] hover:brightness-110 flex items-center justify-center gap-2"
               style={{ background: C.down }}
             >
               Enter DOWN <ArrowDown className="w-4 h-4" />
@@ -391,12 +391,12 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
               </span>
             </div>
 
-            <div className="flex gap-1.5">
+            <div className="flex gap-1 sm:gap-1.5">
               {[0.01, 0.05, 0.1, 0.25, 0.5, 1].map(a => (
                 <button
                   key={a}
                   onClick={() => setBetAmt(a.toString())}
-                  className={`flex-1 py-1.5 rounded-lg text-[9px] font-semibold transition-all border ${
+                  className={`flex-1 py-1.5 rounded-lg text-[8px] sm:text-[9px] font-semibold transition-all border ${
                     betAmt === a.toString()
                       ? 'border-[#7645D9] text-[#F4EEFF]'
                       : 'border-transparent text-[#8C8CA1] hover:text-[#F4EEFF]'
@@ -467,7 +467,7 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
       </div>
 
       {/* ═══ DOWN SHIELD BANNER ═══ */}
-      <div className={`relative transition-all duration-500 ${downHighlight ? 'shield-glow-down' : ''}`} style={{ height: 72 }}>
+      <div className={`relative transition-all duration-500 ${downHighlight ? 'shield-glow-down' : ''}`} style={{ height: 56 }}>
         <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
           <path
             d="M44,10 Q50,0 56,10 L92,37 C97,42 100,48 100,55 L100,100 L0,100 L0,55 C0,48 3,42 8,37 L44,10 Z"
@@ -475,13 +475,13 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
             className="transition-all duration-500"
           />
         </svg>
-        <div className="relative z-10 flex flex-col items-center justify-center h-full pt-2">
-          <span className={`text-[11px] font-bold transition-colors duration-500 ${
+        <div className="relative z-10 flex flex-col items-center justify-center h-full pt-1">
+          <span className={`text-[10px] sm:text-[11px] font-bold transition-colors duration-500 ${
             downHighlight ? 'text-white/80' : 'text-[#8C8CA1]/50'
           }`}>
             {downMulti > 0 ? `${downMulti.toFixed(2)}x` : '—'} Payout
           </span>
-          <span className={`text-[18px] font-extrabold tracking-wider transition-colors duration-500 ${
+          <span className={`text-[15px] sm:text-[18px] font-extrabold tracking-wider transition-colors duration-500 ${
             downHighlight ? 'text-white' : 'text-[#ED4B9E]/60'
           }`}>DOWN</span>
           {bet?.position === 'bear' && (
@@ -705,25 +705,25 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
 
       {/* ═══ TOP BAR ═══ */}
       <div className="shrink-0 relative z-10 border-b border-white/[0.06]" style={{ background: `${C.cardDark}e6` }}>
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3">
+        <div className="flex items-center justify-between px-3 sm:px-6 py-2 sm:py-3">
 
           {/* Left: Logo + Back + SOL Price Ticker */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             {/* Float Logo */}
             {onBack && (
               <button
                 onClick={onBack}
                 className="flex items-center gap-1.5 hover:brightness-125 transition-all"
               >
-                <img src="/float-logo-v2.svg" alt="Float" className="w-7 h-7 rounded-lg shadow-lg shadow-purple-500/20" />
+                <img src="/float-logo-v2.svg" alt="Float" className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg shadow-lg shadow-purple-500/20" />
                 <span className="text-[14px] font-bold text-[#F4EEFF] hidden sm:inline">Float</span>
               </button>
             )}
             <div className="w-px h-5 bg-white/[0.08] hidden sm:block" />
             {/* SOL Price Ticker */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
-              <SolanaLogo className="w-4 h-4" />
-              <span className="text-[14px] font-bold font-mono tabular-nums" style={{ color: C.text }}>
+            <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <SolanaLogo className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="text-[12px] sm:text-[14px] font-bold font-mono tabular-nums" style={{ color: C.text }}>
                 {livePrice > 0 ? `$${livePrice.toFixed(2)}` : '—'}
               </span>
             </div>
@@ -754,12 +754,12 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
             </button>
           </div>
 
-          {/* Right: Timer + Icons + Wallet */}
-          <div className="flex items-center gap-2">
+          {/* Right: Icons + Wallet */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {/* History */}
             <button
               onClick={() => setShowHistory(!showHistory)}
-              className={`p-2.5 rounded-xl transition-all ${
+              className={`p-2 sm:p-2.5 rounded-lg sm:rounded-xl transition-all ${
                 showHistory ? 'text-[#7645D9]' : 'text-[#8C8CA1] hover:text-[#F4EEFF]'
               }`}
               style={{
@@ -786,8 +786,8 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
               <HelpCircle className="w-4 h-4" />
             </button>
 
-            {/* Wallet */}
-            <div className="[&_.wallet-adapter-button]:!h-9 [&_.wallet-adapter-button]:!rounded-xl [&_.wallet-adapter-button]:!text-[12px] [&_.wallet-adapter-button]:!font-semibold [&_.wallet-adapter-button]:!bg-[#7645D9]/20 [&_.wallet-adapter-button]:!border [&_.wallet-adapter-button]:!border-[#7645D9]/30 [&_.wallet-adapter-button]:hover:!bg-[#7645D9]/30 [&_.wallet-adapter-button]:!px-3">
+            {/* Wallet — compact on mobile */}
+            <div className="[&_.wallet-adapter-button]:!h-8 [&_.wallet-adapter-button]:!rounded-lg [&_.wallet-adapter-button]:!text-[11px] [&_.wallet-adapter-button]:!font-semibold [&_.wallet-adapter-button]:!bg-[#7645D9]/20 [&_.wallet-adapter-button]:!border [&_.wallet-adapter-button]:!border-[#7645D9]/30 [&_.wallet-adapter-button]:hover:!bg-[#7645D9]/30 [&_.wallet-adapter-button]:!px-2.5 sm:[&_.wallet-adapter-button]:!h-9 sm:[&_.wallet-adapter-button]:!rounded-xl sm:[&_.wallet-adapter-button]:!text-[12px] sm:[&_.wallet-adapter-button]:!px-3">
               <WalletMultiButton />
             </div>
           </div>
@@ -796,9 +796,9 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
 
       {/* ═══ COUNTDOWN CLOCK (PancakeSwap-style — centered above cards) ═══ */}
       {liveRound && (
-        <div className="shrink-0 relative z-10 flex items-center justify-center py-3 sm:py-4">
+        <div className="shrink-0 relative z-10 flex items-center justify-center py-2 sm:py-4">
           <div
-            className="flex items-center gap-4 px-5 py-2.5 rounded-2xl border"
+            className="flex items-center gap-2.5 sm:gap-4 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl border"
             style={{
               background: 'rgba(53,53,71,0.55)',
               borderColor: timeRemainingMs < 15000
@@ -810,12 +810,10 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
                 : '0 0 20px rgba(118,69,217,0.1)',
             }}
           >
-            {/* Circular progress ring */}
-            <div className="relative w-12 h-12 flex items-center justify-center">
-              <svg className="w-12 h-12 -rotate-90" viewBox="0 0 48 48">
-                {/* Background ring */}
+            {/* Circular progress ring — smaller on mobile */}
+            <div className="relative w-9 h-9 sm:w-12 sm:h-12 flex items-center justify-center">
+              <svg className="w-9 h-9 sm:w-12 sm:h-12 -rotate-90" viewBox="0 0 48 48">
                 <circle cx="24" cy="24" r="20" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="3" />
-                {/* Progress ring */}
                 <circle
                   cx="24" cy="24" r="20" fill="none"
                   stroke={timeRemainingMs < 15000 ? C.down : C.purple}
@@ -827,33 +825,30 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
                   style={{ filter: `drop-shadow(0 0 4px ${timeRemainingMs < 15000 ? 'rgba(237,75,158,0.5)' : 'rgba(118,69,217,0.5)'})` }}
                 />
               </svg>
-              {/* Inner icon */}
               <div className="absolute inset-0 flex items-center justify-center">
                 {timeRemainingMs < 15000
-                  ? <Flame className="w-4 h-4 text-[#ED4B9E] animate-pulse" />
-                  : <Timer className="w-4 h-4 text-[#7645D9]" />
+                  ? <Flame className="w-3 h-3 sm:w-4 sm:h-4 text-[#ED4B9E] animate-pulse" />
+                  : <Timer className="w-3 h-3 sm:w-4 sm:h-4 text-[#7645D9]" />
                 }
               </div>
             </div>
 
             {/* Time display */}
             <div className="flex flex-col items-start">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <span
-                  className={`text-[28px] sm:text-[32px] font-extrabold font-mono tabular-nums leading-none ${
-                    timeRemainingMs < 15000 ? 'text-[#ED4B9E]' : ''
-                  }`}
+                  className="text-[22px] sm:text-[32px] font-extrabold font-mono tabular-nums leading-none"
                   style={{ color: timeRemainingMs < 15000 ? C.down : C.text }}
                 >
                   {fmt(timeRemainingMs)}
                 </span>
-                <div className="flex items-center gap-1 px-2 py-0.5 rounded-md" style={{ background: 'rgba(49,208,170,0.1)' }}>
+                <div className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-md" style={{ background: 'rgba(49,208,170,0.1)' }}>
                   <div className="w-1.5 h-1.5 rounded-full bg-[#31D0AA] animate-pulse" />
-                  <span className="text-[10px] font-bold text-[#31D0AA] tracking-wide">LIVE</span>
+                  <span className="text-[9px] sm:text-[10px] font-bold text-[#31D0AA] tracking-wide">LIVE</span>
                 </div>
               </div>
-              <span className="text-[11px] font-medium mt-0.5" style={{ color: C.muted }}>
-                Round #{liveRound.epoch} · {Math.floor((game?.intervalSeconds ?? 300) / 60)}m rounds
+              <span className="text-[10px] sm:text-[11px] font-medium mt-0.5" style={{ color: C.muted }}>
+                #{liveRound.epoch} · {Math.floor((game?.intervalSeconds ?? 300) / 60)}m rounds
               </span>
             </div>
           </div>
@@ -894,7 +889,7 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
             </div>
           ) : (
             <>
-              <div className="shrink-0 w-[calc(50vw-150px)] sm:w-[calc(50vw-185px)]" aria-hidden />
+              <div className="shrink-0 w-[calc(50vw-140px)] sm:w-[calc(50vw-185px)]" aria-hidden />
               {rounds.map(r => (
                 <RoundCard
                   key={r.epoch}
@@ -911,7 +906,7 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
               {/* ── Upcoming empty card ── */}
               {rounds.length > 0 && (
                 <div
-                  className="w-[300px] sm:w-[370px] shrink-0 rounded-2xl overflow-hidden snap-center flex flex-col border border-white/[0.06] opacity-40"
+                  className="w-[280px] sm:w-[370px] shrink-0 rounded-2xl overflow-hidden snap-center flex flex-col border border-white/[0.06] opacity-40"
                   style={{ background: C.cardDark }}
                 >
                   {/* Header placeholder */}
@@ -924,7 +919,7 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
                   </div>
 
                   {/* UP shield placeholder */}
-                  <div className="relative" style={{ height: 72 }}>
+                  <div className="relative" style={{ height: 56 }}>
                     <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
                       <path d="M0,0 L100,0 L100,45 C100,52 97,58 92,63 L56,90 Q50,100 44,90 L8,63 C3,58 0,52 0,45 Z" fill={C.card} opacity="0.5" />
                     </svg>
@@ -935,13 +930,13 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
                   </div>
 
                   {/* Empty middle */}
-                  <div className="mx-3 my-1 rounded-xl border-2 flex-1 min-h-[180px] flex flex-col items-center justify-center space-y-3" style={{ borderColor: 'rgba(255,255,255,0.04)', background: 'rgba(19,17,28,0.5)' }}>
+                  <div className="mx-2 sm:mx-3 my-1 rounded-xl border-2 flex-1 min-h-[160px] sm:min-h-[180px] flex flex-col items-center justify-center space-y-3" style={{ borderColor: 'rgba(255,255,255,0.04)', background: 'rgba(19,17,28,0.5)' }}>
                     <Lock className="w-10 h-10 text-[#8C8CA1]/10" />
                     <p className="text-[12px] text-[#8C8CA1]/30 font-medium">Upcoming</p>
                   </div>
 
                   {/* DOWN shield placeholder */}
-                  <div className="relative" style={{ height: 72 }}>
+                  <div className="relative" style={{ height: 56 }}>
                     <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
                       <path d="M44,10 Q50,0 56,10 L92,37 C97,42 100,48 100,55 L100,100 L0,100 L0,55 C0,48 3,42 8,37 L44,10 Z" fill={C.card} opacity="0.5" />
                     </svg>
@@ -953,18 +948,38 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
                 </div>
               )}
 
-              <div className="shrink-0 w-[calc(50vw-150px)] sm:w-[calc(50vw-185px)]" aria-hidden />
+              <div className="shrink-0 w-[calc(50vw-140px)] sm:w-[calc(50vw-185px)]" aria-hidden />
             </>
           )}
         </div>
+
+        {/* Mobile floating nav arrows */}
+        {!notReady && rounds.length > 0 && (
+          <>
+            <button
+              onClick={() => scroll('left')}
+              className="sm:hidden absolute left-1.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full flex items-center justify-center text-white/60 active:text-white active:scale-90 transition-all"
+              style={{ background: 'rgba(39,38,44,0.85)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.08)' }}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => scroll('right')}
+              className="sm:hidden absolute right-1.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full flex items-center justify-center text-white/60 active:text-white active:scale-90 transition-all"
+              style={{ background: 'rgba(39,38,44,0.85)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.08)' }}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </>
+        )}
       </div>
 
       {/* ═══ BOTTOM BAR ═══ */}
-      <div className="shrink-0 relative z-10 border-t border-white/[0.06]" style={{ background: `${C.cardDark}e6` }}>
+      <div className="shrink-0 relative z-10 border-t border-white/[0.06] pb-[env(safe-area-inset-bottom)]" style={{ background: `${C.cardDark}e6` }}>
         {showHistory ? (
           <HistoryPanel rounds={rounds} bets={myBets} onClaim={handleClaim} />
         ) : (
-          <div className="flex items-center justify-between px-3 sm:px-6 py-3">
+          <div className="flex items-center justify-between px-3 sm:px-6 py-2 sm:py-3">
             {/* Left: Stats */}
             <div className="flex items-center gap-3 sm:gap-8 overflow-x-auto scrollbar-hide">
               <StatPill label="Rounds" value={String(myBets.length)} />
@@ -1002,9 +1017,9 @@ const StatPill: React.FC<{
   value: string;
   color?: string;
 }> = ({ label, value, color }) => (
-  <div>
-    <div className="text-[9px] uppercase tracking-widest font-medium" style={{ color: 'rgba(140,140,161,0.5)' }}>{label}</div>
-    <div className="text-[14px] font-bold font-mono tabular-nums" style={{ color: color ?? C.text }}>{value}</div>
+  <div className="min-w-0">
+    <div className="text-[8px] sm:text-[9px] uppercase tracking-widest font-medium whitespace-nowrap" style={{ color: 'rgba(140,140,161,0.5)' }}>{label}</div>
+    <div className="text-[12px] sm:text-[14px] font-bold font-mono tabular-nums whitespace-nowrap" style={{ color: color ?? C.text }}>{value}</div>
   </div>
 );
 
@@ -1027,69 +1042,144 @@ const HistoryPanel: React.FC<{
           <p className="text-[10px] mt-1" style={{ color: 'rgba(140,140,161,0.25)' }}>Place your first prediction to see history</p>
         </div>
       ) : (
-        <table className="w-full text-[11px]">
-          <thead className="sticky top-0" style={{ background: `${C.cardDark}f0` }}>
-            <tr style={{ color: 'rgba(140,140,161,0.5)' }} className="border-b border-white/[0.06]">
-              <th className="text-left px-5 py-2.5 font-medium">Round</th>
-              <th className="text-left px-2 py-2.5 font-medium">Position</th>
-              <th className="text-right px-2 py-2.5 font-medium">Amount</th>
-              <th className="text-center px-2 py-2.5 font-medium">Result</th>
-              <th className="text-right px-5 py-2.5 font-medium">Action</th>
-            </tr>
-          </thead>
-          <tbody>
+        <>
+          {/* Desktop: table view */}
+          <table className="hidden sm:table w-full text-[11px]">
+            <thead className="sticky top-0" style={{ background: `${C.cardDark}f0` }}>
+              <tr style={{ color: 'rgba(140,140,161,0.5)' }} className="border-b border-white/[0.06]">
+                <th className="text-left px-5 py-2.5 font-medium">Round</th>
+                <th className="text-left px-2 py-2.5 font-medium">Position</th>
+                <th className="text-right px-2 py-2.5 font-medium">Amount</th>
+                <th className="text-center px-2 py-2.5 font-medium">Result</th>
+                <th className="text-right px-5 py-2.5 font-medium">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sorted.map(b => {
+                const r = rounds.find(rr => rr.epoch === b.epoch);
+                const pending = !r?.oracleCalled;
+                const won = b.payout > b.amount;
+                const tie = b.payout === b.amount && b.payout > 0;
+                return (
+                  <tr key={b.epoch} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
+                    <td className="px-5 py-3 font-mono" style={{ color: C.muted }}>#{b.epoch}</td>
+                    <td className="px-2 py-3">
+                      <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md ${
+                        b.position === 'bull' ? 'bg-[#31D0AA]/8 text-[#31D0AA]' : 'bg-[#ED4B9E]/8 text-[#ED4B9E]'
+                      }`}>
+                        {b.position === 'bull' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+                        {b.position === 'bull' ? 'UP' : 'DOWN'}
+                      </span>
+                    </td>
+                    <td className="px-2 py-3 text-right font-mono" style={{ color: C.text }}>{fmtSol(b.amount)}</td>
+                    <td className="px-2 py-3 text-center">
+                      {pending ? (
+                        <span className="text-[#F0B90B] bg-[#F0B90B]/10 px-2 py-0.5 rounded-md text-[10px] font-medium">Live</span>
+                      ) : won ? (
+                        <span className="text-[#31D0AA] bg-[#31D0AA]/10 px-2 py-0.5 rounded-md text-[10px] font-medium">Won</span>
+                      ) : tie ? (
+                        <span className="text-[#F0B90B] bg-[#F0B90B]/10 px-2 py-0.5 rounded-md text-[10px] font-medium">Tie</span>
+                      ) : (
+                        <span className="text-[#ED4B9E] bg-[#ED4B9E]/10 px-2 py-0.5 rounded-md text-[10px] font-medium">Lost</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-3 text-right">
+                      {(won || tie) && !b.claimed ? (
+                        <button
+                          onClick={() => onClaim(b.epoch)}
+                          className="text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all hover:brightness-110 border"
+                          style={{ color: C.up, background: 'rgba(49,208,170,0.1)', borderColor: 'rgba(49,208,170,0.15)' }}
+                        >
+                          {tie ? 'Refund' : 'Collect'}
+                        </button>
+                      ) : b.claimed ? (
+                        <span className="text-[10px] flex items-center justify-end gap-1" style={{ color: 'rgba(49,208,170,0.6)' }}>
+                          <CheckCircle2 className="w-3 h-3" /> Done
+                        </span>
+                      ) : pending ? (
+                        <span className="text-[10px]" style={{ color: 'rgba(140,140,161,0.3)' }}>—</span>
+                      ) : (
+                        <span className="text-[10px]" style={{ color: 'rgba(237,75,158,0.5)' }}>-{fmtSol(b.amount)}</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          {/* Mobile: card view */}
+          <div className="sm:hidden flex flex-col divide-y divide-white/[0.04]">
             {sorted.map(b => {
               const r = rounds.find(rr => rr.epoch === b.epoch);
               const pending = !r?.oracleCalled;
               const won = b.payout > b.amount;
               const tie = b.payout === b.amount && b.payout > 0;
               return (
-                <tr key={b.epoch} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
-                  <td className="px-5 py-3 font-mono" style={{ color: C.muted }}>#{b.epoch}</td>
-                  <td className="px-2 py-3">
-                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md ${
-                      b.position === 'bull' ? 'bg-[#31D0AA]/8 text-[#31D0AA]' : 'bg-[#ED4B9E]/8 text-[#ED4B9E]'
+                <div key={b.epoch} className="flex items-center justify-between px-3 py-2.5">
+                  {/* Left: direction + details */}
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                      b.position === 'bull' ? 'bg-[#31D0AA]/10' : 'bg-[#ED4B9E]/10'
                     }`}>
-                      {b.position === 'bull' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
-                      {b.position === 'bull' ? 'UP' : 'DOWN'}
-                    </span>
-                  </td>
-                  <td className="px-2 py-3 text-right font-mono" style={{ color: C.text }}>{fmtSol(b.amount)}</td>
-                  <td className="px-2 py-3 text-center">
+                      {b.position === 'bull'
+                        ? <ArrowUp className="w-4 h-4 text-[#31D0AA]" />
+                        : <ArrowDown className="w-4 h-4 text-[#ED4B9E]" />}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[12px] font-bold" style={{ color: C.text }}>
+                          {b.position === 'bull' ? 'UP' : 'DOWN'}
+                        </span>
+                        <span className="text-[10px] font-mono" style={{ color: C.muted }}>#{b.epoch}</span>
+                      </div>
+                      <span className="text-[11px] font-mono" style={{ color: C.muted }}>{fmtSol(b.amount)} SOL</span>
+                    </div>
+                  </div>
+
+                  {/* Right: result + action */}
+                  <div className="flex items-center gap-2">
                     {pending ? (
-                      <span className="text-[#F0B90B] bg-[#F0B90B]/10 px-2 py-0.5 rounded-md text-[10px] font-medium">Live</span>
+                      <span className="text-[#F0B90B] bg-[#F0B90B]/10 px-2 py-1 rounded-md text-[10px] font-bold">Live</span>
                     ) : won ? (
-                      <span className="text-[#31D0AA] bg-[#31D0AA]/10 px-2 py-0.5 rounded-md text-[10px] font-medium">Won</span>
+                      (won || tie) && !b.claimed ? (
+                        <button
+                          onClick={() => onClaim(b.epoch)}
+                          className="text-[10px] font-bold px-3 py-1.5 rounded-lg border active:scale-95 transition-all"
+                          style={{ color: C.up, background: 'rgba(49,208,170,0.1)', borderColor: 'rgba(49,208,170,0.15)' }}
+                        >
+                          {tie ? 'Refund' : `+${fmtSol(b.payout)}`}
+                        </button>
+                      ) : b.claimed ? (
+                        <span className="text-[10px] flex items-center gap-1 text-[#31D0AA]/60">
+                          <CheckCircle2 className="w-3 h-3" /> Done
+                        </span>
+                      ) : (
+                        <span className="text-[#31D0AA] bg-[#31D0AA]/10 px-2 py-1 rounded-md text-[10px] font-bold">Won</span>
+                      )
                     ) : tie ? (
-                      <span className="text-[#F0B90B] bg-[#F0B90B]/10 px-2 py-0.5 rounded-md text-[10px] font-medium">Tie</span>
+                      !b.claimed ? (
+                        <button
+                          onClick={() => onClaim(b.epoch)}
+                          className="text-[10px] font-bold px-3 py-1.5 rounded-lg border active:scale-95 transition-all"
+                          style={{ color: C.yellow, background: 'rgba(240,185,11,0.1)', borderColor: 'rgba(240,185,11,0.15)' }}
+                        >
+                          Refund
+                        </button>
+                      ) : (
+                        <span className="text-[10px] flex items-center gap-1 text-[#31D0AA]/60">
+                          <CheckCircle2 className="w-3 h-3" /> Done
+                        </span>
+                      )
                     ) : (
-                      <span className="text-[#ED4B9E] bg-[#ED4B9E]/10 px-2 py-0.5 rounded-md text-[10px] font-medium">Lost</span>
+                      <span className="text-[#ED4B9E]/70 text-[10px] font-mono">-{fmtSol(b.amount)}</span>
                     )}
-                  </td>
-                  <td className="px-5 py-3 text-right">
-                    {(won || tie) && !b.claimed ? (
-                      <button
-                        onClick={() => onClaim(b.epoch)}
-                        className="text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all hover:brightness-110 border"
-                        style={{ color: C.up, background: 'rgba(49,208,170,0.1)', borderColor: 'rgba(49,208,170,0.15)' }}
-                      >
-                        {tie ? 'Refund' : 'Collect'}
-                      </button>
-                    ) : b.claimed ? (
-                      <span className="text-[10px] flex items-center justify-end gap-1" style={{ color: 'rgba(49,208,170,0.6)' }}>
-                        <CheckCircle2 className="w-3 h-3" /> Done
-                      </span>
-                    ) : pending ? (
-                      <span className="text-[10px]" style={{ color: 'rgba(140,140,161,0.3)' }}>—</span>
-                    ) : (
-                      <span className="text-[10px]" style={{ color: 'rgba(237,75,158,0.5)' }}>-{fmtSol(b.amount)}</span>
-                    )}
-                  </td>
-                </tr>
+                  </div>
+                </div>
               );
             })}
-          </tbody>
-        </table>
+          </div>
+        </>
       )}
     </div>
   );
