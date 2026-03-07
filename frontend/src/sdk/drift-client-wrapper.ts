@@ -13,6 +13,7 @@
  */
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { getAssociatedTokenAddressSync } from '@solana/spl-token';
+import { createResilientConnection } from '../utils/rpc';
 import {
   DriftClient,
   BN,
@@ -231,7 +232,8 @@ export class DriftTradingClient {
   private _pendingOrders: { marketIndex: number; direction: 'long' | 'short'; price: number; sizeBase: number; placedAt: number }[] = [];
 
   constructor(config: TradingConfig) {
-    this.connection = new Connection(config.rpcUrl, 'confirmed');
+    // Use resilient connection with automatic 429 fallback
+    this.connection = createResilientConnection('confirmed');
     this.wallet = config.wallet;
     this.programId = new PublicKey(config.driftProgramId);
   }

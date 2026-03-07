@@ -9,6 +9,7 @@ import { PhantomWalletAdapter } from '@solana/wallet-adapter-wallets';
 import { Toaster } from 'sonner';
 import { BarChart2, BookOpen, ArrowRightLeft, Wallet as WalletIcon, Shield, TrendingUp, List } from 'lucide-react';
 import DRIFT_CONFIG from './config';
+import { rpcEndpoint, connectionProviderConfig } from './utils/rpc';
 import { useDriftStore } from './stores/useDriftStore';
 import { useSetupDrift } from './hooks/useSetupDrift';
 import { useTrading } from './hooks/useTrading';
@@ -320,7 +321,7 @@ export default function App() {
   const wallets = useMemo(() => [new PhantomWalletAdapter()], []);
 
   return (
-    <ConnectionProvider endpoint={DRIFT_CONFIG.rpc}>
+    <ConnectionProvider endpoint={rpcEndpoint} config={connectionProviderConfig}>
       <WalletProvider wallets={wallets} autoConnect>
         <WalletModalProvider>
           <TradingApp />
