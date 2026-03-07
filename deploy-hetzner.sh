@@ -173,7 +173,7 @@ fi
 # Update vite config to bind to 0.0.0.0 and also update faucet plugin
 # to use localhost:8899 instead of devnet
 sed -i "s|host: '127.0.0.1'|host: '0.0.0.0'|g" "$REPO/frontend/vite.config.ts"
-sed -i "s|https://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966|http://localhost:8899|g" "$REPO/frontend/vite.config.ts"
+sed -i "s|https://purple-purple-field.solana-devnet.quiknode.pro/a1fdb633f366155c13687a7d55daba5836aede55/|http://localhost:8899|g" "$REPO/frontend/vite.config.ts"
 
 # Start the frontend
 cd "$REPO/frontend"

@@ -1,5 +1,5 @@
 const { Connection, PublicKey } = require('@solana/web3.js');
-const conn = new Connection('https://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966', 'confirmed');
+const conn = new Connection('https://purple-purple-field.solana-devnet.quiknode.pro/a1fdb633f366155c13687a7d55daba5836aede55/', 'confirmed');
 
 async function main() {
   const txSig = '649UcuJxnkKunpsqYmhNfsSNiHyurfVrdeUwoXvYWm6274Q8wJ3aHWqpXrY6uP5fNUeNPXgekL72Ujf2fsPoFryf';

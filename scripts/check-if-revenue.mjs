@@ -2,7 +2,7 @@ import anchor from '@coral-xyz/anchor';
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 import fs from 'fs';
 
-const conn = new Connection('https://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966', 'confirmed');
+const conn = new Connection('https://purple-purple-field.solana-devnet.quiknode.pro/a1fdb633f366155c13687a7d55daba5836aede55/', 'confirmed');
 const kp = Keypair.fromSecretKey(Uint8Array.from(JSON.parse(fs.readFileSync('./keys/admin-keypair.json','utf8'))));
 const wallet = new anchor.Wallet(kp);
 const provider = new anchor.AnchorProvider(conn, wallet, {});

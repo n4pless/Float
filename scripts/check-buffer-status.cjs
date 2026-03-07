@@ -1,7 +1,7 @@
 const { Connection, Keypair, PublicKey } = require("@solana/web3.js");
 const fs = require("fs");
 (async () => {
-  const c = new Connection("https://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966");
+  const c = new Connection("https://purple-purple-field.solana-devnet.quiknode.pro/a1fdb633f366155c13687a7d55daba5836aede55/");
   const a = Keypair.fromSecretKey(Uint8Array.from(JSON.parse(fs.readFileSync("./keys/admin-keypair.json"))));
   console.log("Admin:", (await c.getBalance(a.publicKey)) / 1e9, "SOL");
   

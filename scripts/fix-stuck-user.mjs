@@ -2,7 +2,7 @@ import { Connection, PublicKey, Keypair } from "@solana/web3.js";
 import { Wallet, BN, BulkAccountLoader, AdminClient, OracleSource, getPrelaunchOraclePublicKey, User } from "@drift-labs/sdk";
 import fs from "fs";
 
-const conn = new Connection("https://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966", "confirmed");
+const conn = new Connection("https://purple-purple-field.solana-devnet.quiknode.pro/a1fdb633f366155c13687a7d55daba5836aede55/", "confirmed");
 const kp = Keypair.fromSecretKey(Uint8Array.from(JSON.parse(fs.readFileSync("/home/gorcore/Drift-Clone/keys/admin-keypair.json"))));
 const wallet = new Wallet(kp);
 const pid = new PublicKey("EvKyHhYjCgpu335GdKZtfRsfu4VoUyjHn3kF3wgA5eXE");

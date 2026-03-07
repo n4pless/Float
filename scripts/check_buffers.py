@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import json, urllib.request
 
-url = 'https://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966'
+url = 'https://purple-purple-field.solana-devnet.quiknode.pro/a1fdb633f366155c13687a7d55daba5836aede55/'
 
 # Check for buffer accounts owned by admin
 payload = json.dumps({

@@ -228,16 +228,16 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
         {isLive && (
           <div className="flex-1 flex flex-col justify-center space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[13px] text-[#8C8CA1] uppercase tracking-wider font-bold">Last Price</span>
+              <span className="text-[10px] text-[#8C8CA1] uppercase tracking-wider font-medium">Last Price</span>
               {liveDelta && (
-                <span className={`text-[13px] font-bold font-mono px-2 py-0.5 rounded-md ${
+                <span className={`text-[11px] font-bold font-mono px-2 py-0.5 rounded-md ${
                   liveDelta.up ? 'text-[#31D0AA] bg-[#31D0AA]/10' : 'text-[#ED4B9E] bg-[#ED4B9E]/10'
                 }`}>
                   {liveDelta.up ? '↑' : '↓'} {liveDelta.value}
                 </span>
               )}
             </div>
-            <div className={`text-[32px] font-extrabold font-mono tabular-nums leading-none tracking-tight transition-colors ${
+            <div className={`text-[28px] font-extrabold font-mono tabular-nums leading-none tracking-tight transition-colors ${
               liveDelta?.up ? 'text-[#31D0AA]' : liveDelta && !liveDelta.up ? 'text-[#ED4B9E]' : 'text-[#F4EEFF]'
             }`}>
               {fmtPrice(livePrice, 4)}
@@ -538,7 +538,7 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
   useEffect(() => {
     if (!connection) return;
     refresh(publicKey ?? undefined);
-    const iv = setInterval(() => refresh(publicKey ?? undefined), 10000);
+    const iv = setInterval(() => refresh(publicKey ?? undefined), 5000);
     return () => clearInterval(iv);
   }, [connection, publicKey]);
 

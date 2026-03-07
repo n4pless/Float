@@ -1,6 +1,6 @@
 #!/bin/bash
 export PATH=/home/gorcore/.local/share/solana/install/active_release/bin:/home/gorcore/.cargo/bin:$PATH
-RPC="https://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966"
+RPC="https://purple-purple-field.solana-devnet.quiknode.pro/a1fdb633f366155c13687a7d55daba5836aede55/"
 KP=/home/gorcore/Drift-Clone/keys/admin-keypair.json
 PROGRAM=EvKyHhYjCgpu335GdKZtfRsfu4VoUyjHn3kF3wgA5eXE
 SO=/home/gorcore/Drift-Clone/protocol-v2/target/deploy/drift.so

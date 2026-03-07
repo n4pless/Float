@@ -2,7 +2,7 @@
 # Fund admin wallet on devnet via repeated airdrops
 PATH=/root/.local/share/solana/install/active_release/bin:/usr/bin
 TARGET="DXosop8DZbV7VU6ZxQitnDs7GBR4D5Nktw2uqSduNd5G"
-RPC="https://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966"
+RPC="https://purple-purple-field.solana-devnet.quiknode.pro/a1fdb633f366155c13687a7d55daba5836aede55/"
 
 echo "Funding $TARGET on devnet..."
 echo "Current balance:"

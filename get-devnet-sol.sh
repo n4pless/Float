@@ -6,7 +6,7 @@ export PATH="/root/.local/share/solana/install/active_release/bin:/root/.cargo/b
 cd /mnt/c/Users/wesle/Documents/GitHub/Drift-Clone
 
 echo "💡 Switching to devnet (easier airdrops than testnet)..."
-solana config set --url https://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966
+solana config set --url https://purple-purple-field.solana-devnet.quiknode.pro/a1fdb633f366155c13687a7d55daba5836aede55/
 
 echo ""
 echo "💰 Requesting devnet SOL airdrops..."

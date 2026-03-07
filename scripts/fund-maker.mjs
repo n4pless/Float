@@ -17,7 +17,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const DRIFT_PROGRAM_ID = 'EvKyHhYjCgpu335GdKZtfRsfu4VoUyjHn3kF3wgA5eXE';
 const USDC_MINT_STR = '4MEQENKXftyy3yaWKs7ip4ZWwfp79GV63y2teWoBnQRn';
-const RPC_URL = 'https://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966';
+const RPC_URL = 'https://purple-purple-field.solana-devnet.quiknode.pro/a1fdb633f366155c13687a7d55daba5836aede55/';
 
 async function main() {
   const usdcAmount = parseFloat(process.argv[2] || '10000');

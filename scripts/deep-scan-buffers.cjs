@@ -81,7 +81,7 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
                       data: Buffer.from([5, 0, 0, 0]),
                     };
                     // Send via helius for reliability
-                    const heliusConn = new Connection("https://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966");
+                    const heliusConn = new Connection("https://purple-purple-field.solana-devnet.quiknode.pro/a1fdb633f366155c13687a7d55daba5836aede55/");
                     const closeTx = new Transaction().add(closeIx);
                     const sig = await sendAndConfirmTransaction(heliusConn, closeTx, [adminKp]);
                     console.log(`  CLOSED! tx: ${sig}`);
@@ -102,6 +102,6 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
     console.log("\nNo buffer found in transaction history.");
   }
 
-  const heliusConn = new Connection("https://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966");
+  const heliusConn = new Connection("https://purple-purple-field.solana-devnet.quiknode.pro/a1fdb633f366155c13687a7d55daba5836aede55/");
   console.log("\nFinal admin balance:", (await conn.getBalance(adminKp.publicKey)) / 1e9, "SOL");
 })();

@@ -25,7 +25,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = parseInt(process.env.PORT || '3001', 10);
 
 // ─── Configuration ───────────────────────────────────────────────────
-const RPC_URL = process.env.RPC_URL || 'https://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966';
+const RPC_URL = process.env.RPC_URL || 'https://purple-purple-field.solana-devnet.quiknode.pro/a1fdb633f366155c13687a7d55daba5836aede55/';
 const USDC_MINT = new PublicKey(process.env.USDC_MINT || '4MEQENKXftyy3yaWKs7ip4ZWwfp79GV63y2teWoBnQRn');
 const ADMIN_KEYPAIR_PATH = process.env.ADMIN_KEYPAIR || resolve(__dirname, '../keys/admin-keypair.json');
 

@@ -13,7 +13,7 @@ import fs from 'fs';
 
 const BN = anchor.BN;
 
-const RPC = 'https://devnet.helius-rpc.com/?api-key=d251870d-cc90-4544-9a60-f786ebff3966';
+const RPC = 'https://purple-purple-field.solana-devnet.quiknode.pro/a1fdb633f366155c13687a7d55daba5836aede55/';
 const PROGRAM_ID = new PublicKey('EvKyHhYjCgpu335GdKZtfRsfu4VoUyjHn3kF3wgA5eXE');
 const USDC_MINT = new PublicKey('4MEQENKXftyy3yaWKs7ip4ZWwfp79GV63y2teWoBnQRn');
 

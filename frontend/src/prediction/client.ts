@@ -250,56 +250,18 @@ export function buildClaimIx(
   });
 }
 
-/* ─── Retry helper with multi-RPC fallback chain ──── */
-
-const FALLBACK_RPCS = [
-  'https://api.devnet.solana.com',
-  'https://rpc.ankr.com/solana_devnet',
-];
-const _fallbackConns: Connection[] = [];
-function getFallbackConn(index: number): Connection {
-  if (!_fallbackConns[index]) {
-    _fallbackConns[index] = new Connection(FALLBACK_RPCS[index], 'confirmed');
-  }
-  return _fallbackConns[index];
-}
-
-/**
- * Wraps an RPC call with retry across multiple fallback RPCs.
- * Tries: primary → fallback[0] → fallback[1] with delays between.
- */
-async function withRetry<T>(primary: Connection, fn: (c: Connection) => Promise<T>): Promise<T> {
-  // Try primary
-  try {
-    return await fn(primary);
-  } catch (_e1) {
-    // Try each fallback with increasing delay
-    for (let i = 0; i < FALLBACK_RPCS.length; i++) {
-      await new Promise(r => setTimeout(r, 300 * (i + 1)));
-      try {
-        return await fn(getFallbackConn(i));
-      } catch {
-        // continue to next fallback
-      }
-    }
-    // All failed — one final retry on primary after 2s
-    await new Promise(r => setTimeout(r, 2000));
-    return await fn(primary);
-  }
-}
-
 /* ─── Fetch helpers ──────────────────────────────── */
 
 export async function fetchGame(conn: Connection): Promise<GameAccount | null> {
   const [pub] = gamePDA();
-  const info = await withRetry(conn, c => c.getAccountInfo(pub));
+  const info = await conn.getAccountInfo(pub);
   if (!info) return null;
   return deserializeGame(info.data as Buffer);
 }
 
 export async function fetchRound(conn: Connection, epoch: number): Promise<RoundAccount | null> {
   const [pub] = roundPDA(epoch);
-  const info = await withRetry(conn, c => c.getAccountInfo(pub));
+  const info = await conn.getAccountInfo(pub);
   if (!info) return null;
   return deserializeRound(info.data as Buffer);
 }
@@ -310,7 +272,7 @@ export async function fetchUserBet(
   user: PublicKey,
 ): Promise<UserBetAccount | null> {
   const [pub] = betPDA(epoch, user);
-  const info = await withRetry(conn, c => c.getAccountInfo(pub));
+  const info = await conn.getAccountInfo(pub);
   if (!info) return null;
   return deserializeUserBet(info.data as Buffer);
 }
@@ -321,7 +283,7 @@ export async function fetchRounds(
   epochs: number[],
 ): Promise<Map<number, RoundAccount>> {
   const pubs = epochs.map(e => roundPDA(e)[0]);
-  const infos = await withRetry(conn, c => c.getMultipleAccountsInfo(pubs));
+  const infos = await conn.getMultipleAccountsInfo(pubs);
   const map = new Map<number, RoundAccount>();
   infos.forEach((info, i) => {
     if (info) map.set(epochs[i], deserializeRound(info.data as Buffer));
@@ -336,7 +298,7 @@ export async function fetchUserBets(
   user: PublicKey,
 ): Promise<Map<number, UserBetAccount>> {
   const pubs = epochs.map(e => betPDA(e, user)[0]);
-  const infos = await withRetry(conn, c => c.getMultipleAccountsInfo(pubs));
+  const infos = await conn.getMultipleAccountsInfo(pubs);
   const map = new Map<number, UserBetAccount>();
   infos.forEach((info, i) => {
     if (info) map.set(epochs[i], deserializeUserBet(info.data as Buffer));
