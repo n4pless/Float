@@ -1,18 +1,19 @@
 /**
  * Resilient RPC Connection with automatic fallback.
  *
- * Primary: QuikNode devnet (fast, but rate-limited on free tier)
- * Fallback: Public Solana devnet RPC (slower, no rate limit)
+ * Primary: Public Solana devnet RPC (no rate limit)
+ * Fallback: QuikNode devnet (fast, but rate-limited on free tier)
  *
- * On a 429 "max usage reached" from the primary endpoint,
+ * On errors from the primary endpoint,
  * subsequent requests transparently fall back for a cooldown period.
  */
 import { Connection } from '@solana/web3.js';
 import DRIFT_CONFIG from '../config';
 
-const PRIMARY_HTTP   = DRIFT_CONFIG.rpc;
-const FALLBACK_HTTP  = 'https://api.devnet.solana.com';
-const FALLBACK_WSS   = 'wss://api.devnet.solana.com';
+const QUIKNODE_HTTP  = DRIFT_CONFIG.rpc;
+const PRIMARY_HTTP   = 'https://api.devnet.solana.com';
+const FALLBACK_HTTP  = QUIKNODE_HTTP;
+const PRIMARY_WSS    = 'wss://api.devnet.solana.com';
 
 /** How long (ms) to stay on the fallback after a 429 before retrying primary */
 const COOLDOWN_MS = 30_000; // 30 seconds
@@ -52,7 +53,7 @@ function logRpc(method: string, endpoint: 'primary' | 'fallback', extra?: string
   _stats.byMethod[method] = (_stats.byMethod[method] ?? 0) + 1;
   _stats.byEndpoint[endpoint]++;
   const elapsed = ((Date.now() - _stats.startedAt) / 1000).toFixed(1);
-  const tag = endpoint === 'primary' ? '🟢 QN' : '🟡 PUB';
+  const tag = endpoint === 'primary' ? '🟢 SOL' : '🟡 QN';
   console.log(
     `[RPC #${_stats.total}] ${tag} ${method}${extra ? ' ' + extra : ''} (${elapsed}s, ${_stats.byEndpoint.primary}qn/${_stats.byEndpoint.fallback}pub)`,
   );
@@ -67,7 +68,7 @@ function printStats() {
       .sort((a, b) => b[1] - a[1])
       .map(([method, count]) => ({ method, count })),
   );
-  console.log(`Endpoints: QuikNode=${_stats.byEndpoint.primary}, PublicDevnet=${_stats.byEndpoint.fallback}`);
+  console.log(`Endpoints: SolanaDevnet=${_stats.byEndpoint.primary}, QuikNode=${_stats.byEndpoint.fallback}`);
   console.log(`429 errors: ${_stats.errors429}, -32615 errors: ${_stats.errors32615}`);
   console.groupEnd();
   return _stats;
@@ -91,7 +92,8 @@ async function fetchWithFallback(
   const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : (input as Request).url;
   const method = extractMethod(init);
 
-  const isPrimaryUrl = url.includes('quiknode.pro');
+  const isPrimaryUrl = url.includes('api.devnet.solana.com');
+  const isQuikNodeUrl = url.includes('quiknode.pro');
 
   // If we're still in cooldown, redirect to fallback immediately
   if (isPrimaryUrl && now < _rateLimitedUntil) {
@@ -100,18 +102,19 @@ async function fetchWithFallback(
     return globalThis.fetch(fallbackUrl, init);
   }
 
-  // Intercept getMultipleAccounts with >5 keys → route directly to public devnet
+  // Intercept getMultipleAccounts with >5 keys on QuikNode → keep on primary (Solana devnet)
   // QuikNode discover plan limits this RPC method to 5 accounts per call
-  if (isPrimaryUrl && init?.body) {
+  // Since Solana devnet IS primary now, only reroute if somehow on QuikNode
+  if (isQuikNodeUrl && init?.body) {
     try {
       const bodyStr = typeof init.body === 'string' ? init.body : new TextDecoder().decode(init.body as ArrayBuffer);
       const parsed = JSON.parse(bodyStr);
 
       // Handle single request
       if (parsed.method === 'getMultipleAccounts' && Array.isArray(parsed.params?.[0]) && parsed.params[0].length > 5) {
-        logRpc(method, 'fallback', `[bulk ${parsed.params[0].length} keys]`);
-        const fallbackUrl = url.replace(PRIMARY_HTTP, FALLBACK_HTTP);
-        return globalThis.fetch(fallbackUrl, init);
+        logRpc(method, 'primary', `[bulk ${parsed.params[0].length} keys → stay on Solana]`);
+        const primaryUrl = url.replace(FALLBACK_HTTP, PRIMARY_HTTP);
+        return globalThis.fetch(primaryUrl, init);
       }
 
       // Handle batch requests containing getMultipleAccounts with >5 keys
@@ -120,9 +123,9 @@ async function fetchWithFallback(
           (r: any) => r.method === 'getMultipleAccounts' && Array.isArray(r.params?.[0]) && r.params[0].length > 5,
         );
         if (hasBulk) {
-          logRpc(method, 'fallback', '[batch has bulk getMultipleAccounts]');
-          const fallbackUrl = url.replace(PRIMARY_HTTP, FALLBACK_HTTP);
-          return globalThis.fetch(fallbackUrl, init);
+          logRpc(method, 'primary', '[batch has bulk getMultipleAccounts → stay on Solana]');
+          const primaryUrl = url.replace(FALLBACK_HTTP, PRIMARY_HTTP);
+          return globalThis.fetch(primaryUrl, init);
         }
       }
     } catch {
@@ -130,26 +133,26 @@ async function fetchWithFallback(
     }
   }
 
-  // Log the call going to primary
+  // Log the call
   logRpc(method, isPrimaryUrl ? 'primary' : 'fallback');
 
   // Try the original request
   const resp = await globalThis.fetch(input, init);
 
-  // On 429, activate cooldown and retry on fallback
+  // On 429 from primary (Solana devnet), activate cooldown and retry on QuikNode fallback
   if (resp.status === 429 && isPrimaryUrl) {
     _rateLimitedUntil = now + COOLDOWN_MS;
     _stats.errors429++;
     console.warn(
-      `[RPC] ⛔ 429 rate-limited on QuikNode — falling back to public devnet for ${COOLDOWN_MS / 1000}s`,
+      `[RPC] ⛔ 429 rate-limited on Solana devnet — falling back to QuikNode for ${COOLDOWN_MS / 1000}s`,
     );
     logRpc(method, 'fallback', '[429 retry]');
     const fallbackUrl = url.replace(PRIMARY_HTTP, FALLBACK_HTTP);
     return globalThis.fetch(fallbackUrl, init);
   }
 
-  // Also catch JSON-RPC error -32615 (method limit exceeded) and retry on fallback
-  if (isPrimaryUrl && resp.ok) {
+  // Also catch JSON-RPC error -32615 on QuikNode fallback and stay on primary
+  if (isQuikNodeUrl && resp.ok) {
     const cloned = resp.clone();
     try {
       const json = await cloned.json();
@@ -157,10 +160,10 @@ async function fetchWithFallback(
         (Array.isArray(json) && json.some((r: any) => r?.error?.code === -32615));
       if (hasLimitError) {
         _stats.errors32615++;
-        console.warn('[RPC] ⛔ QuikNode method limit exceeded (-32615) — retrying on public devnet');
-        logRpc(method, 'fallback', '[-32615 retry]');
-        const fallbackUrl = url.replace(PRIMARY_HTTP, FALLBACK_HTTP);
-        return globalThis.fetch(fallbackUrl, init);
+        console.warn('[RPC] ⛔ QuikNode method limit exceeded (-32615) — retrying on Solana devnet');
+        logRpc(method, 'primary', '[-32615 retry → Solana]');
+        const primaryUrl = url.replace(FALLBACK_HTTP, PRIMARY_HTTP);
+        return globalThis.fetch(primaryUrl, init);
       }
     } catch {
       // JSON parse failed — return original response
@@ -178,7 +181,7 @@ export function createResilientConnection(
 ): Connection {
   return new Connection(PRIMARY_HTTP, {
     commitment,
-    wsEndpoint: FALLBACK_WSS, // WSS uses public devnet (free QuikNode WSS is unreliable)
+    wsEndpoint: PRIMARY_WSS,
     fetch: fetchWithFallback,
     confirmTransactionInitialTimeout: 60_000,
   });
@@ -194,7 +197,7 @@ export const rpcEndpoint = PRIMARY_HTTP;
  */
 export const connectionProviderConfig = {
   commitment: 'confirmed' as const,
-  wsEndpoint: FALLBACK_WSS,
+  wsEndpoint: PRIMARY_WSS,
   fetch: fetchWithFallback,
   confirmTransactionInitialTimeout: 60_000,
 };
