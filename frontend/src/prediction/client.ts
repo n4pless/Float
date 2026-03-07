@@ -250,37 +250,41 @@ export function buildClaimIx(
   });
 }
 
-/* ─── Retry helper with fallback RPC ─────────────── */
+/* ─── Retry helper with multi-RPC fallback chain ──── */
 
-const FALLBACK_RPC = 'https://api.devnet.solana.com';
-let _fallbackConn: Connection | null = null;
-function getFallbackConn(): Connection {
-  if (!_fallbackConn) _fallbackConn = new Connection(FALLBACK_RPC, 'confirmed');
-  return _fallbackConn;
+const FALLBACK_RPCS = [
+  'https://api.devnet.solana.com',
+  'https://rpc.ankr.com/solana_devnet',
+];
+const _fallbackConns: Connection[] = [];
+function getFallbackConn(index: number): Connection {
+  if (!_fallbackConns[index]) {
+    _fallbackConns[index] = new Connection(FALLBACK_RPCS[index], 'confirmed');
+  }
+  return _fallbackConns[index];
 }
 
 /**
- * Wraps an RPC call with retry (1 retry) and fallback to public devnet RPC.
- * Handles 429 rate-limit and TypeError: Failed to fetch gracefully.
+ * Wraps an RPC call with retry across multiple fallback RPCs.
+ * Tries: primary → fallback[0] → fallback[1] with delays between.
  */
 async function withRetry<T>(primary: Connection, fn: (c: Connection) => Promise<T>): Promise<T> {
+  // Try primary
   try {
     return await fn(primary);
-  } catch (err: any) {
-    const msg = String(err?.message ?? err);
-    const isRateLimit = msg.includes('429') || msg.includes('Failed to fetch') || msg.includes('fetch');
-    if (isRateLimit) {
-      // Wait 500ms then try fallback RPC
-      await new Promise(r => setTimeout(r, 500));
+  } catch (_e1) {
+    // Try each fallback with increasing delay
+    for (let i = 0; i < FALLBACK_RPCS.length; i++) {
+      await new Promise(r => setTimeout(r, 300 * (i + 1)));
       try {
-        return await fn(getFallbackConn());
+        return await fn(getFallbackConn(i));
       } catch {
-        // One more attempt after 1s delay
-        await new Promise(r => setTimeout(r, 1000));
-        return await fn(getFallbackConn());
+        // continue to next fallback
       }
     }
-    throw err;
+    // All failed — one final retry on primary after 2s
+    await new Promise(r => setTimeout(r, 2000));
+    return await fn(primary);
   }
 }
 

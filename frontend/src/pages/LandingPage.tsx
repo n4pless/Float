@@ -25,8 +25,9 @@ export const LandingPage: React.FC<Props> = ({ onSelectPerps, onSelectPrediction
       ws.onmessage = e => {
         try { setSolPrice(parseFloat(JSON.parse(e.data).p)); } catch {}
       };
+      ws.onerror = () => {}; // suppress console errors
     } catch {}
-    return () => { ws?.close(); };
+    return () => { try { ws?.close(); } catch {} };
   }, []);
 
   return (

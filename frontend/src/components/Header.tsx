@@ -340,8 +340,9 @@ export const Header: React.FC<HeaderProps> = ({
             />
             <div className="flex items-center gap-2 mt-2">
               {[
+                { label: 'Helius', url: DRIFT_CONFIG.rpc },
                 { label: 'Devnet', url: 'https://api.devnet.solana.com' },
-                { label: 'dRPC', url: DRIFT_CONFIG.rpc },
+                { label: 'Ankr', url: 'https://rpc.ankr.com/solana_devnet' },
               ].map((preset) => (
                 <button
                   key={preset.label}
