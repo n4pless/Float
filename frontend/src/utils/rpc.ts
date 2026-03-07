@@ -21,7 +21,8 @@ let _rateLimitedUntil = 0;
 
 /**
  * Custom fetch that intercepts 429 responses from the primary RPC
- * and retries against the public devnet fallback.
+ * and routes bulk getMultipleAccounts calls to the public fallback
+ * (QuikNode free tier limits getMultipleAccounts to 5 keys).
  */
 async function fetchWithFallback(
   input: RequestInfo | URL,
@@ -38,6 +39,34 @@ async function fetchWithFallback(
     return globalThis.fetch(fallbackUrl, init);
   }
 
+  // Intercept getMultipleAccounts with >5 keys → route directly to public devnet
+  // QuikNode discover plan limits this RPC method to 5 accounts per call
+  if (isPrimaryUrl && init?.body) {
+    try {
+      const bodyStr = typeof init.body === 'string' ? init.body : new TextDecoder().decode(init.body as ArrayBuffer);
+      const parsed = JSON.parse(bodyStr);
+
+      // Handle single request
+      if (parsed.method === 'getMultipleAccounts' && Array.isArray(parsed.params?.[0]) && parsed.params[0].length > 5) {
+        const fallbackUrl = url.replace(PRIMARY_HTTP, FALLBACK_HTTP);
+        return globalThis.fetch(fallbackUrl, init);
+      }
+
+      // Handle batch requests containing getMultipleAccounts with >5 keys
+      if (Array.isArray(parsed)) {
+        const hasBulk = parsed.some(
+          (r: any) => r.method === 'getMultipleAccounts' && Array.isArray(r.params?.[0]) && r.params[0].length > 5,
+        );
+        if (hasBulk) {
+          const fallbackUrl = url.replace(PRIMARY_HTTP, FALLBACK_HTTP);
+          return globalThis.fetch(fallbackUrl, init);
+        }
+      }
+    } catch {
+      // Body parse failed — proceed normally
+    }
+  }
+
   // Try the original request
   const resp = await globalThis.fetch(input, init);
 
@@ -49,6 +78,23 @@ async function fetchWithFallback(
     );
     const fallbackUrl = url.replace(PRIMARY_HTTP, FALLBACK_HTTP);
     return globalThis.fetch(fallbackUrl, init);
+  }
+
+  // Also catch JSON-RPC error -32615 (method limit exceeded) and retry on fallback
+  if (isPrimaryUrl && resp.ok) {
+    const cloned = resp.clone();
+    try {
+      const json = await cloned.json();
+      const hasLimitError = json?.error?.code === -32615 ||
+        (Array.isArray(json) && json.some((r: any) => r?.error?.code === -32615));
+      if (hasLimitError) {
+        console.warn('[RPC] QuikNode method limit exceeded — retrying on public devnet');
+        const fallbackUrl = url.replace(PRIMARY_HTTP, FALLBACK_HTTP);
+        return globalThis.fetch(fallbackUrl, init);
+      }
+    } catch {
+      // JSON parse failed — return original response
+    }
   }
 
   return resp;
