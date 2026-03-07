@@ -756,19 +756,6 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
 
           {/* Right: Timer + Icons + Wallet */}
           <div className="flex items-center gap-2">
-            {/* Countdown Timer */}
-            {liveRound && timeRemainingMs > 0 && (
-              <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <Timer className="w-3.5 h-3.5 text-[#8C8CA1]" />
-                <span className="text-[14px] font-bold font-mono tabular-nums" style={{ color: C.text }}>
-                  {fmt(timeRemainingMs)}
-                </span>
-                <span className="text-[10px] font-semibold text-[#8C8CA1] hidden sm:inline">
-                  {Math.floor((game?.intervalSeconds ?? 300) / 60)}m
-                </span>
-              </div>
-            )}
-
             {/* History */}
             <button
               onClick={() => setShowHistory(!showHistory)}
@@ -806,6 +793,72 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
           </div>
         </div>
       </div>
+
+      {/* ═══ COUNTDOWN CLOCK (PancakeSwap-style — centered above cards) ═══ */}
+      {liveRound && (
+        <div className="shrink-0 relative z-10 flex items-center justify-center py-3 sm:py-4">
+          <div
+            className="flex items-center gap-4 px-5 py-2.5 rounded-2xl border"
+            style={{
+              background: 'rgba(53,53,71,0.55)',
+              borderColor: timeRemainingMs < 15000
+                ? 'rgba(237,75,158,0.35)'
+                : 'rgba(118,69,217,0.25)',
+              backdropFilter: 'blur(12px)',
+              boxShadow: timeRemainingMs < 15000
+                ? '0 0 20px rgba(237,75,158,0.15)'
+                : '0 0 20px rgba(118,69,217,0.1)',
+            }}
+          >
+            {/* Circular progress ring */}
+            <div className="relative w-12 h-12 flex items-center justify-center">
+              <svg className="w-12 h-12 -rotate-90" viewBox="0 0 48 48">
+                {/* Background ring */}
+                <circle cx="24" cy="24" r="20" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="3" />
+                {/* Progress ring */}
+                <circle
+                  cx="24" cy="24" r="20" fill="none"
+                  stroke={timeRemainingMs < 15000 ? C.down : C.purple}
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeDasharray={`${2 * Math.PI * 20}`}
+                  strokeDashoffset={`${2 * Math.PI * 20 * (1 - pct)}`}
+                  className="transition-all duration-1000"
+                  style={{ filter: `drop-shadow(0 0 4px ${timeRemainingMs < 15000 ? 'rgba(237,75,158,0.5)' : 'rgba(118,69,217,0.5)'})` }}
+                />
+              </svg>
+              {/* Inner icon */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                {timeRemainingMs < 15000
+                  ? <Flame className="w-4 h-4 text-[#ED4B9E] animate-pulse" />
+                  : <Timer className="w-4 h-4 text-[#7645D9]" />
+                }
+              </div>
+            </div>
+
+            {/* Time display */}
+            <div className="flex flex-col items-start">
+              <div className="flex items-center gap-2">
+                <span
+                  className={`text-[28px] sm:text-[32px] font-extrabold font-mono tabular-nums leading-none ${
+                    timeRemainingMs < 15000 ? 'text-[#ED4B9E]' : ''
+                  }`}
+                  style={{ color: timeRemainingMs < 15000 ? C.down : C.text }}
+                >
+                  {fmt(timeRemainingMs)}
+                </span>
+                <div className="flex items-center gap-1 px-2 py-0.5 rounded-md" style={{ background: 'rgba(49,208,170,0.1)' }}>
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#31D0AA] animate-pulse" />
+                  <span className="text-[10px] font-bold text-[#31D0AA] tracking-wide">LIVE</span>
+                </div>
+              </div>
+              <span className="text-[11px] font-medium mt-0.5" style={{ color: C.muted }}>
+                Round #{liveRound.epoch} · {Math.floor((game?.intervalSeconds ?? 300) / 60)}m rounds
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ═══ CARDS CAROUSEL ═══ */}
       <div className="flex-1 flex flex-col min-h-0 relative z-10">
