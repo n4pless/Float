@@ -7,7 +7,7 @@ import { AssetIcon } from './icons/AssetIcon';
 import DRIFT_CONFIG from '../config';
 import { useDriftStore } from '../stores/useDriftStore';
 
-export type Page = 'home' | 'trade' | 'user' | 'learn' | 'insurance' | 'positions' | 'prediction';
+export type Page = 'home' | 'trade' | 'user' | 'learn' | 'insurance' | 'positions' | 'prediction' | 'admin';
 
 interface HeaderProps {
   currentPage?: Page;

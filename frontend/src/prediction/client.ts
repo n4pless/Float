@@ -29,6 +29,8 @@ const DISC = {
   bet_bull: new Uint8Array([7, 162, 183, 202, 139, 162, 235, 55]),
   bet_bear: new Uint8Array([185, 134, 109, 63, 188, 166, 162, 105]),
   claim:    new Uint8Array([62, 198, 214, 193, 213, 159, 108, 210]),
+  pause:    new Uint8Array([211, 22, 221, 251, 74, 121, 193, 47]),
+  unpause:  new Uint8Array([169, 144, 4, 38, 10, 141, 188, 255]),
   // Accounts
   Game:     new Uint8Array([27, 90, 166, 125, 74, 100, 121, 18]),
   Round:    new Uint8Array([87, 127, 165, 51, 73, 78, 116, 174]),
@@ -245,6 +247,34 @@ export function buildClaimIx(
       { pubkey: round,   isSigner: false, isWritable: false },
       { pubkey: userBet, isSigner: false, isWritable: true  },
       { pubkey: user,    isSigner: true,  isWritable: true  },
+    ],
+    data,
+  });
+}
+
+/** Build a pause instruction (admin only) */
+export function buildPauseIx(admin: PublicKey): TransactionInstruction {
+  const [game] = gamePDA();
+  const data = Buffer.from(DISC.pause);
+  return new TransactionInstruction({
+    programId: PREDICTION_PROGRAM_ID,
+    keys: [
+      { pubkey: game,  isSigner: false, isWritable: true },
+      { pubkey: admin, isSigner: true,  isWritable: false },
+    ],
+    data,
+  });
+}
+
+/** Build an unpause instruction (admin only) */
+export function buildUnpauseIx(admin: PublicKey): TransactionInstruction {
+  const [game] = gamePDA();
+  const data = Buffer.from(DISC.unpause);
+  return new TransactionInstruction({
+    programId: PREDICTION_PROGRAM_ID,
+    keys: [
+      { pubkey: game,  isSigner: false, isWritable: true },
+      { pubkey: admin, isSigner: true,  isWritable: false },
     ],
     data,
   });

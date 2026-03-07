@@ -29,6 +29,7 @@ import { BottomPanel } from './components/BottomPanel';
 import { TickerBar } from './components/TickerBar';
 import { UserManagement } from './components/UserManagement';
 import { PredictionPage } from './pages/PredictionPage';
+import { AdminPage } from './pages/AdminPage';
 import { LandingPage } from './pages/LandingPage';
 import '@solana/wallet-adapter-react-ui/styles.css';
 
@@ -44,6 +45,7 @@ function pageFromPath(): { page: Page | null; market: number | null } {
   const path = window.location.pathname.replace(/^\/+/, '').toUpperCase();
   if (!path) return { page: null, market: null };
   if (path === 'PREDICTION' || path === 'PREDICT') return { page: 'prediction', market: null };
+  if (path === 'ADMIN') return { page: 'admin', market: null };
   const mkt = SYMBOL_TO_INDEX[path] ?? null;
   if (mkt !== null) return { page: 'trade', market: mkt };
   return { page: null, market: null };
@@ -52,6 +54,8 @@ function pageFromPath(): { page: Page | null; market: number | null } {
 function pushPageUrl(page: Page, marketIdx?: number) {
   if (page === 'prediction') {
     window.history.pushState(null, '', '/prediction');
+  } else if (page === 'admin') {
+    window.history.pushState(null, '', '/admin');
   } else if (page === 'home') {
     window.history.pushState(null, '', '/');
   } else if (page === 'trade' && marketIdx !== undefined) {
@@ -100,6 +104,8 @@ function TradingApp() {
     const { page, market } = pageFromPath();
     if (page === 'prediction') {
       setCurrentPage('prediction');
+    } else if (page === 'admin') {
+      setCurrentPage('admin');
     } else if (page === 'trade' && market !== null) {
       setCurrentPage('trade');
       if (market !== useDriftStore.getState().selectedMarket) {
@@ -111,6 +117,8 @@ function TradingApp() {
       const parsed = pageFromPath();
       if (parsed.page === 'prediction') {
         setCurrentPage('prediction');
+      } else if (parsed.page === 'admin') {
+        setCurrentPage('admin');
       } else if (parsed.page === 'trade' && parsed.market !== null) {
         setCurrentPage('trade');
         setSelectedMarket(parsed.market);
@@ -150,7 +158,7 @@ function TradingApp() {
 
   return (
     <div className="h-screen w-screen max-w-[100vw] flex flex-col overflow-x-hidden bg-drift-bg">
-      {currentPage !== 'prediction' && currentPage !== 'home' && (
+      {currentPage !== 'prediction' && currentPage !== 'home' && currentPage !== 'admin' && (
         <Header
           currentPage={currentPage}
           onNavigate={navigateTo}
@@ -167,6 +175,8 @@ function TradingApp() {
         <InfoPage onBack={() => navigateTo('trade')} />
       ) : currentPage === 'prediction' ? (
         <PredictionPage onBack={() => navigateTo('home')} />
+      ) : currentPage === 'admin' ? (
+        <AdminPage onBack={() => navigateTo('home')} />
       ) : currentPage === 'insurance' ? (
         <InsuranceFundPage onBack={() => navigateTo('trade')} />
       ) : currentPage === 'positions' ? (
@@ -284,7 +294,7 @@ function TradingApp() {
       )}
 
       {/* ── Mobile bottom page nav ── */}
-      {currentPage !== 'prediction' && (
+      {currentPage !== 'prediction' && currentPage !== 'admin' && (
         <nav className="sm:hidden shrink-0 flex items-center border-t border-drift-border bg-drift-panel">
           {([
             { page: 'trade' as Page, label: 'Trade', icon: ArrowRightLeft },
