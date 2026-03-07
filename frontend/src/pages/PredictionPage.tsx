@@ -538,7 +538,7 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
   useEffect(() => {
     if (!connection) return;
     refresh(publicKey ?? undefined);
-    const iv = setInterval(() => refresh(publicKey ?? undefined), 5000);
+    const iv = setInterval(() => refresh(publicKey ?? undefined), 10000);
     return () => clearInterval(iv);
   }, [connection, publicKey]);
 
