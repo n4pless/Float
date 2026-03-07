@@ -937,10 +937,10 @@ export class DriftTradingClient {
               : Number((pos as any).quoteBreakEvenAmount) / PRICE_PRECISION.toNumber())
           : quoteEntryNum;
         const entryPrice = baseNum !== 0 ? Math.abs(quoteBreakEvenNum / baseNum) : 0;
-        // PnL = base * mark + quoteBreakEvenAmount (includes fees, excludes accumulated settled PnL)
-        // Using quoteBreakEvenAmount instead of quoteAssetAmount so PnL resets
-        // cleanly when closing and re-opening a position
-        const unrealizedPnl = baseNum * markPrice + quoteBreakEvenNum;
+        // PnL = base * mark + quoteEntryAmount (pure cost basis, guaranteed to reset on close)
+        // quoteEntryAmount resets to 0 on full close, set to -costBasis on new open
+        // quoteAssetAmount/quoteBreakEvenAmount accumulate historical data and persist
+        const unrealizedPnl = baseNum * markPrice + quoteEntryNum;
         const settledPnl = (pos as any).settledPnl
           ? (typeof (pos as any).settledPnl.toNumber === 'function'
               ? (pos as any).settledPnl.toNumber() / PRICE_PRECISION.toNumber()

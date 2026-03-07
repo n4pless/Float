@@ -137,21 +137,11 @@ export const BottomPanel: React.FC<Props> = ({ trading }) => {
                       <td className="px-3 text-right font-mono tabular-nums text-txt-0">${pos.entryPrice.toFixed(2)}</td>
                       <td className="px-3 text-right font-mono tabular-nums text-txt-0">${pos.markPrice.toFixed(2)}</td>
                       <td className="px-3 text-right font-mono tabular-nums">
-                        {(() => {
-                          const totalPnl = pos.unrealizedPnl + (pos.settledPnl ?? 0);
-                          return (
-                            <div>
-                              <span className={`font-semibold ${totalPnl >= 0 ? 'text-bull' : 'text-bear'}`}>
-                                {totalPnl >= 0 ? '+' : ''}{totalPnl.toFixed(2)}
-                              </span>
-                              {pos.settledPnl !== 0 && (
-                                <div className="text-[9px] text-txt-3 mt-0.5">
-                                  {pos.unrealizedPnl >= 0 ? '+' : ''}{pos.unrealizedPnl.toFixed(2)} unsettled
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })()}
+                        <div>
+                          <span className={`font-semibold ${pos.unrealizedPnl >= 0 ? 'text-bull' : 'text-bear'}`}>
+                            {pos.unrealizedPnl >= 0 ? '+' : ''}{pos.unrealizedPnl.toFixed(2)}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-3 text-right font-mono tabular-nums text-txt-1">
                         {pos.liquidationPrice > 0 ? `$${pos.liquidationPrice.toFixed(2)}` : '—'}

@@ -10,7 +10,7 @@ const BASE_PRECISION  = 1_000_000_000;
 async function fetchDlobL2(marketIndex: number): Promise<L2Orderbook | null> {
   try {
     const resp = await fetch(
-      `/dlob/l2?marketIndex=${marketIndex}&marketType=perp&depth=20&includeVamm=false`,
+      `/dlob/l2?marketIndex=${marketIndex}&marketType=perp&depth=40&includeVamm=true`,
     );
     if (!resp.ok) return null;
     const data = await resp.json();
@@ -166,16 +166,22 @@ export const OrderBook: React.FC<Props> = ({ onPriceClick }) => {
       </div>
 
       {/* Asks */}
-      <div className={`overflow-hidden flex flex-col justify-end ${mode === 'bids' ? '' : 'shrink-0'}`} style={{ height: mode === 'bids' ? 0 : visibleRows * ROW_H }}>
+      <div className={`overflow-hidden flex flex-col justify-end ${mode === 'bids' ? 'h-0' : 'flex-1 min-h-0'}`}>
         {!hasData ? (
           <div className="flex items-center justify-center h-full">
             <span className="text-[12px] text-txt-3 animate-pulse">Loading orderbook…</span>
           </div>
         ) : (
-          visAsks.map((l, i) => (
-            <Row key={`a${i}`} level={l} maxTotal={maxTotal}
-              dec={dec} fmt={fmt} fmtSize={fmtSize} side="ask" onClick={onPriceClick} />
-          ))
+          <>
+            {/* Empty padding rows to fill remaining space above asks */}
+            {Array.from({ length: Math.max(0, visibleRows - visAsks.length) }).map((_, i) => (
+              <div key={`ae${i}`} style={{ height: ROW_H }} />
+            ))}
+            {visAsks.map((l, i) => (
+              <Row key={`a${i}`} level={l} maxTotal={maxTotal}
+                dec={dec} fmt={fmt} fmtSize={fmtSize} side="ask" onClick={onPriceClick} />
+            ))}
+          </>
         )}
       </div>
 
@@ -192,16 +198,22 @@ export const OrderBook: React.FC<Props> = ({ onPriceClick }) => {
       </div>
 
       {/* Bids */}
-      <div className={`overflow-hidden ${mode === 'asks' ? '' : 'shrink-0'}`} style={{ height: mode === 'asks' ? 0 : visibleRows * ROW_H }}>
+      <div className={`overflow-hidden ${mode === 'asks' ? 'h-0' : 'flex-1 min-h-0'}`}>
         {!hasData ? (
           <div className="flex items-center justify-center h-full">
             <span className="text-[12px] text-txt-3">No resting buy orders</span>
           </div>
         ) : (
-          visBids.map((l, i) => (
-            <Row key={`b${i}`} level={l} maxTotal={maxTotal}
-              dec={dec} fmt={fmt} fmtSize={fmtSize} side="bid" onClick={onPriceClick} />
-          ))
+          <>
+            {visBids.map((l, i) => (
+              <Row key={`b${i}`} level={l} maxTotal={maxTotal}
+                dec={dec} fmt={fmt} fmtSize={fmtSize} side="bid" onClick={onPriceClick} />
+            ))}
+            {/* Empty padding rows to fill remaining space below bids */}
+            {Array.from({ length: Math.max(0, visibleRows - visBids.length) }).map((_, i) => (
+              <div key={`be${i}`} style={{ height: ROW_H }} />
+            ))}
+          </>
         )}
       </div>
 
