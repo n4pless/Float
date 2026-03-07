@@ -587,6 +587,7 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
   };
 
   const handleBet = useCallback(async (epoch: number, dir: 'bull' | 'bear', sol: number) => {
+    if (game?.paused) { toast.error('Predictions are currently paused'); return; }
     if (!publicKey || !signTransaction) { toast.error('Connect wallet'); return; }
     try {
       toast.loading('Placing prediction...', { id: 'bet' });
@@ -850,6 +851,20 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
               <span className="text-[10px] sm:text-[11px] font-medium mt-0.5" style={{ color: C.muted }}>
                 #{liveRound.epoch} · {Math.floor((game?.intervalSeconds ?? 300) / 60)}m rounds
               </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ PAUSED BANNER ═══ */}
+      {game?.paused && (
+        <div className="shrink-0 relative z-20 flex items-center justify-center px-4 py-3">
+          <div className="flex items-center gap-3 px-5 py-3 rounded-2xl"
+            style={{ background: 'rgba(237,75,158,0.12)', border: '1px solid rgba(237,75,158,0.25)' }}>
+            <span className="text-lg">⏸</span>
+            <div>
+              <p className="text-[13px] sm:text-[14px] font-bold" style={{ color: '#ED4B9E' }}>Predictions Paused</p>
+              <p className="text-[10px] sm:text-[11px]" style={{ color: 'rgba(237,75,158,0.7)' }}>Betting is temporarily disabled. Existing bets are safe.</p>
             </div>
           </div>
         </div>
