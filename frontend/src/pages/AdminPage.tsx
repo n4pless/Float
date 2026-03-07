@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { useWalletModal } from '@solana/wallet-adapter-react-ui';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { useConnection } from '@solana/wallet-adapter-react';
 import { Transaction } from '@solana/web3.js';
 import { ArrowLeft, Shield, ShieldOff, RefreshCw, Lock, Unlock, AlertTriangle } from 'lucide-react';
@@ -23,7 +23,6 @@ interface AdminPageProps {
 export function AdminPage({ onBack }: AdminPageProps) {
   const { connection } = useConnection();
   const wallet = useWallet();
-  const { setVisible } = useWalletModal();
 
   const [game, setGame] = useState<GameAccount | null>(null);
   const [loading, setLoading] = useState(true);
@@ -113,12 +112,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
               <span className="font-mono text-sm">{wallet.publicKey.toBase58()}</span>
             </div>
           ) : (
-            <button
-              onClick={() => setVisible(true)}
-              className="px-4 py-2 rounded-lg bg-accent text-white font-semibold text-sm hover:opacity-90 transition-opacity"
-            >
-              Connect Wallet
-            </button>
+            <WalletMultiButton />
           )}
 
           {wallet.publicKey && game && !isAdmin && (
