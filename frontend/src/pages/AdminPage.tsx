@@ -14,7 +14,7 @@ import {
 } from '../prediction/client';
 
 /* ─── Authorised admin wallet ─── */
-const ADMIN_WALLET = 'Fm4q9C7kzzEZkFk3ihzA1VVQJRE1LK8kMiZ99Y94mcd';
+const ADMIN_WALLET = 'DXosop8DZbV7VU6ZxQitnDs7GBR4D5Nktw2uqSduNd5G';
 
 interface AdminPageProps {
   onBack: () => void;
