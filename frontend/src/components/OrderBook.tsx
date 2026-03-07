@@ -109,9 +109,13 @@ export const OrderBook: React.FC<Props> = ({ onPriceClick }) => {
   const asks = l2.asks;
   const bids = l2.bids;
   const hasData = asks.length > 0 || bids.length > 0;
+
+  // Compute maxTotal from visible rows only so depth bars fill the full card width
+  const visAsksRaw = asks.slice(0, visibleRows);
+  const visBidsRaw = bids.slice(0, visibleRows);
   const maxTotal = Math.max(
-    asks.length > 0 ? asks[asks.length - 1].total : 0,
-    bids.length > 0 ? bids[bids.length - 1].total : 0,
+    visAsksRaw.length > 0 ? visAsksRaw[visAsksRaw.length - 1].total : 0,
+    visBidsRaw.length > 0 ? visBidsRaw[visBidsRaw.length - 1].total : 0,
     1,
   );
 
@@ -130,8 +134,8 @@ export const OrderBook: React.FC<Props> = ({ onPriceClick }) => {
   const askPct = 100 - bidPct;
 
   const dec = 2;
-  const visAsks = mode === 'bids' ? [] : asks.slice(0, visibleRows).reverse();
-  const visBids = mode === 'asks' ? [] : bids.slice(0, visibleRows);
+  const visAsks = mode === 'bids' ? [] : visAsksRaw.slice().reverse();
+  const visBids = mode === 'asks' ? [] : visBidsRaw;
 
   const fmt = (v: number) =>
     v.toLocaleString('en-US', { maximumFractionDigits: 0 });
