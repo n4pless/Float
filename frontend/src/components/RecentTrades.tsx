@@ -22,7 +22,7 @@ export const RecentTrades: React.FC = () => {
       {/* Column headers - 24px */}
       <div className="grid px-3 text-[11px] text-txt-1 font-medium border-b border-drift-border/50" style={{ height: 24, lineHeight: '24px', gridTemplateColumns: '1fr 1fr 70px' }}>
         <span>Price</span>
-        <span className="text-right">Size (USD)</span>
+        <span className="text-right">Size</span>
         <span className="text-right">Time</span>
       </div>
 
