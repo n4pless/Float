@@ -586,6 +586,20 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
     scrollRef.current?.scrollBy({ left: d === 'left' ? -330 : 330, behavior: 'smooth' });
   };
 
+  // Wheel-to-horizontal-scroll on the card carousel
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const handler = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        e.preventDefault();
+        el.scrollBy({ left: e.deltaY * 2 });
+      }
+    };
+    el.addEventListener('wheel', handler, { passive: false });
+    return () => el.removeEventListener('wheel', handler);
+  }, []);
+
   const handleBet = useCallback(async (epoch: number, dir: 'bull' | 'bear', sol: number) => {
     if (game?.paused) { toast.error('Predictions are currently paused'); return; }
     if (!publicKey || !signTransaction) { toast.error('Connect wallet'); return; }
@@ -730,30 +744,7 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
             </div>
           </div>
 
-          {/* Centre: Nav Arrows (hidden on mobile — swipe instead) */}
-          <div className="hidden sm:flex items-center gap-3">
-            <button
-              onClick={() => scroll('left')}
-              className="w-9 h-9 rounded-full flex items-center justify-center text-[#8C8CA1] hover:text-[#F4EEFF] transition-all hover:scale-105"
-              style={{ background: 'rgba(255,255,255,0.06)' }}
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => scrollToLive('smooth')}
-              className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:scale-105"
-              style={{ background: 'rgba(118,69,217,0.15)', color: C.purple }}
-            >
-              <Flame className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => scroll('right')}
-              className="w-9 h-9 rounded-full flex items-center justify-center text-[#8C8CA1] hover:text-[#F4EEFF] transition-all hover:scale-105"
-              style={{ background: 'rgba(255,255,255,0.06)' }}
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
+
 
           {/* Right: Icons + Wallet */}
           <div className="flex items-center gap-1.5 sm:gap-2">
@@ -877,6 +868,31 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
 
       {/* ═══ CARDS CAROUSEL ═══ */}
       <div className="flex-1 flex flex-col min-h-0 relative z-10">
+
+        {/* Nav arrows above cards */}
+        <div className="shrink-0 flex items-center justify-center gap-3 py-1.5 sm:py-2">
+          <button
+            onClick={() => scroll('left')}
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-[#8C8CA1] hover:text-[#F4EEFF] transition-all hover:scale-105"
+            style={{ background: 'rgba(255,255,255,0.06)' }}
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => scrollToLive('smooth')}
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all hover:scale-105"
+            style={{ background: 'rgba(118,69,217,0.15)', color: C.purple }}
+          >
+            <Flame className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => scroll('right')}
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-[#8C8CA1] hover:text-[#F4EEFF] transition-all hover:scale-105"
+            style={{ background: 'rgba(255,255,255,0.06)' }}
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
 
         <div
           ref={scrollRef}
