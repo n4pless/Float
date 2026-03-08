@@ -803,8 +803,8 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
             }}
           >
             {/* Clock / Flame inside progress ring */}
-            <div className="relative w-11 h-11 sm:w-14 sm:h-14 flex items-center justify-center">
-              <svg className="w-11 h-11 sm:w-14 sm:h-14 -rotate-90" viewBox="0 0 48 48">
+            <div className="relative w-14 h-14 sm:w-[72px] sm:h-[72px] flex items-center justify-center">
+              <svg className="w-14 h-14 sm:w-[72px] sm:h-[72px] -rotate-90" viewBox="0 0 48 48">
                 <circle cx="24" cy="24" r="20" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="3" />
                 <circle
                   cx="24" cy="24" r="20" fill="none"
@@ -819,8 +819,8 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
                 {timeRemainingMs < 15000
-                  ? <Flame className="w-5 h-5 sm:w-6 sm:h-6 text-[#ED4B9E] animate-pulse" />
-                  : <img src="/clock.png" alt="clock" className="w-7 h-7 sm:w-8 sm:h-8 object-contain" />
+                  ? <Flame className="w-6 h-6 sm:w-8 sm:h-8 text-[#ED4B9E] animate-pulse" />
+                  : <img src="/clock.png" alt="clock" className="w-9 h-9 sm:w-11 sm:h-11 object-contain" />
                 }
               </div>
             </div>
@@ -865,7 +865,7 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
       <div className="flex-1 flex flex-col min-h-0 relative z-10">
 
         {/* Nav arrows above cards */}
-        <div className="shrink-0 flex items-center justify-center gap-3 py-1.5 sm:py-2">
+        <div className="shrink-0 flex items-center justify-center gap-3 pt-0 pb-1">
           <button
             onClick={() => scroll('left')}
             className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-[#8C8CA1] hover:text-[#F4EEFF] transition-all hover:scale-105"
