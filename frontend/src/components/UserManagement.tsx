@@ -28,8 +28,8 @@ interface Props {
   onBack: () => void;
   trading?: {
     createAccount: (depositAmount: number) => Promise<string>;
-    deposit: (amount: number) => Promise<string>;
-    withdraw: (amount: number) => Promise<string>;
+    deposit: (amount: number, spotMarketIndex?: number) => Promise<string>;
+    withdraw: (amount: number, spotMarketIndex?: number) => Promise<string>;
   };
   /** When true, hide the internal page header (used when embedded inside PortfolioPage) */
   embedded?: boolean;
@@ -108,6 +108,7 @@ export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack, trading,
   const accountState = useDriftStore((s) => s.accountState);
   const solBalance = useDriftStore((s) => s.solBalance);
   const usdcBalance = useDriftStore((s) => s.usdcBalance);
+  const accountSpotBalances = useDriftStore((s) => s.accountSpotBalances);
 
   const pubkeyStr = publicKey?.toBase58() ?? null;
   const shortPubkey = pubkeyStr ? `${pubkeyStr.slice(0, 4)}...${pubkeyStr.slice(-4)}` : '';
@@ -122,6 +123,7 @@ export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack, trading,
   /* Tabbed deposit/withdraw */
   const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw'>('deposit');
   const [confirmStep, setConfirmStep] = useState(false);
+  const [selectedToken, setSelectedToken] = useState<'USDC' | 'SOL'>('USDC');
 
   /* Faucet dropdown */
   const [faucetOpen, setFaucetOpen] = useState(false);
@@ -208,14 +210,15 @@ export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack, trading,
     if (amt <= 0 || !trading) return;
     setLoading('deposit');
     setFaucetMsg(null);
+    const marketIndex = selectedToken === 'SOL' ? 1 : 0;
     try {
-      await trading.deposit(amt);
-      setFaucetMsg({ type: 'ok', text: `Deposited ${amt} USDC` });
+      await trading.deposit(amt, marketIndex);
+      setFaucetMsg({ type: 'ok', text: `Deposited ${amt} ${selectedToken}` });
       setConfirmStep(false);
     } catch (e: any) {
       setFaucetMsg({ type: 'err', text: e.message || 'Deposit failed' });
     } finally { setLoading(null); }
-  }, [amount, trading]);
+  }, [amount, trading, selectedToken]);
 
   /* -- Withdraw -- */
   const handleWithdraw = useCallback(async () => {
@@ -223,9 +226,10 @@ export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack, trading,
     if (amt <= 0 || !trading) return;
     setLoading('withdraw');
     setFaucetMsg(null);
+    const marketIndex = selectedToken === 'SOL' ? 1 : 0;
     try {
-      await trading.withdraw(amt);
-      setFaucetMsg({ type: 'ok', text: `Withdrew ${amt} USDC` });
+      await trading.withdraw(amt, marketIndex);
+      setFaucetMsg({ type: 'ok', text: `Withdrew ${amt} ${selectedToken}` });
       setConfirmStep(false);
     } catch (e: any) {
       const msg = e?.message || String(e);
@@ -236,7 +240,7 @@ export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack, trading,
         setFaucetMsg({ type: 'err', text: msg });
       }
     } finally { setLoading(null); }
-  }, [amount, trading, accountState]);
+  }, [amount, trading, accountState, selectedToken]);
 
   /* -- Create account -- */
   const handleCreate = useCallback(async () => {
@@ -251,11 +255,22 @@ export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack, trading,
   /* Max button handler */
   const handleMax = useCallback(() => {
     if (activeTab === 'deposit') {
-      setAmount(String(usdcBalance ?? 0));
+      if (selectedToken === 'SOL') {
+        // Reserve 0.05 SOL for fees
+        const maxSol = Math.max(0, (solBalance ?? 0) - 0.05);
+        setAmount(String(Math.floor(maxSol * 10000) / 10000));
+      } else {
+        setAmount(String(usdcBalance ?? 0));
+      }
     } else {
-      setAmount(String(accountState?.freeCollateral ?? 0));
+      if (selectedToken === 'SOL') {
+        const solSpot = accountSpotBalances.find(b => b.marketIndex === 1);
+        setAmount(String(Math.max(0, solSpot?.netBalance ?? 0)));
+      } else {
+        setAmount(String(accountState?.freeCollateral ?? 0));
+      }
     }
-  }, [activeTab, usdcBalance, accountState]);
+  }, [activeTab, selectedToken, usdcBalance, solBalance, accountState, accountSpotBalances]);
 
   const health = accountState?.health ?? 100;
   const equity = accountState?.totalCollateral ?? 0;
@@ -431,14 +446,37 @@ export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack, trading,
                 }`}>Withdraw</button>
             </div>
             <div className="p-4 space-y-3">
+              {/* Token selector */}
+              <div className="flex items-center gap-1.5 p-0.5 bg-drift-surface rounded-lg">
+                {(['USDC', 'SOL'] as const).map((tok) => (
+                  <button
+                    key={tok}
+                    onClick={() => { setSelectedToken(tok); setConfirmStep(false); setAmount(''); }}
+                    className={`flex-1 py-1.5 text-[11px] font-semibold rounded-md text-center transition-colors ${
+                      selectedToken === tok
+                        ? 'bg-drift-panel text-txt-0 shadow-sm'
+                        : 'text-txt-3 hover:text-txt-1'
+                    }`}
+                  >{tok}</button>
+                ))}
+              </div>
               <div className="flex items-center justify-between">
                 <span className="text-[10px] text-txt-1">
-                  {activeTab === 'deposit' ? 'Wallet USDC' : 'Free Collateral'}
+                  {activeTab === 'deposit'
+                    ? `Wallet ${selectedToken}`
+                    : selectedToken === 'SOL'
+                      ? 'Account SOL Balance'
+                      : 'Free Collateral'
+                  }
                 </span>
                 <span className="text-[11px] text-txt-0 font-mono tabular-nums font-semibold">
                   {activeTab === 'deposit'
-                    ? `${(usdcBalance ?? 0).toLocaleString()} USDC`
-                    : `$${freeCollateral.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                    ? selectedToken === 'SOL'
+                      ? `${(solBalance ?? 0).toFixed(4)} SOL`
+                      : `${(usdcBalance ?? 0).toLocaleString()} USDC`
+                    : selectedToken === 'SOL'
+                      ? `${(accountSpotBalances.find(b => b.marketIndex === 1)?.netBalance ?? 0).toFixed(4)} SOL`
+                      : `$${freeCollateral.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                   }
                 </span>
               </div>
@@ -450,7 +488,7 @@ export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack, trading,
                   className="px-2.5 py-1 mr-1.5 text-[10px] font-bold rounded bg-drift-surface text-txt-1 hover:text-txt-0 hover:bg-drift-elevated transition-colors">
                   MAX
                 </button>
-                <span className="text-[11px] text-txt-1 pr-3 font-medium">USDC</span>
+                <span className="text-[11px] text-txt-1 pr-3 font-medium">{selectedToken}</span>
               </div>
               {!confirmStep ? (
                 <button onClick={() => {
@@ -467,7 +505,7 @@ export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack, trading,
                   <div className="bg-drift-input border border-drift-border/40 rounded-lg px-3 py-2.5">
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] text-txt-3">{activeTab === 'deposit' ? 'Deposit' : 'Withdraw'}</span>
-                      <span className="text-[13px] font-semibold text-txt-0 font-mono tabular-nums">{parseFloat(amount).toLocaleString()} USDC</span>
+                      <span className="text-[13px] font-semibold text-txt-0 font-mono tabular-nums">{parseFloat(amount).toLocaleString()} {selectedToken}</span>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2">

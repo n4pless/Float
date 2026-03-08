@@ -253,7 +253,7 @@ export class DriftTradingClient {
         programID: this.programId,
         opts: { commitment: 'confirmed' },
         perpMarketIndexes: [0],     // SOL-PERP
-        spotMarketIndexes: [0],     // USDC
+        spotMarketIndexes: [0, 1],  // USDC, SOL
         oracleInfos: [
           {
             publicKey: new PublicKey('8pb2q6teRzjpYM19sEQiAxfX4ynmZEpALyQiyWddaPpG'),
@@ -802,13 +802,16 @@ export class DriftTradingClient {
    * Deposit USDC collateral into the Drift user account.
    * User must have USDC tokens AND a Drift account first.
    */
-  async depositCollateral(usdcAmount: number, spotMarketIndex = 0): Promise<string> {
+  async depositCollateral(amount: number, spotMarketIndex = 0): Promise<string> {
     if (!this._userInitialized) {
       throw new Error('User account not initialized. Call initializeUserAccount() first.');
     }
 
-    const amountBN = new BN(Math.floor(usdcAmount * 1e6)); // USDC has 6 decimals
-    console.log(`[drift] depositing ${usdcAmount} USDC (${amountBN.toString()} raw)...`);
+    // USDC = 6 decimals, SOL = 9 decimals
+    const decimals = spotMarketIndex === 1 ? 9 : 6;
+    const symbol = spotMarketIndex === 1 ? 'SOL' : 'USDC';
+    const amountBN = new BN(Math.floor(amount * 10 ** decimals));
+    console.log(`[drift] depositing ${amount} ${symbol} (${amountBN.toString()} raw, market ${spotMarketIndex})...`);
 
     // Derive the user's Associated Token Account for the spot market mint
     const spotMarket = this.driftClient.getSpotMarketAccount(spotMarketIndex);
@@ -831,8 +834,10 @@ export class DriftTradingClient {
   /**
    * Withdraw USDC collateral from the Drift user account.
    */
-  async withdrawCollateral(usdcAmount: number, spotMarketIndex = 0): Promise<string> {
-    const amountBN = new BN(Math.floor(usdcAmount * 1e6));
+  async withdrawCollateral(amount: number, spotMarketIndex = 0): Promise<string> {
+    // USDC = 6 decimals, SOL = 9 decimals
+    const decimals = spotMarketIndex === 1 ? 9 : 6;
+    const amountBN = new BN(Math.floor(amount * 10 ** decimals));
 
     // Derive the user's Associated Token Account for the spot market mint
     const spotMarket = this.driftClient.getSpotMarketAccount(spotMarketIndex);

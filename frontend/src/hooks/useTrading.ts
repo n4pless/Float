@@ -160,16 +160,17 @@ export function useTrading(forceRefresh: () => Promise<void>) {
   );
 
   const deposit = useCallback(
-    async (amount: number): Promise<string> => {
+    async (amount: number, spotMarketIndex = 0): Promise<string> => {
       const { client } = useDriftStore.getState();
       if (!client) throw new Error('Client not connected');
 
-      const toastId = toast.loading(`Depositing ${amount.toLocaleString()} USDC`);
+      const symbol = spotMarketIndex === 1 ? 'SOL' : 'USDC';
+      const toastId = toast.loading(`Depositing ${amount.toLocaleString()} ${symbol}`);
 
       try {
-        const txSig = await client.depositCollateral(amount);
+        const txSig = await client.depositCollateral(amount, spotMarketIndex);
 
-        toast.success(`${amount.toLocaleString()} USDC Deposited`, {
+        toast.success(`${amount.toLocaleString()} ${symbol} Deposited`, {
           id: toastId,
           action: {
             label: 'View',
@@ -193,16 +194,17 @@ export function useTrading(forceRefresh: () => Promise<void>) {
   );
 
   const withdraw = useCallback(
-    async (amount: number): Promise<string> => {
+    async (amount: number, spotMarketIndex = 0): Promise<string> => {
       const { client } = useDriftStore.getState();
       if (!client) throw new Error('Client not connected');
 
-      const toastId = toast.loading(`Withdrawing ${amount.toLocaleString()} USDC`);
+      const symbol = spotMarketIndex === 1 ? 'SOL' : 'USDC';
+      const toastId = toast.loading(`Withdrawing ${amount.toLocaleString()} ${symbol}`);
 
       try {
-        const txSig = await client.withdrawCollateral(amount);
+        const txSig = await client.withdrawCollateral(amount, spotMarketIndex);
 
-        toast.success(`${amount.toLocaleString()} USDC Withdrawn`, {
+        toast.success(`${amount.toLocaleString()} ${symbol} Withdrawn`, {
           id: toastId,
           action: {
             label: 'View',

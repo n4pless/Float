@@ -9,7 +9,7 @@ interface Props {
   trading: {
     executeTrade: (params: any) => Promise<string>;
     createAccount: (amount: number) => Promise<string>;
-    deposit: (amount: number) => Promise<string>;
+    deposit: (amount: number, spotMarketIndex?: number) => Promise<string>;
   };
   initialLimitPrice?: number;
   onSwitchToAccount?: () => void;

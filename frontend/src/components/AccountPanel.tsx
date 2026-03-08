@@ -8,8 +8,8 @@ import DRIFT_CONFIG from '../config';
 interface Props {
   trading: {
     createAccount: (depositAmount: number) => Promise<string>;
-    deposit: (amount: number) => Promise<string>;
-    withdraw: (amount: number) => Promise<string>;
+    deposit: (amount: number, spotMarketIndex?: number) => Promise<string>;
+    withdraw: (amount: number, spotMarketIndex?: number) => Promise<string>;
   };
 }
 
