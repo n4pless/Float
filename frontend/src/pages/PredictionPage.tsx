@@ -455,7 +455,7 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
         {/* ── LATER Content ── */}
         {isLater && (
           <div className="flex-1 flex flex-col items-center justify-center space-y-2 text-center">
-            <Clock className="w-8 h-8 text-[#8C8CA1]/25" />
+            <img src="/clock.png" alt="clock" className="w-8 h-8 opacity-25" />
             <div>
               <p className="text-[12px] text-[#8C8CA1]/50 font-medium">Entry starts</p>
               <p className="text-[16px] text-[#8C8CA1] font-mono font-bold mt-0.5">
@@ -829,7 +829,7 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
               <div className="absolute inset-0 flex items-center justify-center">
                 {timeRemainingMs < 15000
                   ? <Flame className="w-3 h-3 sm:w-4 sm:h-4 text-[#ED4B9E] animate-pulse" />
-                  : <Timer className="w-3 h-3 sm:w-4 sm:h-4 text-[#7645D9]" />
+                  : <img src="/clock.png" alt="clock" className="w-4 h-4 sm:w-5 sm:h-5" />
                 }
               </div>
             </div>
