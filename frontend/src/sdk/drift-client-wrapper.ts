@@ -1395,6 +1395,7 @@ export class DriftTradingClient {
         side,
         ts: Date.now(),
         txSig,
+        taker: this.wallet.publicKey.toBase58(),
         marketIndex,
         takerFee,
       });
