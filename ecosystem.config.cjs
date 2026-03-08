@@ -12,7 +12,7 @@ module.exports = {
       env: {
         PORT: '3001',
         NODE_ENV: 'production',
-        RPC_URL: 'https://purple-purple-field.solana-devnet.quiknode.pro/a1fdb633f366155c13687a7d55daba5836aede55/',
+        RPC_URL: 'https://api.devnet.solana.com',
       },
     },
     {
@@ -23,7 +23,7 @@ module.exports = {
       max_restarts: 10,
       restart_delay: 3000,
       env: {
-        ENDPOINT: 'https://purple-purple-field.solana-devnet.quiknode.pro/a1fdb633f366155c13687a7d55daba5836aede55/',
+        ENDPOINT: 'https://api.devnet.solana.com',
         WS_ENDPOINT: 'wss://api.devnet.solana.com',
         ENV: 'devnet',
         DRIFT_PROGRAM_ID: 'EvKyHhYjCgpu335GdKZtfRsfu4VoUyjHn3kF3wgA5eXE',
@@ -35,9 +35,9 @@ module.exports = {
         USE_REDIS: 'true',
         REDIS_CLIENT: 'DLOB',
         METRICS_PORT: '9467',
-        BULK_ACCOUNT_LOADER_POLLING_INTERVAL: '5000',
-        EVENT_SUBSCRIBER_POLLING_INTERVAL: '5000',
-        RATE_LIMIT_CALLS_PER_SECOND: '10',
+        BULK_ACCOUNT_LOADER_POLLING_INTERVAL: '15000',
+        EVENT_SUBSCRIBER_POLLING_INTERVAL: '15000',
+        RATE_LIMIT_CALLS_PER_SECOND: '5',
       },
     },
     {
@@ -49,7 +49,7 @@ module.exports = {
       max_restarts: 10,
       restart_delay: 5000,
       env: {
-        RPC_URL: 'https://purple-purple-field.solana-devnet.quiknode.pro/a1fdb633f366155c13687a7d55daba5836aede55/',
+        RPC_URL: 'https://api.devnet.solana.com',
       },
     },
     {

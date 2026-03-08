@@ -534,11 +534,11 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
     return () => { ws?.close(); };
   }, []);
 
-  // Poll on-chain data every 5s
+  // Poll on-chain data every 10s
   useEffect(() => {
     if (!connection) return;
     refresh(publicKey ?? undefined);
-    const iv = setInterval(() => refresh(publicKey ?? undefined), 5000);
+    const iv = setInterval(() => refresh(publicKey ?? undefined), 10000);
     return () => clearInterval(iv);
   }, [connection, publicKey]);
 
