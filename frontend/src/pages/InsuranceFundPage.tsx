@@ -184,7 +184,7 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
   })();
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-auto bg-drift-bg">
+    <div className={embedded ? '' : 'flex-1 flex flex-col min-h-0 overflow-auto bg-drift-bg'}>
       {/* ── Header ── */}
       {!embedded && (
         <div className="sticky top-0 z-20 flex items-center gap-3 px-4 sm:px-6 bg-drift-bg border-b border-drift-border" style={{ height: 48 }}>
@@ -200,7 +200,7 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
         </div>
       )}
 
-      <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-5 space-y-5">
+      <div className={embedded ? 'px-4 sm:px-6 py-5 space-y-5' : 'w-full max-w-5xl mx-auto px-4 sm:px-6 py-5 space-y-5'}>
 
         {/* 1. STAT CARDS */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -255,7 +255,10 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
                     <div className="text-[10px] text-txt-3">Cost basis: {formatUsdPlain(userStake.costBasis)}</div>
                   </div>
                 </div>
-                <div className="text-[13px] font-mono font-bold text-txt-0">{formatUsdPlain(userStake.stakeValue)}</div>
+                <div className="text-right">
+                  <div className="text-[13px] font-mono font-bold text-txt-0">{formatUsdPlain(userStake.stakeValue)}</div>
+                  <div className="text-[10px] text-txt-3">USDC</div>
+                </div>
               </div>
               <div className="flex items-center justify-between px-4 py-3">
                 <div className="flex items-center gap-3">
@@ -264,11 +267,14 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
                   </div>
                   <div>
                     <div className="text-[13px] font-semibold text-txt-0">Unrealized P&L</div>
-                    <div className="text-[10px] text-txt-3">{pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%</div>
+                    <div className="text-[10px] text-txt-3">Since deposit</div>
                   </div>
                 </div>
-                <div className={`text-[13px] font-mono font-bold ${pnlDollar >= 0 ? 'text-bull' : 'text-bear'}`}>
-                  {pnlDollar >= 0 ? '+' : ''}{formatUsdPlain(pnlDollar)}
+                <div className="text-right">
+                  <div className={`text-[13px] font-mono font-bold ${pnlDollar >= 0 ? 'text-bull' : 'text-bear'}`}>
+                    {pnlDollar >= 0 ? '+' : ''}{formatUsdPlain(pnlDollar)}
+                  </div>
+                  <div className={`text-[10px] ${pnlDollar >= 0 ? 'text-bull/70' : 'text-bear/70'}`}>{pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%</div>
                 </div>
               </div>
               <div className="flex items-center justify-between px-4 py-3">
@@ -281,7 +287,10 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
                     <div className="text-[10px] text-txt-3">of {Number(fundStats!.totalShares).toLocaleString()} total</div>
                   </div>
                 </div>
-                <div className="text-[13px] font-mono font-bold text-txt-0">{Number(userStake.ifShares).toLocaleString()}</div>
+                <div className="text-right">
+                  <div className="text-[13px] font-mono font-bold text-txt-0">{Number(userStake.ifShares).toLocaleString()}</div>
+                  <div className="text-[10px] text-txt-3">{userSharePct.toFixed(1)}% of pool</div>
+                </div>
               </div>
               <div className="px-4 py-3">
                 <div className="flex items-center justify-between mb-1.5">
@@ -303,7 +312,10 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
                       <div className="text-[10px] text-txt-3">Awaiting completion</div>
                     </div>
                   </div>
-                  <div className="text-[13px] font-mono font-bold text-txt-0">{formatUsdPlain(userStake.lastWithdrawRequestValue)}</div>
+                  <div className="text-right">
+                    <div className="text-[13px] font-mono font-bold text-txt-0">{formatUsdPlain(userStake.lastWithdrawRequestValue)}</div>
+                    <div className="text-[10px] text-txt-3">USDC</div>
+                  </div>
                 </div>
               )}
             </div>
