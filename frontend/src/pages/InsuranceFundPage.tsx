@@ -3,7 +3,6 @@ import {
   Loader2,
   Shield,
   TrendingUp,
-  Zap,
   Wallet,
   PieChart,
   CheckCircle2,
@@ -11,10 +10,7 @@ import {
   Layers,
   ArrowDownToLine,
   ArrowUpFromLine,
-  Percent,
   AlertTriangle,
-  ChevronDown,
-  ChevronUp,
   Info,
 } from 'lucide-react';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -56,39 +52,25 @@ const Skeleton: React.FC<{ className?: string }> = ({ className = '' }) => (
   <div className={`animate-pulse bg-drift-surface/60 rounded-lg ${className}`} />
 );
 
-/* ─── SVG Arc Gauge for pool share ─── */
-const ArcGauge: React.FC<{ pct: number; size?: number }> = ({ pct, size = 80 }) => {
-  const r = (size - 8) / 2;
-  const circ = 2 * Math.PI * r;
-  const val = Math.max(0, Math.min(100, pct));
-  const offset = circ - (val / 100) * circ;
-  return (
-    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth={5} />
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth={5}
-          strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset}
-          className="transition-all duration-700" />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-[16px] font-bold tabular-nums text-txt-0 leading-none">{val.toFixed(1)}</span>
-        <span className="text-[8px] text-txt-3 mt-0.5">%</span>
+/* ─── StatCard (matches Portfolio pattern) ─── */
+const StatCard: React.FC<{
+  icon: React.FC<{ className?: string }>;
+  label: string;
+  value: string;
+  sub?: string;
+  color?: string;
+}> = ({ icon: Icon, label, value, sub, color = 'text-txt-0' }) => (
+  <div className="border border-drift-border/60 bg-drift-panel/80 rounded-xl p-4 flex flex-col gap-1.5 hover:border-drift-border transition-colors">
+    <div className="flex items-center justify-between">
+      <span className="text-[10px] text-txt-2 font-semibold uppercase tracking-wider">{label}</span>
+      <div className="w-6 h-6 rounded-lg bg-drift-surface/60 flex items-center justify-center">
+        <Icon className="w-3 h-3 text-txt-3" />
       </div>
     </div>
-  );
-};
-
-/* ─── Mini Donut for fee allocation ─── */
-const MiniDonut: React.FC<{ pct: number }> = ({ pct }) => {
-  const r = 8, circ = 2 * Math.PI * r, off = circ - (Math.min(pct, 100) / 100) * circ;
-  return (
-    <svg width={22} height={22} className="-rotate-90 inline-block mr-1.5 align-middle">
-      <circle cx={11} cy={11} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={3} />
-      <circle cx={11} cy={11} r={r} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth={3}
-        strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={off} />
-    </svg>
-  );
-};
+    <div className={`text-[20px] font-bold font-mono tracking-tight ${color}`}>{value}</div>
+    {sub && <div className="text-[10px] text-txt-3 font-medium">{sub}</div>}
+  </div>
+);
 
 /* ─── Pill toggle buttons ─── */
 const PillBtn: React.FC<{ label: string; onClick: () => void; active?: boolean }> = ({ label, onClick, active }) => (
@@ -114,15 +96,7 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
   const [success, setSuccess] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'stake' | 'unstake'>('stake');
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [showHowItWorks, setShowHowItWorks] = useState(false);
-  const [showStakeInfo, setShowStakeInfo] = useState(false);
   const refreshTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  /* Auto-collapse "How It Works" if user has active stake */
-  useEffect(() => {
-    if (userStake?.isInitialized) setShowHowItWorks(false);
-    else setShowHowItWorks(true);
-  }, [userStake?.isInitialized]);
 
   const fetchIfData = useCallback(async () => {
     if (!client || !isSubscribed) return;
@@ -183,9 +157,7 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
 
   /* Derived */
   const dataLoaded = !!fundStats;
-  const stakerSharePct = fundStats ? (fundStats.totalFactor > 0 ? ((fundStats.userFactor / fundStats.totalFactor) * 100).toFixed(0) : '0') : '—';
   const ifFeePct = fundStats ? ((fundStats.totalFactor / 10000) * 100).toFixed(1) : '—';
-  const ifFeePctNum = fundStats ? (fundStats.totalFactor / 10000) * 100 : 0;
   const hasPendingWithdraw = userStake?.isInitialized && userStake.lastWithdrawRequestShares !== '0' && userStake.lastWithdrawRequestTs > 0;
   const walletUsdc = usdcBalance != null ? usdcBalance : 0;
   const userSharePct = (() => {
@@ -228,409 +200,301 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
         </div>
       )}
 
-      <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-5 space-y-5">
+      <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-5 space-y-5">
 
-        {/* ╔══════════════════════════════════════════╗
-            ║  1. HERO SECTION — gradient card          ║
-            ╚══════════════════════════════════════════╝ */}
-        <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 overflow-hidden">
-          <div className="p-6 sm:p-8">
-            <div className="flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-8">
-              <div className="flex-1 space-y-3">
-                <h2 className="text-[12px] font-semibold text-txt-1 uppercase tracking-widest">Insurance Fund</h2>
-                {dataLoaded ? (
-                  <div className="text-[24px] sm:text-[28px] font-bold tracking-tight leading-none font-mono tabular-nums text-txt-0">
-                    ${fundStats!.vaultBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </div>
-                ) : <Skeleton className="h-14 w-64" />}
-                <p className="text-[13px] text-txt-1 leading-relaxed max-w-lg">
-                  Stake USDC to earn <span className="text-txt-0 font-semibold">{ifFeePct}%</span> of protocol revenue while backstopping the exchange against socialized losses.
-                </p>
-              </div>
-            </div>
-            {/* Icon chips */}
-            <div className="flex flex-wrap items-center gap-2.5 mt-5">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-drift-surface/60 border border-drift-border/40">
-                <Shield className="w-3.5 h-3.5 text-txt-3" />
-                <span className="text-[11px] font-medium text-txt-1">Backstop Protection</span>
-              </div>
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-drift-surface/60 border border-drift-border/40">
-                <TrendingUp className="w-3.5 h-3.5 text-txt-3" />
-                <span className="text-[11px] font-medium text-txt-1">Revenue Share</span>
-              </div>
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-drift-surface/60 border border-drift-border/40">
-                <Zap className="w-3.5 h-3.5 text-txt-3" />
-                <span className="text-[11px] font-medium text-txt-1">Instant Withdrawal</span>
-              </div>
-            </div>
-          </div>
+        {/* 1. STAT CARDS */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <StatCard
+            icon={Shield}
+            label="Vault Balance"
+            value={dataLoaded ? formatUsdPlain(fundStats!.vaultBalance) : '—'}
+            sub="Total USDC deposited"
+          />
+          <StatCard
+            icon={DollarSign}
+            label="Fees Collected"
+            value={dataLoaded ? formatUsdPlain(fundStats!.totalFeesCollected) : '—'}
+            sub="From trading activity"
+          />
+          <StatCard
+            icon={Wallet}
+            label="Your Stake"
+            value={userStake?.isInitialized ? formatUsdPlain(userStake.stakeValue) : '$0.00'}
+            sub={userStake?.isInitialized ? `${Number(userStake.ifShares).toLocaleString()} shares` : 'Not staking'}
+            color={userStake?.isInitialized ? 'text-txt-0' : 'text-txt-2'}
+          />
+          <StatCard
+            icon={PieChart}
+            label="Pool Share"
+            value={userStake?.isInitialized ? `${userSharePct.toFixed(1)}%` : '0%'}
+            sub={`Fee allocation: ${ifFeePct}%`}
+          />
         </div>
 
-        {/* ╔══════════════════════════════════════════╗
-            ║  2. VAULT STATS ROW                       ║
-            ╚══════════════════════════════════════════╝ */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          {/* Primary: Vault Balance */}
-          <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 p-4 flex flex-col gap-2">
-            <div className="flex items-center gap-1.5">
-              <Wallet className="w-3.5 h-3.5 text-txt-3" />
-              <span className="text-[10px] text-txt-2 uppercase tracking-wider font-semibold">Vault Balance</span>
-            </div>
-            {!dataLoaded ? <Skeleton className="h-7 w-20" /> : (
-              <span className="text-[20px] font-bold font-mono tabular-nums text-txt-0 leading-none">{formatCompact(fundStats!.vaultBalance)}</span>
-            )}
-            <span className="text-[10px] text-txt-3">Total USDC deposited</span>
-          </div>
-          {/* Secondary: Total Shares */}
-          <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 p-4 flex flex-col gap-2">
-            <div className="flex items-center gap-1.5">
-              <Layers className="w-3.5 h-3.5 text-txt-3" />
-              <span className="text-[10px] text-txt-2 uppercase tracking-wider">Total Shares</span>
-            </div>
-            {!dataLoaded ? <Skeleton className="h-5 w-16" /> : (
-              <span className="text-[15px] font-semibold font-mono tabular-nums text-txt-0 leading-none">{Number(fundStats!.totalShares).toLocaleString()}</span>
-            )}
-            <span className="text-[10px] font-mono text-txt-3">Yours: {fundStats ? Number(fundStats.userShares).toLocaleString() : '—'}</span>
-          </div>
-          {/* Secondary: Fee Allocation with mini donut */}
-          <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 p-4 flex flex-col gap-2">
-            <div className="flex items-center gap-1.5">
-              <PieChart className="w-3.5 h-3.5 text-txt-3" />
-              <span className="text-[10px] text-txt-2 uppercase tracking-wider">Fee Allocation</span>
-            </div>
-            {!dataLoaded ? <Skeleton className="h-5 w-16" /> : (
-              <span className="text-[15px] font-semibold font-mono tabular-nums text-txt-0 leading-none">
-                <MiniDonut pct={ifFeePctNum} />{ifFeePct}%
+        {/* 2. YOUR POSITION */}
+        {connected && userStake?.isInitialized && (
+          <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 overflow-hidden">
+            <div className="px-4 py-3 border-b border-drift-border/40 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-txt-2" />
+                <h3 className="text-[13px] font-bold text-txt-0">Your Position</h3>
+              </div>
+              <span className="flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-full border border-drift-border text-txt-1 font-semibold bg-drift-surface">
+                <span className="w-2 h-2 rounded-full bg-bull" />
+                Active
               </span>
-            )}
-            <span className="text-[10px] font-mono text-txt-3">{stakerSharePct}% to stakers</span>
-          </div>
-          {/* Secondary: Withdrawal with checkmark */}
-          <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 p-4 flex flex-col gap-2">
-            <div className="flex items-center gap-1.5">
-              <ArrowUpFromLine className="w-3.5 h-3.5 text-txt-3" />
-              <span className="text-[10px] text-txt-2 uppercase tracking-wider">Withdrawal</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[15px] font-semibold text-txt-1 leading-none">Instant</span>
-              <CheckCircle2 className="w-4 h-4 text-bull" />
-            </div>
-            <span className="text-[10px] text-txt-3">{fundStats ? `Settles ${formatDuration(fundStats.revenueSettlePeriod)}` : '—'}</span>
-          </div>
-          {/* Primary: Fees Collected */}
-          <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 p-4 flex flex-col gap-2 col-span-2 sm:col-span-1">
-            <div className="flex items-center gap-1.5">
-              <DollarSign className="w-3.5 h-3.5 text-txt-3" />
-              <span className="text-[10px] text-txt-2 uppercase tracking-wider font-semibold">Fees Collected</span>
-            </div>
-            {!dataLoaded ? <Skeleton className="h-7 w-20" /> : (
-              <span className="text-[20px] font-bold font-mono tabular-nums text-txt-0 leading-none">{formatCompact(fundStats!.totalFeesCollected)}</span>
-            )}
-            <span className="text-[10px] text-txt-3">From trading activity</span>
-          </div>
-        </div>
-
-        {/* ╔══════════════════════════════════════════╗
-            ║  MAIN 2-COLUMN LAYOUT                     ║
-            ║  Left 60%: Stake/Unstake                   ║
-            ║  Right 40%: Position + How It Works        ║
-            ╚══════════════════════════════════════════╝ */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-
-          {/* ── LEFT COLUMN: Stake/Unstake (60%) ── */}
-          <div className="lg:col-span-3 space-y-4 order-2 lg:order-1">
-
-            {/* 3. STAKE/UNSTAKE UNIFIED CARD */}
-            <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 overflow-hidden">
-              {/* Tabs at top of card */}
-              <div className="flex border-b border-drift-border/40">
-                {(['stake', 'unstake'] as const).map(tab => {
-                  const act = activeTab === tab;
-                  const isS = tab === 'stake';
-                  return (
-                    <button key={tab} onClick={() => { setActiveTab(tab); setError(null); }}
-                      className={`flex-1 py-3 text-[13px] font-semibold text-center transition-colors ${
-                        act ? (isS ? 'text-txt-0 border-b-2 border-txt-0' : 'text-txt-0 border-b-2 border-txt-0')
-                          : 'text-txt-3 hover:text-txt-1'
-                      }`}>
-                      <span className="flex items-center justify-center gap-1.5">
-                        {isS ? <ArrowDownToLine className="w-3.5 h-3.5" /> : <ArrowUpFromLine className="w-3.5 h-3.5" />}
-                        {isS ? 'Stake' : 'Unstake'}
-                      </span>
-                    </button>
-                  );
-                })}
+            <div className="divide-y divide-drift-border/30">
+              <div className="flex items-center justify-between px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-drift-surface flex items-center justify-center">
+                    <Wallet className="w-4 h-4 text-txt-1" />
+                  </div>
+                  <div>
+                    <div className="text-[13px] font-semibold text-txt-0">Staked Value</div>
+                    <div className="text-[10px] text-txt-3">Cost basis: {formatUsdPlain(userStake.costBasis)}</div>
+                  </div>
+                </div>
+                <div className="text-[13px] font-mono font-bold text-txt-0">{formatUsdPlain(userStake.stakeValue)}</div>
               </div>
+              <div className="flex items-center justify-between px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-drift-surface flex items-center justify-center">
+                    <TrendingUp className="w-4 h-4 text-txt-1" />
+                  </div>
+                  <div>
+                    <div className="text-[13px] font-semibold text-txt-0">Unrealized P&L</div>
+                    <div className="text-[10px] text-txt-3">{pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%</div>
+                  </div>
+                </div>
+                <div className={`text-[13px] font-mono font-bold ${pnlDollar >= 0 ? 'text-bull' : 'text-bear'}`}>
+                  {pnlDollar >= 0 ? '+' : ''}{formatUsdPlain(pnlDollar)}
+                </div>
+              </div>
+              <div className="flex items-center justify-between px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-drift-surface flex items-center justify-center">
+                    <Layers className="w-4 h-4 text-txt-1" />
+                  </div>
+                  <div>
+                    <div className="text-[13px] font-semibold text-txt-0">Your Shares</div>
+                    <div className="text-[10px] text-txt-3">of {Number(fundStats!.totalShares).toLocaleString()} total</div>
+                  </div>
+                </div>
+                <div className="text-[13px] font-mono font-bold text-txt-0">{Number(userStake.ifShares).toLocaleString()}</div>
+              </div>
+              <div className="px-4 py-3">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] text-txt-2 font-semibold uppercase tracking-wider">Pool Share</span>
+                  <span className="text-[11px] font-bold font-mono text-txt-0">{userSharePct.toFixed(1)}%</span>
+                </div>
+                <div className="h-2 rounded-full bg-drift-surface overflow-hidden">
+                  <div className="h-full rounded-full bg-txt-1/40 transition-all duration-700" style={{ width: `${Math.min(userSharePct, 100)}%` }} />
+                </div>
+              </div>
+              {hasPendingWithdraw && (
+                <div className="flex items-center justify-between px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-drift-surface flex items-center justify-center">
+                      <ArrowUpFromLine className="w-4 h-4 text-txt-1" />
+                    </div>
+                    <div>
+                      <div className="text-[13px] font-semibold text-txt-0">Pending Unstake</div>
+                      <div className="text-[10px] text-txt-3">Awaiting completion</div>
+                    </div>
+                  </div>
+                  <div className="text-[13px] font-mono font-bold text-txt-0">{formatUsdPlain(userStake.lastWithdrawRequestValue)}</div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
-              {/* Stake form */}
-              {activeTab === 'stake' && (
-                <div className="p-6 space-y-4">
-                  {/* Wallet balance prominent */}
-                  {connected && (
-                    <div className="bg-drift-input border border-drift-border/40 rounded-lg px-4 py-3 flex items-center justify-between">
-                      <span className="text-[11px] text-txt-1 uppercase tracking-wide">Wallet Balance</span>
-                      <span className="text-[18px] font-bold font-mono tabular-nums text-txt-0">{formatUsdPlain(walletUsdc)}</span>
+        {!connected && (
+          <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 p-6 text-center">
+            <p className="text-[13px] font-medium text-txt-1 mb-1.5">Connect Wallet</p>
+            <p className="text-[11px] text-txt-3 mb-4">Connect your wallet to stake and view your position</p>
+            <WalletMultiButton />
+          </div>
+        )}
+
+        {connected && !userStake?.isInitialized && (
+          <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 p-6 text-center">
+            <p className="text-[13px] font-medium text-txt-1 mb-1.5">No Active Stake</p>
+            <p className="text-[11px] text-txt-3">Deposit USDC below to start earning yield</p>
+          </div>
+        )}
+
+        {/* 3. STAKE / UNSTAKE */}
+        <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 overflow-hidden">
+          <div className="px-4 py-3 border-b border-drift-border/40 flex items-center gap-2">
+            <ArrowDownToLine className="w-4 h-4 text-txt-2" />
+            <h3 className="text-[13px] font-bold text-txt-0">Stake / Unstake</h3>
+          </div>
+          <div className="flex border-b border-drift-border/40">
+            {(['stake', 'unstake'] as const).map(tab => {
+              const act = activeTab === tab;
+              const isS = tab === 'stake';
+              return (
+                <button key={tab} onClick={() => { setActiveTab(tab); setError(null); }}
+                  className={`flex-1 py-2.5 text-[12px] font-semibold text-center transition-colors ${
+                    act ? 'text-txt-0 border-b-2 border-txt-0' : 'text-txt-3 hover:text-txt-1'
+                  }`}>
+                  <span className="flex items-center justify-center gap-1.5">
+                    {isS ? <ArrowDownToLine className="w-3.5 h-3.5" /> : <ArrowUpFromLine className="w-3.5 h-3.5" />}
+                    {isS ? 'Stake' : 'Unstake'}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Stake form */}
+          {activeTab === 'stake' && (
+            <div className="p-4 space-y-3">
+              {connected && (
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-txt-1 uppercase tracking-wide">Wallet Balance</span>
+                  <span className="text-[11px] font-bold font-mono tabular-nums text-txt-0">{formatUsdPlain(walletUsdc)}</span>
+                </div>
+              )}
+              <div>
+                <label className="text-[10px] text-txt-3 uppercase tracking-wide mb-1.5 block">Deposit Amount</label>
+                <div className="flex items-center h-10 bg-drift-input border border-drift-border rounded-lg focus-within:border-txt-3/40 transition-colors">
+                  <span className="pl-3 text-[11px] font-semibold text-txt-1">USDC</span>
+                  <input type="number" step="0.01" min="0" value={stakeAmount} onChange={e => setStakeAmount(e.target.value)} placeholder="0.00"
+                    className="flex-1 px-3 h-full bg-transparent text-right text-txt-0 text-[14px] font-semibold font-mono tabular-nums placeholder:text-txt-3/30 focus:outline-none" />
+                </div>
+              </div>
+              {connected && walletUsdc > 0 && (
+                <div className="flex items-center gap-2">
+                  {[{ l: '25%', p: 0.25 }, { l: '50%', p: 0.5 }, { l: '75%', p: 0.75 }, { l: 'MAX', p: 1 }].map(x => (
+                    <PillBtn key={x.l} label={x.l} onClick={() => handleStakePreset(x.p)} active={stakeAmount === (walletUsdc * x.p).toFixed(2)} />
+                  ))}
+                </div>
+              )}
+              {stakePreviewShares && (
+                <div className="text-[10px] text-txt-3 flex items-center gap-1.5">
+                  <Layers className="w-3 h-3" />
+                  &asymp; <span className="text-txt-1 font-semibold">{Number(stakePreviewShares).toLocaleString()} shares</span>
+                </div>
+              )}
+              {!connected ? (
+                <div className="flex flex-col items-center gap-3 py-6">
+                  <p className="text-[11px] text-txt-3">Connect wallet to stake</p>
+                  <WalletMultiButton />
+                </div>
+              ) : (
+                <button onClick={handleStake} disabled={loading || !stakeAmount || parseFloat(stakeAmount) <= 0}
+                  className="w-full py-3 bg-bull text-white text-[12px] font-semibold rounded-lg disabled:opacity-30 disabled:cursor-not-allowed active:opacity-80 transition-opacity flex items-center justify-center gap-2">
+                  {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {loading ? 'Staking\u2026' : `Stake ${stakeAmount && parseFloat(stakeAmount) > 0 ? `${parseFloat(stakeAmount).toLocaleString()} USDC` : 'USDC'}`}
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Unstake form */}
+          {activeTab === 'unstake' && (
+            <div className="p-4 space-y-3">
+              {hasPendingWithdraw && (
+                <div className="p-3 border border-bull/20 bg-bull/5 rounded-lg space-y-2">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-bull" />
+                    <span className="text-[12px] font-semibold text-bull">Unstake Ready</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[14px] font-bold text-txt-0 font-mono tabular-nums">{formatUsdPlain(userStake!.lastWithdrawRequestValue)}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={handleCompleteUnstake} disabled={loading}
+                      className="flex-1 py-2.5 bg-bull text-white text-[12px] font-semibold rounded-lg disabled:opacity-40 transition-opacity flex items-center justify-center gap-2">
+                      {loading && <Loader2 className="w-4 h-4 animate-spin" />} Complete Withdrawal
+                    </button>
+                    <button onClick={handleCancelUnstake} disabled={loading}
+                      className="px-3 py-2.5 border border-drift-border rounded-lg text-txt-1 text-[11px] font-medium hover:text-txt-0 transition-colors">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+              {!hasPendingWithdraw && (
+                <>
+                  {userStake?.isInitialized && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-txt-1 uppercase tracking-wide">Staked Value</span>
+                      <span className="text-[11px] font-bold font-mono tabular-nums text-txt-0">{formatUsdPlain(userStake.stakeValue)}</span>
                     </div>
                   )}
-                  {/* Amount input */}
                   <div>
-                    <label className="text-[11px] text-txt-3 uppercase tracking-wide mb-2 block">Deposit Amount</label>
-                    <div className="flex items-center h-12 bg-drift-input border border-drift-border rounded-lg focus-within:border-txt-3/40 transition-colors">
-                      <span className="pl-4 text-[12px] font-semibold text-txt-1">USDC</span>
-                      <input type="number" step="0.01" min="0" value={stakeAmount} onChange={e => setStakeAmount(e.target.value)} placeholder="0.00"
-                        className="flex-1 px-3 h-full bg-transparent text-right text-txt-0 text-[18px] font-semibold font-mono tabular-nums placeholder:text-txt-3/30 focus:outline-none" />
+                    <label className="text-[10px] text-txt-3 uppercase tracking-wide mb-1.5 block">Withdraw Amount</label>
+                    <div className="flex items-center h-10 bg-drift-input border border-drift-border rounded-lg focus-within:border-txt-3/40 transition-colors">
+                      <span className="pl-3 text-[11px] font-semibold text-txt-1">USDC</span>
+                      <input type="number" step="0.01" min="0" value={unstakeAmount} onChange={e => setUnstakeAmount(e.target.value)} placeholder="0.00"
+                        className="flex-1 px-3 h-full bg-transparent text-right text-txt-0 text-[14px] font-semibold font-mono tabular-nums placeholder:text-txt-3/30 focus:outline-none" />
                     </div>
                   </div>
-                  {/* Pill toggles */}
-                  {connected && walletUsdc > 0 && (
+                  {userStake?.isInitialized && userStake.stakeValue > 0 && (
                     <div className="flex items-center gap-2">
                       {[{ l: '25%', p: 0.25 }, { l: '50%', p: 0.5 }, { l: '75%', p: 0.75 }, { l: 'MAX', p: 1 }].map(x => (
-                        <PillBtn key={x.l} label={x.l} onClick={() => handleStakePreset(x.p)} active={stakeAmount === (walletUsdc * x.p).toFixed(2)} />
+                        <PillBtn key={x.l} label={x.l} onClick={() => handleUnstakePreset(x.p)} active={unstakeAmount === (userStake.stakeValue * x.p).toFixed(2)} />
                       ))}
                     </div>
                   )}
-                  {/* Live shares preview */}
-                  {stakePreviewShares && (
-                    <div className="text-[11px] text-txt-3 flex items-center gap-1.5">
-                      <Layers className="w-3 h-3" />
-                      You will receive approximately <span className="text-txt-1 font-semibold">{Number(stakePreviewShares).toLocaleString()} shares</span>
-                    </div>
-                  )}
-                  {/* Action */}
                   {!connected ? (
-                    <div className="flex flex-col items-center gap-3 py-8 bg-drift-input border border-dashed border-drift-border">
-                      <p className="text-[12px] text-txt-1">Connect your wallet to stake</p><WalletMultiButton />
+                    <div className="flex flex-col items-center gap-3 py-6">
+                      <p className="text-[11px] text-txt-3">Connect wallet to unstake</p>
+                      <WalletMultiButton />
                     </div>
                   ) : (
-                    <button onClick={handleStake} disabled={loading || !stakeAmount || parseFloat(stakeAmount) <= 0}
-                      className="w-full py-3.5 bg-bull text-white text-[13px] font-semibold rounded-lg disabled:opacity-30 disabled:cursor-not-allowed active:opacity-80 transition-opacity flex items-center justify-center gap-2">
+                    <button onClick={handleRequestUnstake} disabled={loading || !unstakeAmount || parseFloat(unstakeAmount) <= 0 || !userStake?.isInitialized}
+                      className="w-full py-3 bg-bear text-white text-[12px] font-semibold rounded-lg disabled:opacity-30 disabled:cursor-not-allowed active:opacity-80 transition-opacity flex items-center justify-center gap-2">
                       {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                      {loading ? 'Staking…' : `Stake ${stakeAmount && parseFloat(stakeAmount) > 0 ? `${parseFloat(stakeAmount).toLocaleString()} USDC` : 'USDC'}`}
+                      {loading ? 'Processing\u2026' : `Withdraw ${unstakeAmount && parseFloat(unstakeAmount) > 0 ? `${parseFloat(unstakeAmount).toLocaleString()} USDC` : ''}`}
                     </button>
                   )}
-                  {/* Collapsible info tooltip */}
-                  <button onClick={() => setShowStakeInfo(!showStakeInfo)} className="flex items-center gap-1 text-[11px] text-txt-3 hover:text-txt-1 transition-colors">
-                    <Info className="w-3 h-3" />
-                    How staking works
-                    {showStakeInfo ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                  </button>
-                  {showStakeInfo && (
-                    <div className="text-[11px] text-txt-1 leading-relaxed bg-drift-surface/40 border border-drift-border/40 rounded-lg px-4 py-3">
-                      USDC deposited into the Insurance Fund vault. You'll receive shares proportional to the fund's total value.
-                      Your share of protocol fees accrues automatically.
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Unstake form */}
-              {activeTab === 'unstake' && (
-                <div className="p-6 space-y-4">
-                  {hasPendingWithdraw && (
-                    <div className="p-4 border border-bull/20 bg-bull/5 space-y-3">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-bull" />
-                        <span className="text-[13px] font-semibold text-bull">Unstake Ready</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[20px] font-bold text-txt-0 font-mono tabular-nums">{formatUsdPlain(userStake!.lastWithdrawRequestValue)}</span>
-                        <span className="text-bull font-semibold text-[11px] uppercase">Ready</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <button onClick={handleCompleteUnstake} disabled={loading}
-                          className="flex-1 py-3 bg-bull text-white text-[13px] font-semibold rounded-lg disabled:opacity-40 transition-opacity flex items-center justify-center gap-2">
-                          {loading && <Loader2 className="w-4 h-4 animate-spin" />} Complete Withdrawal
-                        </button>
-                        <button onClick={handleCancelUnstake} disabled={loading}
-                          className="px-4 py-3 border border-drift-border rounded-lg text-txt-1 text-[12px] font-medium hover:text-txt-0 transition-colors">
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  {!hasPendingWithdraw && (
-                    <>
-                      {/* Staked balance prominent */}
-                      {userStake?.isInitialized && (
-                        <div className="bg-drift-input border border-drift-border/40 rounded-lg px-4 py-3 flex items-center justify-between">
-                          <span className="text-[11px] text-txt-1 uppercase tracking-wide">Staked Value</span>
-                          <span className="text-[18px] font-bold font-mono tabular-nums text-txt-0">{formatUsdPlain(userStake.stakeValue)}</span>
-                        </div>
-                      )}
-                      <div>
-                        <label className="text-[11px] text-txt-3 uppercase tracking-wide mb-2 block">Withdraw Amount</label>
-                        <div className="flex items-center h-12 bg-drift-input border border-drift-border rounded-lg focus-within:border-txt-3/40 transition-colors">
-                          <span className="pl-4 text-[12px] font-semibold text-txt-1">USDC</span>
-                          <input type="number" step="0.01" min="0" value={unstakeAmount} onChange={e => setUnstakeAmount(e.target.value)} placeholder="0.00"
-                            className="flex-1 px-3 h-full bg-transparent text-right text-txt-0 text-[18px] font-semibold font-mono tabular-nums placeholder:text-txt-3/30 focus:outline-none" />
-                        </div>
-                      </div>
-                      {/* Pill toggles */}
-                      {userStake?.isInitialized && userStake.stakeValue > 0 && (
-                        <div className="flex items-center gap-2">
-                          {[{ l: '25%', p: 0.25 }, { l: '50%', p: 0.5 }, { l: '75%', p: 0.75 }, { l: 'MAX', p: 1 }].map(x => (
-                            <PillBtn key={x.l} label={x.l} onClick={() => handleUnstakePreset(x.p)} active={unstakeAmount === (userStake.stakeValue * x.p).toFixed(2)} />
-                          ))}
-                        </div>
-                      )}
-                      {!connected ? (
-                        <div className="flex flex-col items-center gap-3 py-8 bg-drift-input border border-dashed border-drift-border">
-                          <p className="text-[12px] text-txt-1">Connect your wallet to unstake</p><WalletMultiButton />
-                        </div>
-                      ) : (
-                        <button onClick={handleRequestUnstake} disabled={loading || !unstakeAmount || parseFloat(unstakeAmount) <= 0 || !userStake?.isInitialized}
-                          className="w-full py-3.5 bg-bear text-white text-[13px] font-semibold rounded-lg disabled:opacity-30 disabled:cursor-not-allowed active:opacity-80 transition-opacity flex items-center justify-center gap-2">
-                          {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                          {loading ? 'Processing…' : `Withdraw ${unstakeAmount && parseFloat(unstakeAmount) > 0 ? `${parseFloat(unstakeAmount).toLocaleString()} USDC` : ''}`}
-                        </button>
-                      )}
-                    </>
-                  )}
-                </div>
+                </>
               )}
             </div>
+          )}
+        </div>
 
-            {/* Status messages */}
-            {error && (
-              <div className="flex items-center gap-2 p-4 border border-bear/15 bg-bear/8 text-bear text-[12px] rounded-xl">
-                <span className="flex-1">{error}</span>
-                <button onClick={() => setError(null)} className="text-bear/60 hover:text-bear text-xs transition-colors">✕</button>
-              </div>
-            )}
-            {success && (
-              <div className="flex items-center gap-2 p-4 border border-bull/15 bg-bull/8 text-bull text-[12px] rounded-xl">
-                <span className="flex-1">{success}</span>
-              </div>
-            )}
+        {/* Status messages */}
+        {error && (
+          <div className="flex items-center gap-2 p-3 border border-bear/15 bg-bear/8 text-bear text-[11px] rounded-xl">
+            <span className="flex-1">{error}</span>
+            <button onClick={() => setError(null)} className="text-bear/60 hover:text-bear text-xs transition-colors">&times;</button>
           </div>
+        )}
+        {success && (
+          <div className="flex items-center gap-2 p-3 border border-bull/15 bg-bull/8 text-bull text-[11px] rounded-xl">
+            <span className="flex-1">{success}</span>
+          </div>
+        )}
 
-          {/* ── RIGHT COLUMN: Position + How It Works (40%) ── */}
-          <div className="lg:col-span-2 space-y-4 order-1 lg:order-2">
-
-            {/* 4. YOUR POSITION — prominent card */}
-            <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-drift-border/40">
-                <h3 className="text-[13px] font-bold text-txt-0 uppercase tracking-wide">Your Position</h3>
-                {userStake?.isInitialized && (
-                  <span className="flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-full border border-drift-border text-txt-1 font-semibold bg-drift-surface">
-                    <span className="w-2 h-2 rounded-full bg-bull" />
-                    Active
-                  </span>
-                )}
+        {/* 4. INFO */}
+        <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 overflow-hidden">
+          <div className="px-4 py-3 border-b border-drift-border/40 flex items-center gap-2">
+            <Info className="w-4 h-4 text-txt-2" />
+            <h3 className="text-[13px] font-bold text-txt-0">How It Works</h3>
+          </div>
+          <div className="grid grid-cols-3 gap-px bg-drift-border/30">
+            {[
+              { label: 'Stake', desc: 'Deposit USDC into the vault' },
+              { label: 'Earn', desc: `${ifFeePct}% of protocol fees` },
+              { label: 'Withdraw', desc: 'Instant \u2014 no lock-up' },
+            ].map(s => (
+              <div key={s.label} className="px-4 py-3 bg-drift-panel/80">
+                <div className="text-[10px] text-txt-3 font-medium uppercase tracking-wider">{s.label}</div>
+                <div className="text-[12px] font-semibold text-txt-1 mt-1">{s.desc}</div>
               </div>
-              <div className="p-4">
-                {!connected ? (
-                  <div className="text-center py-8">
-                    <p className="text-[13px] font-medium text-txt-1 mb-1.5">Connect Wallet</p>
-                    <p className="text-[11px] text-txt-3 mb-4">View your stake and earnings</p>
-                    <WalletMultiButton />
-                  </div>
-                ) : !userStake?.isInitialized ? (
-                  <div className="text-center py-8">
-                    <p className="text-[13px] font-medium text-txt-1 mb-1.5">No Active Stake</p>
-                    <p className="text-[11px] text-txt-3 mb-3">Deposit USDC to start earning yield</p>
-                    <button onClick={() => setActiveTab('stake')}
-                      className="text-[12px] text-txt-1 font-semibold hover:text-txt-0 hover:underline transition-colors">
-                      Get Started &rarr;
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-5">
-                    {/* Hero staked value */}
-                    <div className="text-center">
-                      <div className="text-[10px] text-txt-2 uppercase tracking-wider mb-2 font-semibold">Staked Value</div>
-                      <div className="text-[20px] font-bold font-mono tracking-tight leading-none tabular-nums">
-                        <span className="text-txt-0">${userStake.stakeValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                      </div>
-                      {/* P&L with $ and % */}
-                      <div className="flex items-center justify-center gap-2 mt-2">
-                        <span className={`text-[14px] font-semibold font-mono tabular-nums ${pnlDollar >= 0 ? 'text-bull' : 'text-bear'}`}>
-                          {pnlDollar >= 0 ? '+' : ''}{formatUsdPlain(pnlDollar)}
-                        </span>
-                        <span className={`text-[12px] font-mono tabular-nums ${pnlDollar >= 0 ? 'text-bull/70' : 'text-bear/70'}`}>
-                          ({pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%)
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Pool share bar */}
-                    <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[10px] text-txt-2 font-semibold uppercase tracking-wider">Pool Share</span>
-                        <span className="text-[13px] font-bold font-mono text-txt-0">{userSharePct.toFixed(1)}%</span>
-                      </div>
-                      <div className="h-2 rounded-full bg-drift-surface overflow-hidden">
-                        <div className="h-full rounded-full bg-txt-1/40 transition-all duration-700" style={{ width: `${Math.min(userSharePct, 100)}%` }} />
-                      </div>
-                    </div>
-
-                    {/* Two-column detail row */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-drift-surface/60 border border-drift-border/40 rounded-lg px-3.5 py-3 text-center">
-                        <div className="text-[10px] text-txt-2 mb-1">Your Shares</div>
-                        <div className="text-[14px] font-semibold text-txt-0 tabular-nums font-mono">{Number(userStake.ifShares).toLocaleString()}</div>
-                      </div>
-                      <div className="bg-drift-surface/60 border border-drift-border/40 rounded-lg px-3.5 py-3 text-center">
-                        <div className="text-[10px] text-txt-2 mb-1">Cost Basis</div>
-                        <div className="text-[14px] font-semibold text-txt-0 tabular-nums font-mono">{formatUsdPlain(userStake.costBasis)}</div>
-                      </div>
-                    </div>
-
-                    {/* Pending unstake */}
-                    {hasPendingWithdraw && (
-                    <div className="bg-drift-surface/60 border border-drift-border/40 rounded-lg px-3.5 py-2.5 flex items-center justify-between">
-                      <span className="text-[11px] text-txt-1">Pending Unstake</span>
-                      <span className="text-[12px] font-semibold font-mono text-txt-0 tabular-nums">{formatUsdPlain(userStake.lastWithdrawRequestValue)}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* 5. HOW IT WORKS — collapsible stepper */}
-            <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 overflow-hidden">
-              <button onClick={() => setShowHowItWorks(!showHowItWorks)}
-                className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-drift-surface/20 transition-colors">
-                <h3 className="text-[14px] font-semibold text-txt-0 uppercase tracking-wide">How It Works</h3>
-                {showHowItWorks ? <ChevronUp className="w-4 h-4 text-txt-3" /> : <ChevronDown className="w-4 h-4 text-txt-3" />}
-              </button>
-              {showHowItWorks && (
-                <div className="px-6 pb-6 pt-2">
-                  <div className="relative">
-                    {[
-                      { icon: <Wallet className="w-4 h-4 text-txt-2" />, title: 'Stake USDC', desc: 'Deposit from your wallet into the vault' },
-                      { icon: <Percent className="w-4 h-4 text-txt-2" />, title: 'Earn Protocol Revenue', desc: `${ifFeePct}% of fees flow to the fund` },
-                      { icon: <ArrowUpFromLine className="w-4 h-4 text-txt-2" />, title: 'Withdraw Anytime', desc: 'No lock-up — instant withdrawals' },
-                    ].map((s, i) => (
-                      <div key={i} className="flex gap-3 items-start relative">
-                        {/* Connecting line */}
-                        {i < 2 && (
-                          <div className="absolute left-[15px] top-[32px] w-px h-[calc(100%-8px)] bg-drift-border" />
-                        )}
-                        <div className="shrink-0 w-[30px] h-[30px] rounded-full bg-drift-surface border border-drift-border flex items-center justify-center z-10">
-                          {s.icon}
-                        </div>
-                        <div className="pt-1 pb-4">
-                          <div className="text-[12px] font-semibold text-txt-0">{s.title}</div>
-                          <div className="text-[11px] text-txt-3 mt-0.5">{s.desc}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* 6. RISK DISCLOSURE — amber warning card */}
-            <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 p-4 space-y-2">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-txt-2 shrink-0" />
-                <span className="text-[13px] font-semibold text-txt-1">Risk Disclosure</span>
-              </div>
-              <p className="text-[12px] text-txt-2 leading-relaxed">
-                Stakers take on the risk of covering bankrupt accounts. If liquidation losses exceed the fund, you may lose part of your deposit.
-                Only stake what you can afford to risk.
+            ))}
+          </div>
+          <div className="px-4 py-3 border-t border-drift-border/40">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="w-3.5 h-3.5 text-txt-3 shrink-0 mt-0.5" />
+              <p className="text-[10px] text-txt-3 leading-relaxed">
+                Stakers backstop bankrupt accounts. If losses exceed the fund, you may lose part of your deposit.
               </p>
             </div>
           </div>
