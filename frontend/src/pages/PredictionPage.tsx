@@ -96,9 +96,11 @@ interface CardProps {
   onBet: (epoch: number, dir: 'bull' | 'bear', sol: number) => void;
   onClaim: (epoch: number) => void;
   walletConnected: boolean;
+  timeRemainingMs?: number;
+  pct?: number;
 }
 
-const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, onBet, onClaim, walletConnected }) => {
+const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, onBet, onClaim, walletConnected, timeRemainingMs = 0, pct = 0 }) => {
   const [betDir, setBetDir] = useState<'bull' | 'bear' | null>(null);
   const [betAmt, setBetAmt] = useState('');
   const [placing, setPlacing] = useState(false);
@@ -189,6 +191,24 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
         </div>
         <span className="text-[11px] text-[#8C8CA1]/50 font-mono">#{epoch}</span>
       </div>
+
+      {/* ═══ LIVE PROGRESS BAR ═══ */}
+      {isLive && (
+        <div className="w-full h-[3px] relative" style={{ background: 'rgba(255,255,255,0.06)' }}>
+          <div
+            className="h-full transition-all duration-1000 rounded-r-full"
+            style={{
+              width: `${Math.min(100, pct * 100)}%`,
+              background: timeRemainingMs < 15000
+                ? 'linear-gradient(90deg, #ED4B9E, #ED4B9E)'
+                : `linear-gradient(90deg, ${C.purple}, #31D0AA)`,
+              boxShadow: timeRemainingMs < 15000
+                ? '0 0 8px rgba(237,75,158,0.5)'
+                : `0 0 8px rgba(118,69,217,0.4)`,
+            }}
+          />
+        </div>
+      )}
 
       {/* ═══ UP SHIELD BANNER ═══ */}
       <div className={`relative transition-all duration-500 ${upHighlight ? 'shield-glow-up' : ''}`} style={{ height: 56 }}>
@@ -802,28 +822,11 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
                 : '0 0 20px rgba(118,69,217,0.1)',
             }}
           >
-            {/* Clock / Flame inside progress ring */}
-            <div className="relative w-14 h-14 sm:w-[72px] sm:h-[72px] flex items-center justify-center">
-              <svg className="w-14 h-14 sm:w-[72px] sm:h-[72px] -rotate-90" viewBox="0 0 48 48">
-                <circle cx="24" cy="24" r="20" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="3" />
-                <circle
-                  cx="24" cy="24" r="20" fill="none"
-                  stroke={timeRemainingMs < 15000 ? C.down : C.purple}
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeDasharray={`${2 * Math.PI * 20}`}
-                  strokeDashoffset={`${2 * Math.PI * 20 * (1 - pct)}`}
-                  className="transition-all duration-1000"
-                  style={{ filter: `drop-shadow(0 0 4px ${timeRemainingMs < 15000 ? 'rgba(237,75,158,0.5)' : 'rgba(118,69,217,0.5)'})` }}
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                {timeRemainingMs < 15000
-                  ? <Flame className="w-6 h-6 sm:w-8 sm:h-8 text-[#ED4B9E] animate-pulse" />
-                  : <img src="/clock.png" alt="clock" className="w-9 h-9 sm:w-11 sm:h-11 object-contain" />
-                }
-              </div>
-            </div>
+            {/* Clock / Flame icon */}
+            {timeRemainingMs < 15000
+              ? <Flame className="w-10 h-10 sm:w-12 sm:h-12 text-[#ED4B9E] animate-pulse" />
+              : <img src="/clock.png" alt="clock" className="w-12 h-12 sm:w-14 sm:h-14 object-contain" />
+            }
 
             {/* Time display */}
             <div className="flex flex-col items-start">
@@ -931,6 +934,8 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
                   onBet={handleBet}
                   onClaim={handleClaim}
                   walletConnected={!!publicKey}
+                  timeRemainingMs={r.status === 'live' ? timeRemainingMs : undefined}
+                  pct={r.status === 'live' ? pct : undefined}
                 />
               ))}
 
