@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { Settings, ExternalLink, Droplets, Menu, X, Search, Globe, Zap, Check } from 'lucide-react';
+import { Settings, ExternalLink, Droplets, Menu, X, Search, Globe, Zap, Check, MessageCircle } from 'lucide-react';
 import { UserAccountSelector } from './UserAccountSelector';
 import { AssetIcon } from './icons/AssetIcon';
 import DRIFT_CONFIG from '../config';
@@ -212,6 +212,17 @@ export const Header: React.FC<HeaderProps> = ({
           <span className="hidden sm:inline">Faucet</span>
         </a>
 
+        <a
+          href="https://discord.gg/ydwDdnBq5S"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded text-[11px] font-medium text-[#5865F2] bg-[#5865F2]/8 hover:bg-[#5865F2]/15 transition-colors"
+          title="Join our Discord"
+        >
+          <MessageCircle className="w-3 h-3" />
+          <span>Discord</span>
+        </a>
+
         <div className="relative hidden sm:block">
           <button onClick={() => setShowSettings(!showSettings)}
             onBlur={() => setTimeout(() => setShowSettings(false), 150)}
@@ -282,6 +293,18 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 <Droplets className="w-3.5 h-3.5" />
                 Get Devnet SOL (Faucet)
+                <ExternalLink className="w-3 h-3 ml-auto text-txt-3" />
+              </a>
+
+              {/* Discord */}
+              <a
+                href="https://discord.gg/ydwDdnBq5S"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 py-1 text-[12px] text-[#5865F2] font-medium"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                Join Discord
                 <ExternalLink className="w-3 h-3 ml-auto text-txt-3" />
               </a>
 
