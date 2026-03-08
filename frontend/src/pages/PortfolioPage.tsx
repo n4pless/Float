@@ -2,13 +2,12 @@
  * PortfolioPage — Unified dashboard: Overview, Positions, History,
  * Vault (Insurance Fund), and Account management in one place.
  */
-import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
-  ArrowLeft, TrendingUp, TrendingDown, Activity, Shield, Wallet,
-  BarChart3, Clock, DollarSign, Percent, Target, AlertTriangle,
-  ChevronDown, ChevronUp, ExternalLink, Layers, Zap, Award,
-  PieChart, ArrowUpRight, ArrowDownRight, Minus, RefreshCw,
-  User, Lock,
+  ArrowLeft, TrendingUp, Activity, Shield, Wallet,
+  BarChart3, Clock, DollarSign, Target, ExternalLink,
+  Layers, Award, PieChart, ArrowUpRight, ArrowDownRight,
+  User,
 } from 'lucide-react';
 import {
   useDriftStore,
@@ -21,17 +20,12 @@ import {
   selectFundingRate,
   selectSolBalance,
   selectUsdcBalance,
-  selectAccountSpotBalances,
   selectSubAccounts,
-  selectActiveSubAccountId,
-  selectInsuranceFundStats,
   selectUserIfStake,
   type RecentTrade,
-  type PriceSnapshot,
 } from '../stores/useDriftStore';
 import { usePredictionStore } from '../stores/usePredictionStore';
 import type { UserPosition } from '../sdk/drift-client-wrapper';
-import type { Order } from '../sdk/drift-client-wrapper';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { InsuranceFundPage } from './InsuranceFundPage';
@@ -40,9 +34,7 @@ import { UserManagement } from '../components/UserManagement';
 /* ─── Helpers ─── */
 
 function formatUsd(n: number, decimals = 2): string {
-  if (Math.abs(n) >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
-  if (Math.abs(n) >= 1_000) return `$${(n / 1_000).toFixed(2)}K`;
-  return `$${n.toFixed(decimals)}`;
+  return `$${n.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
 }
 
 function formatSol(n: number): string {
@@ -69,7 +61,6 @@ function timeAgo(ts: number): string {
 }
 
 const pnlColor = (v: number) => v > 0 ? 'text-bull' : v < 0 ? 'text-bear' : 'text-txt-2';
-const pnlBg = (v: number) => v > 0 ? 'bg-bull/8' : v < 0 ? 'bg-bear/8' : 'bg-drift-surface';
 
 /* ═══════════════════════════════════════════════════════ */
 /*  StatCard                                               */
@@ -81,15 +72,14 @@ const StatCard: React.FC<{
   sub?: string;
   color?: string;
   delay?: number;
-}> = ({ icon: Icon, label, value, sub, color = 'text-txt-0', delay = 0 }) => (
+}> = ({ icon: Icon, label, value, sub, color = 'text-txt-0' }) => (
   <div
-    className="border border-drift-border/60 bg-drift-panel/80 backdrop-blur-sm rounded-xl p-4 flex flex-col gap-1.5 animate-fadeInUp hover:border-drift-border transition-colors"
-    style={{ animationDelay: `${delay}ms` }}
+    className="border border-drift-border/60 bg-drift-panel/80 rounded-xl p-4 flex flex-col gap-1.5 hover:border-drift-border transition-colors"
   >
     <div className="flex items-center justify-between">
       <span className="text-[10px] text-txt-2 font-semibold uppercase tracking-wider">{label}</span>
       <div className="w-6 h-6 rounded-lg bg-drift-surface/60 flex items-center justify-center">
-        <Icon className={`w-3 h-3 ${color}`} />
+        <Icon className="w-3 h-3 text-txt-3" />
       </div>
     </div>
     <div className={`text-[20px] font-bold font-mono tracking-tight ${color}`}>{value}</div>
@@ -176,7 +166,7 @@ const EquityChart: React.FC<{ data: { ts: number; value: number }[] }> = ({ data
 /*  Health Bar                                             */
 /* ═══════════════════════════════════════════════════════ */
 const HealthBar: React.FC<{ health: number }> = ({ health }) => {
-  const color = health >= 70 ? 'bg-bull' : health >= 40 ? 'bg-yellow' : 'bg-bear';
+  const color = health >= 70 ? 'bg-bull' : health >= 40 ? 'bg-accent' : 'bg-bear';
   const text = health >= 70 ? 'Healthy' : health >= 40 ? 'Moderate' : 'At Risk';
   return (
     <div className="flex items-center gap-3">
@@ -225,7 +215,7 @@ const PositionRow: React.FC<{ pos: UserPosition; oraclePrice: number }> = ({ pos
       {/* Liq Price */}
       <div className="text-right hidden md:block">
         <div className="text-[11px] text-txt-3">Liq</div>
-        <div className="text-[13px] font-mono font-semibold text-yellow">{pos.liquidationPrice > 0 ? formatUsd(pos.liquidationPrice) : '—'}</div>
+        <div className="text-[13px] font-mono font-semibold text-txt-2">{pos.liquidationPrice > 0 ? formatUsd(pos.liquidationPrice) : '—'}</div>
       </div>
 
       {/* PnL */}
@@ -313,18 +303,18 @@ const PredictionSummary: React.FC = () => {
   if (!stats || stats.total === 0) return null;
 
   return (
-    <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 backdrop-blur-sm overflow-hidden">
+    <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 overflow-hidden">
       <div className="px-4 py-3 border-b border-drift-border/40 flex items-center gap-2">
-        <Target className="w-4 h-4 text-accent" />
+        <Target className="w-4 h-4 text-txt-2" />
         <h3 className="text-[13px] font-bold text-txt-0">Prediction Market</h3>
-        <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent/10 text-accent font-semibold">{stats.total} bets</span>
+        <span className="text-[10px] px-2 py-0.5 rounded-full bg-drift-surface text-txt-2 font-semibold">{stats.total} bets</span>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-drift-border/30">
         {[
           { label: 'Total Wagered', value: `${stats.totalBet.toFixed(2)} SOL`, color: 'text-txt-0' },
           { label: 'Net P&L', value: `${stats.netPnl >= 0 ? '+' : ''}${stats.netPnl.toFixed(3)} SOL`, color: pnlColor(stats.netPnl) },
           { label: 'Win Rate', value: `${stats.winRate.toFixed(0)}%`, color: stats.winRate >= 50 ? 'text-bull' : 'text-bear' },
-          { label: 'Unclaimed', value: `${stats.unclaimed.toFixed(3)} SOL`, color: stats.unclaimed > 0 ? 'text-yellow' : 'text-txt-2' },
+          { label: 'Unclaimed', value: `${stats.unclaimed.toFixed(3)} SOL`, color: stats.unclaimed > 0 ? 'text-accent' : 'text-txt-2' },
         ].map(item => (
           <div key={item.label} className="px-4 py-3 bg-drift-panel/80">
             <div className="text-[10px] text-txt-3 font-medium uppercase tracking-wider">{item.label}</div>
@@ -335,7 +325,7 @@ const PredictionSummary: React.FC = () => {
       <div className="px-4 py-2.5 flex items-center gap-4 text-[11px] text-txt-3">
         <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-bull" />{stats.won} Won</span>
         <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-bear" />{stats.lost} Lost</span>
-        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow animate-pulse" />{stats.pending} Pending</span>
+        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-accent" />{stats.pending} Pending</span>
       </div>
     </div>
   );
@@ -378,7 +368,6 @@ export const PortfolioPage: React.FC<PortfolioPageProps> = ({ onBack, forceRefre
   const fundingRate = useDriftStore(selectFundingRate);
   const solBalance = useDriftStore(selectSolBalance);
   const usdcBalance = useDriftStore(selectUsdcBalance);
-  const spotBalances = useDriftStore(selectAccountSpotBalances);
   const subAccounts = useDriftStore(selectSubAccounts);
   const priceHistory = useDriftStore(s => s.priceHistory);
   const ifStake = useDriftStore(selectUserIfStake);
@@ -446,8 +435,8 @@ export const PortfolioPage: React.FC<PortfolioPageProps> = ({ onBack, forceRefre
   if (!connected) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-drift-bg px-4">
-        <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center mb-4">
-          <Wallet className="w-8 h-8 text-accent" />
+        <div className="w-16 h-16 rounded-2xl bg-drift-surface flex items-center justify-center mb-4">
+          <Wallet className="w-8 h-8 text-txt-2" />
         </div>
         <h2 className="text-xl font-bold text-txt-0 mb-2">Connect Wallet</h2>
         <p className="text-[13px] text-txt-2 text-center max-w-sm mb-5">
@@ -462,7 +451,7 @@ export const PortfolioPage: React.FC<PortfolioPageProps> = ({ onBack, forceRefre
     <div className="flex-1 flex flex-col min-h-0 bg-drift-bg overflow-auto custom-scrollbar">
 
       {/* ── Top bar ── */}
-      <div className="shrink-0 flex items-center justify-between px-4 sm:px-6 py-3 border-b border-drift-border bg-drift-panel/50 backdrop-blur-sm">
+      <div className="shrink-0 flex items-center justify-between px-4 sm:px-6 py-3 border-b border-drift-border bg-drift-panel/50">
         <div className="flex items-center gap-3">
           {/* Back button only on mobile (Header handles nav on desktop) */}
           <button onClick={onBack} className="sm:hidden p-1.5 rounded-lg hover:bg-drift-surface transition-colors text-txt-2 hover:text-txt-0">
@@ -471,14 +460,14 @@ export const PortfolioPage: React.FC<PortfolioPageProps> = ({ onBack, forceRefre
           <div>
             <h1 className="text-[16px] font-bold text-txt-0 flex items-center gap-2">
               Portfolio
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent/10 text-accent font-semibold">Live</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-drift-surface text-txt-2 font-semibold">Live</span>
             </h1>
             <span className="text-[11px] text-txt-3 font-mono">{shortAddr(publicKey?.toBase58() || '')}</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-drift-surface border border-drift-border/50">
-            <div className="w-1.5 h-1.5 rounded-full bg-bull animate-pulse" />
+            <div className="w-1.5 h-1.5 rounded-full bg-bull" />
             <span className="text-[10px] text-txt-2 font-medium">Devnet</span>
           </div>
         </div>
@@ -500,7 +489,7 @@ export const PortfolioPage: React.FC<PortfolioPageProps> = ({ onBack, forceRefre
               onClick={() => setActiveTab(tab.key)}
               className={`flex items-center gap-1.5 px-3 sm:px-4 py-2.5 text-[12px] font-semibold transition-colors border-b-2 -mb-px whitespace-nowrap ${
                 active
-                  ? 'text-txt-0 border-accent'
+                  ? 'text-txt-0 border-txt-0'
                   : 'text-txt-3 border-transparent hover:text-txt-1'
               }`}
             >
@@ -508,7 +497,7 @@ export const PortfolioPage: React.FC<PortfolioPageProps> = ({ onBack, forceRefre
               {tab.label}
               {badge && (
                 <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${
-                  active ? 'bg-accent/15 text-accent' : 'bg-drift-surface text-txt-3'
+                  active ? 'bg-drift-surface text-txt-0' : 'bg-drift-surface text-txt-3'
                 }`}>
                   {badge}
                 </span>
@@ -547,11 +536,7 @@ export const PortfolioPage: React.FC<PortfolioPageProps> = ({ onBack, forceRefre
                 label="Account Health"
                 value={`${(accountState?.health ?? 100).toFixed(0)}%`}
                 sub={accountState ? `Leverage: ${accountState.leverage.toFixed(2)}x` : 'No account'}
-                color={
-                  (accountState?.health ?? 100) >= 70 ? 'text-bull'
-                  : (accountState?.health ?? 100) >= 40 ? 'text-yellow'
-                  : 'text-bear'
-                }
+                color="text-txt-0"
                 delay={100}
               />
               <StatCard
@@ -559,14 +544,14 @@ export const PortfolioPage: React.FC<PortfolioPageProps> = ({ onBack, forceRefre
                 label="Open Positions"
                 value={`${positions.length}`}
                 sub={`${openOrders.length} open orders`}
-                color="text-accent"
+                color="text-txt-0"
                 delay={150}
               />
             </div>
 
             {/* Health Bar */}
             {accountState && isUserInitialized && (
-              <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 backdrop-blur-sm p-4">
+              <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 p-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[11px] text-txt-2 font-semibold uppercase tracking-wider">Account Health</span>
                   <div className="flex items-center gap-3 text-[11px] text-txt-3">
@@ -579,10 +564,10 @@ export const PortfolioPage: React.FC<PortfolioPageProps> = ({ onBack, forceRefre
             )}
 
             {/* Equity Chart */}
-            <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 backdrop-blur-sm overflow-hidden">
+            <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 overflow-hidden">
               <div className="px-4 py-3 border-b border-drift-border/40 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4 text-accent" />
+                  <BarChart3 className="w-4 h-4 text-txt-2" />
                   <h3 className="text-[13px] font-bold text-txt-0">Equity Curve</h3>
                 </div>
                 <div className="flex items-center gap-2 text-[10px] text-txt-3">
@@ -600,17 +585,17 @@ export const PortfolioPage: React.FC<PortfolioPageProps> = ({ onBack, forceRefre
             </div>
 
             {/* Balances */}
-            <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 backdrop-blur-sm overflow-hidden">
+            <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 overflow-hidden">
               <div className="px-4 py-3 border-b border-drift-border/40 flex items-center gap-2">
-                <Wallet className="w-4 h-4 text-accent" />
+                <Wallet className="w-4 h-4 text-txt-2" />
                 <h3 className="text-[13px] font-bold text-txt-0">Balances</h3>
               </div>
               <div className="divide-y divide-drift-border/30">
                 {/* Wallet SOL */}
                 <div className="flex items-center justify-between px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center">
-                      <span className="text-[12px] font-bold text-purple-400">◎</span>
+                    <div className="w-8 h-8 rounded-lg bg-drift-surface flex items-center justify-center">
+                      <span className="text-[12px] font-bold text-txt-1">◎</span>
                     </div>
                     <div>
                       <div className="text-[13px] font-semibold text-txt-0">SOL</div>
@@ -626,8 +611,8 @@ export const PortfolioPage: React.FC<PortfolioPageProps> = ({ onBack, forceRefre
                 {/* USDC in margin */}
                 <div className="flex items-center justify-between px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                      <DollarSign className="w-4 h-4 text-blue-400" />
+                    <div className="w-8 h-8 rounded-lg bg-drift-surface flex items-center justify-center">
+                      <DollarSign className="w-4 h-4 text-txt-1" />
                     </div>
                     <div>
                       <div className="text-[13px] font-semibold text-txt-0">USDC</div>
@@ -644,8 +629,8 @@ export const PortfolioPage: React.FC<PortfolioPageProps> = ({ onBack, forceRefre
                 {ifStake && ifStake.stakeValue > 0 && (
                   <div className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-drift-surface/30 transition-colors" onClick={() => setActiveTab('vault')}>
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
-                        <Shield className="w-4 h-4 text-accent" />
+                      <div className="w-8 h-8 rounded-lg bg-drift-surface flex items-center justify-center">
+                        <Shield className="w-4 h-4 text-txt-1" />
                       </div>
                       <div>
                         <div className="text-[13px] font-semibold text-txt-0">Insurance Fund</div>
@@ -663,13 +648,13 @@ export const PortfolioPage: React.FC<PortfolioPageProps> = ({ onBack, forceRefre
 
             {/* Quick Position Summary */}
             {positions.length > 0 && (
-              <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 backdrop-blur-sm overflow-hidden">
+              <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 overflow-hidden">
                 <div className="px-4 py-3 border-b border-drift-border/40 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-accent" />
+                    <Layers className="w-4 h-4 text-txt-2" />
                     <h3 className="text-[13px] font-bold text-txt-0">Active Positions</h3>
                   </div>
-                  <button onClick={() => setActiveTab('positions')} className="text-[11px] text-accent hover:underline">
+                  <button onClick={() => setActiveTab('positions')} className="text-[11px] text-txt-2 hover:text-txt-0 hover:underline">
                     View all →
                   </button>
                 </div>
@@ -683,15 +668,15 @@ export const PortfolioPage: React.FC<PortfolioPageProps> = ({ onBack, forceRefre
             <PredictionSummary />
 
             {/* Trading Stats */}
-            <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 backdrop-blur-sm overflow-hidden">
+            <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 overflow-hidden">
               <div className="px-4 py-3 border-b border-drift-border/40 flex items-center gap-2">
-                <Award className="w-4 h-4 text-accent" />
+                <Award className="w-4 h-4 text-txt-2" />
                 <h3 className="text-[13px] font-bold text-txt-0">Trading Stats</h3>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-drift-border/30">
                 {[
                   { label: 'Total Trades', value: tradeCount.toString(), color: 'text-txt-0' },
-                  { label: 'Fees Paid', value: formatUsd(totalFees), color: 'text-yellow' },
+                  { label: 'Fees Paid', value: formatUsd(totalFees), color: 'text-txt-1' },
                   { label: 'Funding Rate', value: `${(fundingRate * 100).toFixed(4)}%`, color: fundingRate >= 0 ? 'text-bull' : 'text-bear' },
                   { label: 'Sub-Accounts', value: Math.max(1, subAccounts.length).toString(), color: 'text-txt-0' },
                 ].map(item => (
@@ -708,7 +693,7 @@ export const PortfolioPage: React.FC<PortfolioPageProps> = ({ onBack, forceRefre
         {/* ═══ POSITIONS TAB ═══ */}
         {activeTab === 'positions' && (
           <div className="px-4 sm:px-6 py-5">
-            <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 backdrop-blur-sm overflow-hidden">
+            <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 overflow-hidden">
               {positions.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <Layers className="w-10 h-10 text-txt-3 mb-3" />
@@ -744,7 +729,7 @@ export const PortfolioPage: React.FC<PortfolioPageProps> = ({ onBack, forceRefre
         {/* ═══ HISTORY TAB ═══ */}
         {activeTab === 'history' && (
           <div className="px-4 sm:px-6 py-5">
-            <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 backdrop-blur-sm overflow-hidden">
+            <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 overflow-hidden">
               {myTrades.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <Clock className="w-10 h-10 text-txt-3 mb-3" />
