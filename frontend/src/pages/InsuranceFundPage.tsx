@@ -53,7 +53,7 @@ function formatDuration(seconds: number): string {
 }
 
 const Skeleton: React.FC<{ className?: string }> = ({ className = '' }) => (
-  <div className={`animate-pulse bg-drift-surface/60 ${className}`} />
+  <div className={`animate-pulse bg-drift-surface/60 rounded-lg ${className}`} />
 );
 
 /* ─── SVG Arc Gauge for pool share ─── */
@@ -66,7 +66,7 @@ const ArcGauge: React.FC<{ pct: number; size?: number }> = ({ pct, size = 80 }) 
     <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth={5} />
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#5c8ae6" strokeWidth={5}
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth={5}
           strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset}
           className="transition-all duration-700" />
       </svg>
@@ -84,7 +84,7 @@ const MiniDonut: React.FC<{ pct: number }> = ({ pct }) => {
   return (
     <svg width={22} height={22} className="-rotate-90 inline-block mr-1.5 align-middle">
       <circle cx={11} cy={11} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={3} />
-      <circle cx={11} cy={11} r={r} fill="none" stroke="#5c8ae6" strokeWidth={3}
+      <circle cx={11} cy={11} r={r} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth={3}
         strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={off} />
     </svg>
   );
@@ -93,9 +93,9 @@ const MiniDonut: React.FC<{ pct: number }> = ({ pct }) => {
 /* ─── Pill toggle buttons ─── */
 const PillBtn: React.FC<{ label: string; onClick: () => void; active?: boolean }> = ({ label, onClick, active }) => (
   <button type="button" onClick={onClick}
-    className={`px-3.5 py-1.5 text-[11px] font-semibold transition-colors ${
+    className={`px-3.5 py-1.5 text-[11px] font-semibold rounded-lg transition-colors ${
       active ? 'bg-drift-elevated text-txt-0 border border-drift-border' : 'bg-drift-surface text-txt-2 hover:text-txt-0 hover:bg-drift-elevated'
-    }`} style={{ borderRadius: 6 }}>{label}</button>
+    }`}>{label}</button>
 );
 
 /* ═══════════ Main Page ═══════════ */
@@ -219,7 +219,7 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
           <button onClick={onBack} className="text-txt-1 hover:text-txt-0 text-[13px] font-medium transition-colors">&larr; Back</button>
           <div className="w-px h-4 bg-drift-border" />
           <h1 className="text-[14px] font-semibold text-txt-0">Vault</h1>
-          <span className="text-[10px] font-bold text-txt-2 px-2 py-0.5 border border-drift-border bg-drift-surface" style={{ borderRadius: 4 }}>USDC</span>
+          <span className="text-[10px] font-bold text-txt-2 px-2 py-0.5 rounded border border-drift-border bg-drift-surface">USDC</span>
           <div className="flex-1" />
           <span className="hidden sm:inline text-[10px] text-bull font-medium">● Live</span>
           <button onClick={handleRefresh} className={`text-[11px] text-txt-1 hover:text-txt-0 transition-colors ${isRefreshing ? 'opacity-50' : ''}`}>
@@ -228,18 +228,18 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
         </div>
       )}
 
-      <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-4">
+      <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-5 space-y-5">
 
         {/* ╔══════════════════════════════════════════╗
             ║  1. HERO SECTION — gradient card          ║
             ╚══════════════════════════════════════════╝ */}
-        <div className="border border-drift-border bg-drift-panel overflow-hidden">
+        <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 overflow-hidden">
           <div className="p-6 sm:p-8">
             <div className="flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-8">
               <div className="flex-1 space-y-3">
                 <h2 className="text-[12px] font-semibold text-txt-1 uppercase tracking-widest">Insurance Fund</h2>
                 {dataLoaded ? (
-                  <div className="text-[40px] sm:text-[48px] font-bold tracking-tight leading-none font-mono tabular-nums text-txt-0">
+                  <div className="text-[24px] sm:text-[28px] font-bold tracking-tight leading-none font-mono tabular-nums text-txt-0">
                     ${fundStats!.vaultBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                 ) : <Skeleton className="h-14 w-64" />}
@@ -250,17 +250,17 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
             </div>
             {/* Icon chips */}
             <div className="flex flex-wrap items-center gap-2.5 mt-5">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-drift-elevated border border-drift-border" style={{ borderRadius: 4 }}>
-                <Shield className="w-3.5 h-3.5 text-txt-2" />
-                <span className="text-[11px] font-medium text-txt-0">Backstop Protection</span>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-drift-surface/60 border border-drift-border/40">
+                <Shield className="w-3.5 h-3.5 text-txt-3" />
+                <span className="text-[11px] font-medium text-txt-1">Backstop Protection</span>
               </div>
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-drift-elevated border border-drift-border" style={{ borderRadius: 4 }}>
-                <TrendingUp className="w-3.5 h-3.5 text-txt-2" />
-                <span className="text-[11px] font-medium text-txt-0">Revenue Share</span>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-drift-surface/60 border border-drift-border/40">
+                <TrendingUp className="w-3.5 h-3.5 text-txt-3" />
+                <span className="text-[11px] font-medium text-txt-1">Revenue Share</span>
               </div>
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-drift-elevated border border-drift-border" style={{ borderRadius: 4 }}>
-                <Zap className="w-3.5 h-3.5 text-txt-2" />
-                <span className="text-[11px] font-medium text-txt-0">Instant Withdrawal</span>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-drift-surface/60 border border-drift-border/40">
+                <Zap className="w-3.5 h-3.5 text-txt-3" />
+                <span className="text-[11px] font-medium text-txt-1">Instant Withdrawal</span>
               </div>
             </div>
           </div>
@@ -269,64 +269,64 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
         {/* ╔══════════════════════════════════════════╗
             ║  2. VAULT STATS ROW                       ║
             ╚══════════════════════════════════════════╝ */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {/* Primary: Vault Balance */}
-          <div className="border border-drift-border bg-drift-panel p-4 flex flex-col gap-2">
+          <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 p-4 flex flex-col gap-2">
             <div className="flex items-center gap-1.5">
-              <Wallet className="w-3.5 h-3.5 text-txt-2" />
-              <span className="text-[11px] text-txt-1 uppercase tracking-wide font-semibold">Vault Balance</span>
+              <Wallet className="w-3.5 h-3.5 text-txt-3" />
+              <span className="text-[10px] text-txt-2 uppercase tracking-wider font-semibold">Vault Balance</span>
             </div>
             {!dataLoaded ? <Skeleton className="h-7 w-20" /> : (
-              <span className="text-[22px] font-bold font-mono tabular-nums text-txt-0 leading-none">{formatCompact(fundStats!.vaultBalance)}</span>
+              <span className="text-[20px] font-bold font-mono tabular-nums text-txt-0 leading-none">{formatCompact(fundStats!.vaultBalance)}</span>
             )}
-            <span className="text-[10px] text-txt-1">Total USDC deposited</span>
+            <span className="text-[10px] text-txt-3">Total USDC deposited</span>
           </div>
           {/* Secondary: Total Shares */}
-          <div className="border border-drift-border bg-drift-panel/60 p-4 flex flex-col gap-2">
+          <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 p-4 flex flex-col gap-2">
             <div className="flex items-center gap-1.5">
-              <Layers className="w-3.5 h-3.5 text-txt-1" />
-              <span className="text-[10px] text-txt-1 uppercase tracking-wide">Total Shares</span>
+              <Layers className="w-3.5 h-3.5 text-txt-3" />
+              <span className="text-[10px] text-txt-2 uppercase tracking-wider">Total Shares</span>
             </div>
             {!dataLoaded ? <Skeleton className="h-5 w-16" /> : (
               <span className="text-[15px] font-semibold font-mono tabular-nums text-txt-0 leading-none">{Number(fundStats!.totalShares).toLocaleString()}</span>
             )}
-            <span className="text-[10px] font-mono text-txt-1">Yours: {fundStats ? Number(fundStats.userShares).toLocaleString() : '—'}</span>
+            <span className="text-[10px] font-mono text-txt-3">Yours: {fundStats ? Number(fundStats.userShares).toLocaleString() : '—'}</span>
           </div>
           {/* Secondary: Fee Allocation with mini donut */}
-          <div className="border border-drift-border bg-drift-panel/60 p-4 flex flex-col gap-2">
+          <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 p-4 flex flex-col gap-2">
             <div className="flex items-center gap-1.5">
-              <PieChart className="w-3.5 h-3.5 text-txt-1" />
-              <span className="text-[10px] text-txt-1 uppercase tracking-wide">Fee Allocation</span>
+              <PieChart className="w-3.5 h-3.5 text-txt-3" />
+              <span className="text-[10px] text-txt-2 uppercase tracking-wider">Fee Allocation</span>
             </div>
             {!dataLoaded ? <Skeleton className="h-5 w-16" /> : (
               <span className="text-[15px] font-semibold font-mono tabular-nums text-txt-0 leading-none">
                 <MiniDonut pct={ifFeePctNum} />{ifFeePct}%
               </span>
             )}
-            <span className="text-[10px] font-mono text-txt-1">{stakerSharePct}% to stakers</span>
+            <span className="text-[10px] font-mono text-txt-3">{stakerSharePct}% to stakers</span>
           </div>
           {/* Secondary: Withdrawal with checkmark */}
-          <div className="border border-drift-border bg-drift-panel/60 p-4 flex flex-col gap-2">
+          <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 p-4 flex flex-col gap-2">
             <div className="flex items-center gap-1.5">
-              <ArrowUpFromLine className="w-3.5 h-3.5 text-txt-1" />
-              <span className="text-[10px] text-txt-1 uppercase tracking-wide">Withdrawal</span>
+              <ArrowUpFromLine className="w-3.5 h-3.5 text-txt-3" />
+              <span className="text-[10px] text-txt-2 uppercase tracking-wider">Withdrawal</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="text-[15px] font-semibold text-txt-1 leading-none">Instant</span>
               <CheckCircle2 className="w-4 h-4 text-bull" />
             </div>
-            <span className="text-[10px] text-txt-1">{fundStats ? `Settles ${formatDuration(fundStats.revenueSettlePeriod)}` : '—'}</span>
+            <span className="text-[10px] text-txt-3">{fundStats ? `Settles ${formatDuration(fundStats.revenueSettlePeriod)}` : '—'}</span>
           </div>
           {/* Primary: Fees Collected */}
-          <div className="border border-drift-border bg-drift-panel p-4 flex flex-col gap-2 col-span-2 sm:col-span-1">
+          <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 p-4 flex flex-col gap-2 col-span-2 sm:col-span-1">
             <div className="flex items-center gap-1.5">
-              <DollarSign className="w-3.5 h-3.5 text-txt-2" />
-              <span className="text-[11px] text-txt-1 uppercase tracking-wide font-semibold">Fees Collected</span>
+              <DollarSign className="w-3.5 h-3.5 text-txt-3" />
+              <span className="text-[10px] text-txt-2 uppercase tracking-wider font-semibold">Fees Collected</span>
             </div>
             {!dataLoaded ? <Skeleton className="h-7 w-20" /> : (
-              <span className="text-[22px] font-bold font-mono tabular-nums text-txt-0 leading-none">{formatCompact(fundStats!.totalFeesCollected)}</span>
+              <span className="text-[20px] font-bold font-mono tabular-nums text-txt-0 leading-none">{formatCompact(fundStats!.totalFeesCollected)}</span>
             )}
-            <span className="text-[10px] text-txt-1">From trading activity</span>
+            <span className="text-[10px] text-txt-3">From trading activity</span>
           </div>
         </div>
 
@@ -335,15 +335,15 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
             ║  Left 60%: Stake/Unstake                   ║
             ║  Right 40%: Position + How It Works        ║
             ╚══════════════════════════════════════════╝ */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
 
           {/* ── LEFT COLUMN: Stake/Unstake (60%) ── */}
           <div className="lg:col-span-3 space-y-4 order-2 lg:order-1">
 
             {/* 3. STAKE/UNSTAKE UNIFIED CARD */}
-            <div className="border border-drift-border bg-drift-panel overflow-hidden">
+            <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 overflow-hidden">
               {/* Tabs at top of card */}
-              <div className="flex border-b border-drift-border">
+              <div className="flex border-b border-drift-border/40">
                 {(['stake', 'unstake'] as const).map(tab => {
                   const act = activeTab === tab;
                   const isS = tab === 'stake';
@@ -367,7 +367,7 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
                 <div className="p-6 space-y-4">
                   {/* Wallet balance prominent */}
                   {connected && (
-                    <div className="bg-drift-input border border-drift-border px-4 py-3 flex items-center justify-between">
+                    <div className="bg-drift-input border border-drift-border/40 rounded-lg px-4 py-3 flex items-center justify-between">
                       <span className="text-[11px] text-txt-1 uppercase tracking-wide">Wallet Balance</span>
                       <span className="text-[18px] font-bold font-mono tabular-nums text-txt-0">{formatUsdPlain(walletUsdc)}</span>
                     </div>
@@ -375,7 +375,7 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
                   {/* Amount input */}
                   <div>
                     <label className="text-[11px] text-txt-3 uppercase tracking-wide mb-2 block">Deposit Amount</label>
-                    <div className="flex items-center h-12 bg-drift-input border border-drift-border focus-within:border-txt-3/40 transition-colors" style={{ borderRadius: 4 }}>
+                    <div className="flex items-center h-12 bg-drift-input border border-drift-border rounded-lg focus-within:border-txt-3/40 transition-colors">
                       <span className="pl-4 text-[12px] font-semibold text-txt-1">USDC</span>
                       <input type="number" step="0.01" min="0" value={stakeAmount} onChange={e => setStakeAmount(e.target.value)} placeholder="0.00"
                         className="flex-1 px-3 h-full bg-transparent text-right text-txt-0 text-[18px] font-semibold font-mono tabular-nums placeholder:text-txt-3/30 focus:outline-none" />
@@ -403,7 +403,7 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
                     </div>
                   ) : (
                     <button onClick={handleStake} disabled={loading || !stakeAmount || parseFloat(stakeAmount) <= 0}
-                      className="w-full py-3.5 bg-bull text-white text-[13px] font-semibold disabled:opacity-30 disabled:cursor-not-allowed active:opacity-80 transition-opacity flex items-center justify-center gap-2" style={{ borderRadius: 6 }}>
+                      className="w-full py-3.5 bg-bull text-white text-[13px] font-semibold rounded-lg disabled:opacity-30 disabled:cursor-not-allowed active:opacity-80 transition-opacity flex items-center justify-center gap-2">
                       {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                       {loading ? 'Staking…' : `Stake ${stakeAmount && parseFloat(stakeAmount) > 0 ? `${parseFloat(stakeAmount).toLocaleString()} USDC` : 'USDC'}`}
                     </button>
@@ -415,7 +415,7 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
                     {showStakeInfo ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                   </button>
                   {showStakeInfo && (
-                    <div className="text-[11px] text-txt-1 leading-relaxed bg-drift-input border border-drift-border px-4 py-3">
+                    <div className="text-[11px] text-txt-1 leading-relaxed bg-drift-surface/40 border border-drift-border/40 rounded-lg px-4 py-3">
                       USDC deposited into the Insurance Fund vault. You'll receive shares proportional to the fund's total value.
                       Your share of protocol fees accrues automatically.
                     </div>
@@ -438,11 +438,11 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
                       </div>
                       <div className="flex gap-2">
                         <button onClick={handleCompleteUnstake} disabled={loading}
-                          className="flex-1 py-3 bg-bull text-white text-[13px] font-semibold disabled:opacity-40 transition-opacity flex items-center justify-center gap-2" style={{ borderRadius: 6 }}>
+                          className="flex-1 py-3 bg-bull text-white text-[13px] font-semibold rounded-lg disabled:opacity-40 transition-opacity flex items-center justify-center gap-2">
                           {loading && <Loader2 className="w-4 h-4 animate-spin" />} Complete Withdrawal
                         </button>
                         <button onClick={handleCancelUnstake} disabled={loading}
-                          className="px-4 py-3 border border-drift-border text-txt-1 text-[12px] font-medium hover:text-txt-0 transition-colors" style={{ borderRadius: 6 }}>
+                          className="px-4 py-3 border border-drift-border rounded-lg text-txt-1 text-[12px] font-medium hover:text-txt-0 transition-colors">
                           Cancel
                         </button>
                       </div>
@@ -452,14 +452,14 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
                     <>
                       {/* Staked balance prominent */}
                       {userStake?.isInitialized && (
-                        <div className="bg-drift-input border border-drift-border px-4 py-3 flex items-center justify-between">
+                        <div className="bg-drift-input border border-drift-border/40 rounded-lg px-4 py-3 flex items-center justify-between">
                           <span className="text-[11px] text-txt-1 uppercase tracking-wide">Staked Value</span>
                           <span className="text-[18px] font-bold font-mono tabular-nums text-txt-0">{formatUsdPlain(userStake.stakeValue)}</span>
                         </div>
                       )}
                       <div>
                         <label className="text-[11px] text-txt-3 uppercase tracking-wide mb-2 block">Withdraw Amount</label>
-                        <div className="flex items-center h-12 bg-drift-input border border-drift-border focus-within:border-txt-3/40 transition-colors" style={{ borderRadius: 4 }}>
+                        <div className="flex items-center h-12 bg-drift-input border border-drift-border rounded-lg focus-within:border-txt-3/40 transition-colors">
                           <span className="pl-4 text-[12px] font-semibold text-txt-1">USDC</span>
                           <input type="number" step="0.01" min="0" value={unstakeAmount} onChange={e => setUnstakeAmount(e.target.value)} placeholder="0.00"
                             className="flex-1 px-3 h-full bg-transparent text-right text-txt-0 text-[18px] font-semibold font-mono tabular-nums placeholder:text-txt-3/30 focus:outline-none" />
@@ -479,7 +479,7 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
                         </div>
                       ) : (
                         <button onClick={handleRequestUnstake} disabled={loading || !unstakeAmount || parseFloat(unstakeAmount) <= 0 || !userStake?.isInitialized}
-                          className="w-full py-3.5 bg-bear text-white text-[13px] font-semibold disabled:opacity-30 disabled:cursor-not-allowed active:opacity-80 transition-opacity flex items-center justify-center gap-2" style={{ borderRadius: 6 }}>
+                          className="w-full py-3.5 bg-bear text-white text-[13px] font-semibold rounded-lg disabled:opacity-30 disabled:cursor-not-allowed active:opacity-80 transition-opacity flex items-center justify-center gap-2">
                           {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                           {loading ? 'Processing…' : `Withdraw ${unstakeAmount && parseFloat(unstakeAmount) > 0 ? `${parseFloat(unstakeAmount).toLocaleString()} USDC` : ''}`}
                         </button>
@@ -492,13 +492,13 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
 
             {/* Status messages */}
             {error && (
-              <div className="flex items-center gap-2 p-4 border border-bear/15 bg-bear/8 text-bear text-[12px]">
+              <div className="flex items-center gap-2 p-4 border border-bear/15 bg-bear/8 text-bear text-[12px] rounded-xl">
                 <span className="flex-1">{error}</span>
                 <button onClick={() => setError(null)} className="text-bear/60 hover:text-bear text-xs transition-colors">✕</button>
               </div>
             )}
             {success && (
-              <div className="flex items-center gap-2 p-4 border border-bull/15 bg-bull/8 text-bull text-[12px]">
+              <div className="flex items-center gap-2 p-4 border border-bull/15 bg-bull/8 text-bull text-[12px] rounded-xl">
                 <span className="flex-1">{success}</span>
               </div>
             )}
@@ -508,25 +508,25 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
           <div className="lg:col-span-2 space-y-4 order-1 lg:order-2">
 
             {/* 4. YOUR POSITION — prominent card */}
-            <div className="border border-drift-border bg-drift-panel overflow-hidden">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-drift-border">
-                <h3 className="text-[13px] font-semibold text-txt-0 uppercase tracking-wide">Your Position</h3>
+            <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-drift-border/40">
+                <h3 className="text-[13px] font-bold text-txt-0 uppercase tracking-wide">Your Position</h3>
                 {userStake?.isInitialized && (
-                  <span className="flex items-center gap-1.5 text-[10px] px-2.5 py-1 border border-drift-border text-txt-1 font-semibold bg-drift-surface" style={{ borderRadius: 12 }}>
+                  <span className="flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-full border border-drift-border text-txt-1 font-semibold bg-drift-surface">
                     <span className="w-2 h-2 rounded-full bg-bull" />
                     Active
                   </span>
                 )}
               </div>
-              <div className="p-6">
+              <div className="p-4">
                 {!connected ? (
-                  <div className="text-center py-10">
+                  <div className="text-center py-8">
                     <p className="text-[13px] font-medium text-txt-1 mb-1.5">Connect Wallet</p>
                     <p className="text-[11px] text-txt-3 mb-4">View your stake and earnings</p>
                     <WalletMultiButton />
                   </div>
                 ) : !userStake?.isInitialized ? (
-                  <div className="text-center py-10">
+                  <div className="text-center py-8">
                     <p className="text-[13px] font-medium text-txt-1 mb-1.5">No Active Stake</p>
                     <p className="text-[11px] text-txt-3 mb-3">Deposit USDC to start earning yield</p>
                     <button onClick={() => setActiveTab('stake')}
@@ -538,8 +538,8 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
                   <div className="space-y-5">
                     {/* Hero staked value */}
                     <div className="text-center">
-                      <div className="text-[10px] text-txt-3 uppercase tracking-wider mb-2">Staked Value</div>
-                      <div className="text-[36px] font-bold font-mono tracking-tight leading-none tabular-nums">
+                      <div className="text-[10px] text-txt-2 uppercase tracking-wider mb-2 font-semibold">Staked Value</div>
+                      <div className="text-[20px] font-bold font-mono tracking-tight leading-none tabular-nums">
                         <span className="text-txt-0">${userStake.stakeValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       </div>
                       {/* P&L with $ and % */}
@@ -553,27 +553,32 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
                       </div>
                     </div>
 
-                    {/* Arc gauge for pool share */}
-                    <div className="flex flex-col items-center gap-1">
-                      <ArcGauge pct={userSharePct} size={80} />
-                      <span className="text-[10px] text-txt-3 uppercase tracking-wide">Pool Share</span>
+                    {/* Pool share bar */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] text-txt-2 font-semibold uppercase tracking-wider">Pool Share</span>
+                        <span className="text-[13px] font-bold font-mono text-txt-0">{userSharePct.toFixed(1)}%</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-drift-surface overflow-hidden">
+                        <div className="h-full rounded-full bg-txt-1/40 transition-all duration-700" style={{ width: `${Math.min(userSharePct, 100)}%` }} />
+                      </div>
                     </div>
 
                     {/* Two-column detail row */}
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-drift-input border border-drift-border px-3.5 py-3 text-center">
-                        <div className="text-[10px] text-txt-1 mb-1">Your Shares</div>
+                      <div className="bg-drift-surface/60 border border-drift-border/40 rounded-lg px-3.5 py-3 text-center">
+                        <div className="text-[10px] text-txt-2 mb-1">Your Shares</div>
                         <div className="text-[14px] font-semibold text-txt-0 tabular-nums font-mono">{Number(userStake.ifShares).toLocaleString()}</div>
                       </div>
-                      <div className="bg-drift-input border border-drift-border px-3.5 py-3 text-center">
-                        <div className="text-[10px] text-txt-1 mb-1">Cost Basis</div>
+                      <div className="bg-drift-surface/60 border border-drift-border/40 rounded-lg px-3.5 py-3 text-center">
+                        <div className="text-[10px] text-txt-2 mb-1">Cost Basis</div>
                         <div className="text-[14px] font-semibold text-txt-0 tabular-nums font-mono">{formatUsdPlain(userStake.costBasis)}</div>
                       </div>
                     </div>
 
                     {/* Pending unstake */}
                     {hasPendingWithdraw && (
-                    <div className="bg-drift-surface border border-drift-border px-3.5 py-2.5 flex items-center justify-between">
+                    <div className="bg-drift-surface/60 border border-drift-border/40 rounded-lg px-3.5 py-2.5 flex items-center justify-between">
                       <span className="text-[11px] text-txt-1">Pending Unstake</span>
                       <span className="text-[12px] font-semibold font-mono text-txt-0 tabular-nums">{formatUsdPlain(userStake.lastWithdrawRequestValue)}</span>
                       </div>
@@ -584,7 +589,7 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
             </div>
 
             {/* 5. HOW IT WORKS — collapsible stepper */}
-            <div className="border border-drift-border bg-drift-panel overflow-hidden">
+            <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 overflow-hidden">
               <button onClick={() => setShowHowItWorks(!showHowItWorks)}
                 className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-drift-surface/20 transition-colors">
                 <h3 className="text-[14px] font-semibold text-txt-0 uppercase tracking-wide">How It Works</h3>
@@ -618,7 +623,7 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
             </div>
 
             {/* 6. RISK DISCLOSURE — amber warning card */}
-            <div className="border border-drift-border bg-drift-panel p-5 space-y-2">
+            <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 p-4 space-y-2">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-txt-2 shrink-0" />
                 <span className="text-[13px] font-semibold text-txt-1">Risk Disclosure</span>
