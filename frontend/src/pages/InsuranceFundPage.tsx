@@ -31,6 +31,8 @@ import {
 /* ─── Props ─── */
 interface InsuranceFundPageProps {
   onBack: () => void;
+  /** When true, hide the internal header bar (used when embedded inside PortfolioPage) */
+  embedded?: boolean;
 }
 
 /* ─── Helpers ─── */
@@ -99,7 +101,7 @@ const PillBtn: React.FC<{ label: string; onClick: () => void; active?: boolean }
 );
 
 /* ═══════════ Main Page ═══════════ */
-export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack }) => {
+export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, embedded }) => {
   const { connected } = useWallet();
   const client = useDriftStore(selectClient);
   const isSubscribed = useDriftStore(selectIsSubscribed);
@@ -214,17 +216,19 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack }) 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-auto bg-drift-bg">
       {/* ── Header ── */}
-      <div className="sticky top-0 z-20 flex items-center gap-3 px-4 sm:px-6 bg-drift-bg border-b border-drift-border" style={{ height: 48 }}>
-        <button onClick={onBack} className="text-txt-1 hover:text-txt-0 text-[13px] font-medium transition-colors">&larr; Back</button>
-        <div className="w-px h-4 bg-drift-border" />
-        <h1 className="text-[14px] font-semibold text-txt-0">Vault</h1>
-        <span className="text-[10px] font-bold text-accent px-2 py-0.5 border border-accent/20 bg-accent/5" style={{ borderRadius: 4 }}>USDC</span>
-        <div className="flex-1" />
-        <span className="hidden sm:inline text-[10px] text-bull font-medium">● Live</span>
-        <button onClick={handleRefresh} className={`text-[11px] text-txt-1 hover:text-txt-0 transition-colors ${isRefreshing ? 'opacity-50' : ''}`}>
-          Refresh
-        </button>
-      </div>
+      {!embedded && (
+        <div className="sticky top-0 z-20 flex items-center gap-3 px-4 sm:px-6 bg-drift-bg border-b border-drift-border" style={{ height: 48 }}>
+          <button onClick={onBack} className="text-txt-1 hover:text-txt-0 text-[13px] font-medium transition-colors">&larr; Back</button>
+          <div className="w-px h-4 bg-drift-border" />
+          <h1 className="text-[14px] font-semibold text-txt-0">Vault</h1>
+          <span className="text-[10px] font-bold text-accent px-2 py-0.5 border border-accent/20 bg-accent/5" style={{ borderRadius: 4 }}>USDC</span>
+          <div className="flex-1" />
+          <span className="hidden sm:inline text-[10px] text-bull font-medium">● Live</span>
+          <button onClick={handleRefresh} className={`text-[11px] text-txt-1 hover:text-txt-0 transition-colors ${isRefreshing ? 'opacity-50' : ''}`}>
+            Refresh
+          </button>
+        </div>
+      )}
 
       <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-4">
 

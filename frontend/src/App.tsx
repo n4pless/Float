@@ -186,7 +186,7 @@ function TradingApp() {
       ) : currentPage === 'admin' ? (
         <AdminPage onBack={() => navigateTo('home')} />
       ) : currentPage === 'portfolio' ? (
-        <PortfolioPage onBack={() => navigateTo('trade')} />
+        <PortfolioPage onBack={() => navigateTo('trade')} forceRefresh={forceRefresh} trading={trading} />
       ) : currentPage === 'insurance' ? (
         <InsuranceFundPage onBack={() => navigateTo('trade')} />
       ) : currentPage === 'positions' ? (

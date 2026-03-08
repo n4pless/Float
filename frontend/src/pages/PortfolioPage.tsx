@@ -1,6 +1,6 @@
 /**
- * PortfolioPage — Dashboard showing overall account health, equity curve,
- * open positions, trade history, and prediction market performance.
+ * PortfolioPage — Unified dashboard: Overview, Positions, History,
+ * Vault (Insurance Fund), and Account management in one place.
  */
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import {
@@ -8,6 +8,7 @@ import {
   BarChart3, Clock, DollarSign, Percent, Target, AlertTriangle,
   ChevronDown, ChevronUp, ExternalLink, Layers, Zap, Award,
   PieChart, ArrowUpRight, ArrowDownRight, Minus, RefreshCw,
+  User, Lock,
 } from 'lucide-react';
 import {
   useDriftStore,
@@ -32,6 +33,9 @@ import { usePredictionStore } from '../stores/usePredictionStore';
 import type { UserPosition } from '../sdk/drift-client-wrapper';
 import type { Order } from '../sdk/drift-client-wrapper';
 import { useWallet } from '@solana/wallet-adapter-react';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { InsuranceFundPage } from './InsuranceFundPage';
+import { UserManagement } from '../components/UserManagement';
 
 /* ─── Helpers ─── */
 
@@ -338,18 +342,32 @@ const PredictionSummary: React.FC = () => {
 };
 
 /* ═══════════════════════════════════════════════════════ */
-/*  Tab Selector                                           */
+/*  Tab types                                              */
 /* ═══════════════════════════════════════════════════════ */
-type Tab = 'overview' | 'positions' | 'history';
+type Tab = 'overview' | 'positions' | 'history' | 'vault' | 'account';
+
+const TABS: { key: Tab; label: string; icon: React.FC<{ className?: string }> }[] = [
+  { key: 'overview', label: 'Overview', icon: PieChart },
+  { key: 'positions', label: 'Positions', icon: Layers },
+  { key: 'history', label: 'Trades', icon: Clock },
+  { key: 'vault', label: 'Vault', icon: Shield },
+  { key: 'account', label: 'Account', icon: User },
+];
 
 /* ═══════════════════════════════════════════════════════ */
 /*  Main Page                                              */
 /* ═══════════════════════════════════════════════════════ */
 interface PortfolioPageProps {
   onBack: () => void;
+  forceRefresh?: () => Promise<void>;
+  trading?: {
+    createAccount: (depositAmount: number) => Promise<string>;
+    deposit: (amount: number) => Promise<string>;
+    withdraw: (amount: number) => Promise<string>;
+  };
 }
 
-export const PortfolioPage: React.FC<PortfolioPageProps> = ({ onBack }) => {
+export const PortfolioPage: React.FC<PortfolioPageProps> = ({ onBack, forceRefresh, trading }) => {
   const { publicKey, connected } = useWallet();
   const accountState = useDriftStore(selectAccountState);
   const positions = useDriftStore(selectPositions);
@@ -371,8 +389,6 @@ export const PortfolioPage: React.FC<PortfolioPageProps> = ({ onBack }) => {
   // Build equity history from price snapshots + current collateral
   const equityHistory = useMemo(() => {
     if (!accountState || priceHistory.length === 0) return [];
-    // Approximate: for each price snapshot, compute what the account value would be
-    // This is a simplified approach — in production, we'd track account value snapshots
     const basePosition = positions.find(p => p.marketIndex === 0);
     const baseAmt = basePosition ? basePosition.baseAssetAmount : 0;
     const costBasis = basePosition ? Math.abs(basePosition.quoteEntryAmount) : 0;
@@ -424,6 +440,9 @@ export const PortfolioPage: React.FC<PortfolioPageProps> = ({ onBack }) => {
   // Total portfolio value
   const totalPortfolioValue = (accountState?.totalCollateral ?? 0) + walletSolUsd + ifStakeUsd;
 
+  // Dummy forceRefresh if not provided
+  const safeForceRefresh = forceRefresh ?? (async () => {});
+
   if (!connected) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-drift-bg px-4">
@@ -431,10 +450,10 @@ export const PortfolioPage: React.FC<PortfolioPageProps> = ({ onBack }) => {
           <Wallet className="w-8 h-8 text-accent" />
         </div>
         <h2 className="text-xl font-bold text-txt-0 mb-2">Connect Wallet</h2>
-        <p className="text-[13px] text-txt-2 text-center max-w-sm">
-          Connect your Phantom wallet to view your portfolio dashboard with live positions, trade history, and performance metrics.
+        <p className="text-[13px] text-txt-2 text-center max-w-sm mb-5">
+          Connect your wallet to view your portfolio dashboard, manage your account, and interact with the vault.
         </p>
-        <button onClick={onBack} className="mt-4 text-[12px] text-accent hover:underline">← Back</button>
+        <WalletMultiButton />
       </div>
     );
   }
@@ -465,109 +484,121 @@ export const PortfolioPage: React.FC<PortfolioPageProps> = ({ onBack }) => {
         </div>
       </div>
 
-      {/* ── Content ── */}
-      <div className="flex-1 min-h-0 px-4 sm:px-6 py-5 space-y-5">
+      {/* ── Tab selector ── */}
+      <div className="shrink-0 flex items-center gap-0.5 px-4 sm:px-6 border-b border-drift-border/40 bg-drift-panel/30 overflow-x-auto scrollbar-hide">
+        {TABS.map(tab => {
+          const active = activeTab === tab.key;
+          const Icon = tab.icon;
+          // Dynamic count badges
+          let badge: string | null = null;
+          if (tab.key === 'positions' && positions.length > 0) badge = String(positions.length);
+          if (tab.key === 'history' && myTrades.length > 0) badge = String(myTrades.length);
 
-        {/* ── Top Stats Grid ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <StatCard
-            icon={DollarSign}
-            label="Total Portfolio"
-            value={formatUsd(totalPortfolioValue)}
-            sub={accountState ? `${formatUsd(accountState.totalCollateral)} in margin` : undefined}
-            color="text-txt-0"
-            delay={0}
-          />
-          <StatCard
-            icon={TrendingUp}
-            label="Unrealized P&L"
-            value={`${totalUnrealizedPnl >= 0 ? '+' : ''}${formatUsd(totalUnrealizedPnl)}`}
-            sub={totalNotional > 0 ? `${formatPct((totalUnrealizedPnl / totalNotional) * 100)} on notional` : undefined}
-            color={pnlColor(totalUnrealizedPnl)}
-            delay={50}
-          />
-          <StatCard
-            icon={Shield}
-            label="Account Health"
-            value={`${(accountState?.health ?? 100).toFixed(0)}%`}
-            sub={accountState ? `Leverage: ${accountState.leverage.toFixed(2)}x` : 'No account'}
-            color={
-              (accountState?.health ?? 100) >= 70 ? 'text-bull'
-              : (accountState?.health ?? 100) >= 40 ? 'text-yellow'
-              : 'text-bear'
-            }
-            delay={100}
-          />
-          <StatCard
-            icon={Activity}
-            label="Open Positions"
-            value={`${positions.length}`}
-            sub={`${openOrders.length} open orders`}
-            color="text-accent"
-            delay={150}
-          />
-        </div>
-
-        {/* ── Health Bar ── */}
-        {accountState && isUserInitialized && (
-          <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 backdrop-blur-sm p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] text-txt-2 font-semibold uppercase tracking-wider">Account Health</span>
-              <div className="flex items-center gap-3 text-[11px] text-txt-3">
-                <span>Margin: {formatUsd(accountState.maintenanceMargin)}</span>
-                <span>Free: {formatUsd(accountState.freeCollateral)}</span>
-              </div>
-            </div>
-            <HealthBar health={accountState.health} />
-          </div>
-        )}
-
-        {/* ── Equity Chart ── */}
-        <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 backdrop-blur-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-drift-border/40 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-accent" />
-              <h3 className="text-[13px] font-bold text-txt-0">Equity Curve</h3>
-            </div>
-            <div className="flex items-center gap-2 text-[10px] text-txt-3">
-              <span>{equityHistory.length} data points</span>
-              {equityHistory.length >= 2 && (
-                <span className={pnlColor(equityHistory[equityHistory.length - 1].value - equityHistory[0].value)}>
-                  {formatPct(((equityHistory[equityHistory.length - 1].value - equityHistory[0].value) / (equityHistory[0].value || 1)) * 100)} session
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="h-[160px] sm:h-[200px] p-2">
-            <EquityChart data={equityHistory} />
-          </div>
-        </div>
-
-        {/* ── Tab selector ── */}
-        <div className="flex items-center gap-1 border-b border-drift-border/40">
-          {([
-            { key: 'overview' as Tab, label: 'Overview', icon: PieChart },
-            { key: 'positions' as Tab, label: `Positions (${positions.length})`, icon: Layers },
-            { key: 'history' as Tab, label: `Trades (${myTrades.length})`, icon: Clock },
-          ]).map(tab => (
+          return (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-[12px] font-semibold transition-colors border-b-2 -mb-px ${
-                activeTab === tab.key
+              className={`flex items-center gap-1.5 px-3 sm:px-4 py-2.5 text-[12px] font-semibold transition-colors border-b-2 -mb-px whitespace-nowrap ${
+                active
                   ? 'text-txt-0 border-accent'
                   : 'text-txt-3 border-transparent hover:text-txt-1'
               }`}
             >
-              <tab.icon className="w-3.5 h-3.5" />
+              <Icon className="w-3.5 h-3.5" />
               {tab.label}
+              {badge && (
+                <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${
+                  active ? 'bg-accent/15 text-accent' : 'bg-drift-surface text-txt-3'
+                }`}>
+                  {badge}
+                </span>
+              )}
             </button>
-          ))}
-        </div>
+          );
+        })}
+      </div>
 
-        {/* ── Tab content ── */}
+      {/* ── Tab content ── */}
+      <div className="flex-1 min-h-0">
+
+        {/* ═══ OVERVIEW TAB ═══ */}
         {activeTab === 'overview' && (
-          <div className="space-y-4">
+          <div className="px-4 sm:px-6 py-5 space-y-5">
+            {/* Top Stats Grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <StatCard
+                icon={DollarSign}
+                label="Total Portfolio"
+                value={formatUsd(totalPortfolioValue)}
+                sub={accountState ? `${formatUsd(accountState.totalCollateral)} in margin` : undefined}
+                color="text-txt-0"
+                delay={0}
+              />
+              <StatCard
+                icon={TrendingUp}
+                label="Unrealized P&L"
+                value={`${totalUnrealizedPnl >= 0 ? '+' : ''}${formatUsd(totalUnrealizedPnl)}`}
+                sub={totalNotional > 0 ? `${formatPct((totalUnrealizedPnl / totalNotional) * 100)} on notional` : undefined}
+                color={pnlColor(totalUnrealizedPnl)}
+                delay={50}
+              />
+              <StatCard
+                icon={Shield}
+                label="Account Health"
+                value={`${(accountState?.health ?? 100).toFixed(0)}%`}
+                sub={accountState ? `Leverage: ${accountState.leverage.toFixed(2)}x` : 'No account'}
+                color={
+                  (accountState?.health ?? 100) >= 70 ? 'text-bull'
+                  : (accountState?.health ?? 100) >= 40 ? 'text-yellow'
+                  : 'text-bear'
+                }
+                delay={100}
+              />
+              <StatCard
+                icon={Activity}
+                label="Open Positions"
+                value={`${positions.length}`}
+                sub={`${openOrders.length} open orders`}
+                color="text-accent"
+                delay={150}
+              />
+            </div>
+
+            {/* Health Bar */}
+            {accountState && isUserInitialized && (
+              <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 backdrop-blur-sm p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] text-txt-2 font-semibold uppercase tracking-wider">Account Health</span>
+                  <div className="flex items-center gap-3 text-[11px] text-txt-3">
+                    <span>Margin: {formatUsd(accountState.maintenanceMargin)}</span>
+                    <span>Free: {formatUsd(accountState.freeCollateral)}</span>
+                  </div>
+                </div>
+                <HealthBar health={accountState.health} />
+              </div>
+            )}
+
+            {/* Equity Chart */}
+            <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 backdrop-blur-sm overflow-hidden">
+              <div className="px-4 py-3 border-b border-drift-border/40 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-accent" />
+                  <h3 className="text-[13px] font-bold text-txt-0">Equity Curve</h3>
+                </div>
+                <div className="flex items-center gap-2 text-[10px] text-txt-3">
+                  <span>{equityHistory.length} data points</span>
+                  {equityHistory.length >= 2 && (
+                    <span className={pnlColor(equityHistory[equityHistory.length - 1].value - equityHistory[0].value)}>
+                      {formatPct(((equityHistory[equityHistory.length - 1].value - equityHistory[0].value) / (equityHistory[0].value || 1)) * 100)} session
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="h-[160px] sm:h-[200px] p-2">
+                <EquityChart data={equityHistory} />
+              </div>
+            </div>
+
             {/* Balances */}
             <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 backdrop-blur-sm overflow-hidden">
               <div className="px-4 py-3 border-b border-drift-border/40 flex items-center gap-2">
@@ -611,14 +642,14 @@ export const PortfolioPage: React.FC<PortfolioPageProps> = ({ onBack }) => {
 
                 {/* IF Stake */}
                 {ifStake && ifStake.stakeValue > 0 && (
-                  <div className="flex items-center justify-between px-4 py-3">
+                  <div className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-drift-surface/30 transition-colors" onClick={() => setActiveTab('vault')}>
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
                         <Shield className="w-4 h-4 text-accent" />
                       </div>
                       <div>
                         <div className="text-[13px] font-semibold text-txt-0">Insurance Fund</div>
-                        <div className="text-[10px] text-txt-3">Vault Stake</div>
+                        <div className="text-[10px] text-txt-3">Vault Stake · Click to manage →</div>
                       </div>
                     </div>
                     <div className="text-right">
@@ -674,64 +705,88 @@ export const PortfolioPage: React.FC<PortfolioPageProps> = ({ onBack }) => {
           </div>
         )}
 
+        {/* ═══ POSITIONS TAB ═══ */}
         {activeTab === 'positions' && (
-          <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 backdrop-blur-sm overflow-hidden">
-            {positions.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Layers className="w-10 h-10 text-txt-3 mb-3" />
-                <p className="text-[14px] font-semibold text-txt-1">No open positions</p>
-                <p className="text-[12px] text-txt-3 mt-1">Open a trade to see it here</p>
-              </div>
-            ) : (
-              <>
-                {/* Header */}
-                <div className="flex items-center gap-3 px-4 py-2.5 border-b border-drift-border/40 text-[10px] text-txt-3 font-semibold uppercase tracking-wider">
-                  <div className="w-8" />
-                  <div className="flex-1">Market</div>
-                  <div className="text-right hidden sm:block w-[80px]">Mark</div>
-                  <div className="text-right hidden md:block w-[80px]">Liq Price</div>
-                  <div className="text-right min-w-[80px]">P&L</div>
+          <div className="px-4 sm:px-6 py-5">
+            <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 backdrop-blur-sm overflow-hidden">
+              {positions.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Layers className="w-10 h-10 text-txt-3 mb-3" />
+                  <p className="text-[14px] font-semibold text-txt-1">No open positions</p>
+                  <p className="text-[12px] text-txt-3 mt-1">Open a trade to see it here</p>
                 </div>
-                {positions.map((pos, i) => (
-                  <PositionRow key={i} pos={pos} oraclePrice={oraclePrice} />
-                ))}
-                {/* Totals */}
-                <div className="flex items-center justify-between px-4 py-3 border-t border-drift-border/40 bg-drift-surface/30">
-                  <span className="text-[11px] text-txt-2 font-semibold">Total Notional: {formatUsd(totalNotional)}</span>
-                  <span className={`text-[13px] font-bold font-mono ${pnlColor(totalUnrealizedPnl)}`}>
-                    {totalUnrealizedPnl >= 0 ? '+' : ''}{formatUsd(totalUnrealizedPnl)}
-                  </span>
-                </div>
-              </>
-            )}
+              ) : (
+                <>
+                  {/* Header */}
+                  <div className="flex items-center gap-3 px-4 py-2.5 border-b border-drift-border/40 text-[10px] text-txt-3 font-semibold uppercase tracking-wider">
+                    <div className="w-8" />
+                    <div className="flex-1">Market</div>
+                    <div className="text-right hidden sm:block w-[80px]">Mark</div>
+                    <div className="text-right hidden md:block w-[80px]">Liq Price</div>
+                    <div className="text-right min-w-[80px]">P&L</div>
+                  </div>
+                  {positions.map((pos, i) => (
+                    <PositionRow key={i} pos={pos} oraclePrice={oraclePrice} />
+                  ))}
+                  {/* Totals */}
+                  <div className="flex items-center justify-between px-4 py-3 border-t border-drift-border/40 bg-drift-surface/30">
+                    <span className="text-[11px] text-txt-2 font-semibold">Total Notional: {formatUsd(totalNotional)}</span>
+                    <span className={`text-[13px] font-bold font-mono ${pnlColor(totalUnrealizedPnl)}`}>
+                      {totalUnrealizedPnl >= 0 ? '+' : ''}{formatUsd(totalUnrealizedPnl)}
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         )}
 
+        {/* ═══ HISTORY TAB ═══ */}
         {activeTab === 'history' && (
-          <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 backdrop-blur-sm overflow-hidden">
-            {myTrades.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Clock className="w-10 h-10 text-txt-3 mb-3" />
-                <p className="text-[14px] font-semibold text-txt-1">No trade history</p>
-                <p className="text-[12px] text-txt-3 mt-1">Your fills will appear here</p>
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center justify-between px-4 py-2.5 border-b border-drift-border/40">
-                  <span className="text-[11px] text-txt-2 font-semibold uppercase tracking-wider">Recent Fills</span>
-                  <span className="text-[10px] text-txt-3">{myTrades.length} trades this session</span>
+          <div className="px-4 sm:px-6 py-5">
+            <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 backdrop-blur-sm overflow-hidden">
+              {myTrades.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Clock className="w-10 h-10 text-txt-3 mb-3" />
+                  <p className="text-[14px] font-semibold text-txt-1">No trade history</p>
+                  <p className="text-[12px] text-txt-3 mt-1">Your fills will appear here</p>
                 </div>
-                {myTrades.slice(0, 50).map((trade, i) => (
-                  <TradeRow key={i} trade={trade} walletKey={publicKey?.toBase58()} />
-                ))}
-              </>
-            )}
+              ) : (
+                <>
+                  <div className="flex items-center justify-between px-4 py-2.5 border-b border-drift-border/40">
+                    <span className="text-[11px] text-txt-2 font-semibold uppercase tracking-wider">Recent Fills</span>
+                    <span className="text-[10px] text-txt-3">{myTrades.length} trades this session</span>
+                  </div>
+                  {myTrades.slice(0, 50).map((trade, i) => (
+                    <TradeRow key={i} trade={trade} walletKey={publicKey?.toBase58()} />
+                  ))}
+                </>
+              )}
+            </div>
           </div>
         )}
 
-        {/* Spacer for mobile nav */}
-        <div className="h-16 sm:hidden" />
+        {/* ═══ VAULT TAB ═══ */}
+        {activeTab === 'vault' && (
+          <InsuranceFundPage
+            onBack={() => setActiveTab('overview')}
+            embedded
+          />
+        )}
+
+        {/* ═══ ACCOUNT TAB ═══ */}
+        {activeTab === 'account' && (
+          <UserManagement
+            forceRefresh={safeForceRefresh}
+            onBack={() => setActiveTab('overview')}
+            trading={trading}
+            embedded
+          />
+        )}
       </div>
+
+      {/* Spacer for mobile nav */}
+      <div className="h-16 sm:hidden" />
     </div>
   );
 };

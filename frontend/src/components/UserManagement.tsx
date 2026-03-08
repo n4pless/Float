@@ -31,6 +31,8 @@ interface Props {
     deposit: (amount: number) => Promise<string>;
     withdraw: (amount: number) => Promise<string>;
   };
+  /** When true, hide the internal page header (used when embedded inside PortfolioPage) */
+  embedded?: boolean;
 }
 
 /* ── Section header ── */
@@ -84,7 +86,7 @@ const PageHeader: React.FC<{ onBack: () => void; pubkey?: string }> = ({ onBack,
 /* ═══════════════════════════════════════════════ */
 /*  Main UserManagement component                  */
 /* ═══════════════════════════════════════════════ */
-export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack, trading }) => {
+export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack, trading, embedded }) => {
   const {
     connected,
     publicKey,
@@ -266,7 +268,7 @@ export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack, trading 
   if (!connected) {
     return (
       <div className="flex-1 min-h-0 flex flex-col bg-drift-bg">
-        <PageHeader onBack={onBack} />
+        {!embedded && <PageHeader onBack={onBack} />}
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center space-y-4 max-w-xs">
             <p className="text-[13px] font-semibold text-txt-0">Connect Wallet</p>
@@ -283,7 +285,7 @@ export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack, trading 
   /* ═══════ Connected ═══════ */
   return (
     <div className="flex-1 min-h-0 flex flex-col bg-drift-bg">
-      <PageHeader onBack={onBack} pubkey={shortPubkey} />
+      {!embedded && <PageHeader onBack={onBack} pubkey={shortPubkey} />}
 
       {/* Status toast */}
       {(status.type || faucetMsg) && (

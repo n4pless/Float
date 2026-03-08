@@ -19,8 +19,6 @@ const NAV: { id: Page; label: string }[] = [
   { id: 'home', label: 'Home' },
   { id: 'trade', label: 'Futures' },
   { id: 'portfolio', label: 'Portfolio' },
-  { id: 'insurance', label: 'Vault' },
-  { id: 'user', label: 'Account' },
   { id: 'positions', label: 'Positions' },
   { id: 'learn', label: 'More' },
 ];
