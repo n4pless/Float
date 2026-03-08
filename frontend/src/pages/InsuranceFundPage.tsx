@@ -94,7 +94,7 @@ const MiniDonut: React.FC<{ pct: number }> = ({ pct }) => {
 const PillBtn: React.FC<{ label: string; onClick: () => void; active?: boolean }> = ({ label, onClick, active }) => (
   <button type="button" onClick={onClick}
     className={`px-3.5 py-1.5 text-[11px] font-semibold transition-colors ${
-      active ? 'bg-accent text-white' : 'bg-drift-surface text-txt-1 hover:text-txt-0 hover:bg-drift-elevated'
+      active ? 'bg-drift-elevated text-txt-0 border border-drift-border' : 'bg-drift-surface text-txt-2 hover:text-txt-0 hover:bg-drift-elevated'
     }`} style={{ borderRadius: 6 }}>{label}</button>
 );
 
@@ -219,7 +219,7 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
           <button onClick={onBack} className="text-txt-1 hover:text-txt-0 text-[13px] font-medium transition-colors">&larr; Back</button>
           <div className="w-px h-4 bg-drift-border" />
           <h1 className="text-[14px] font-semibold text-txt-0">Vault</h1>
-          <span className="text-[10px] font-bold text-accent px-2 py-0.5 border border-accent/20 bg-accent/5" style={{ borderRadius: 4 }}>USDC</span>
+          <span className="text-[10px] font-bold text-txt-2 px-2 py-0.5 border border-drift-border bg-drift-surface" style={{ borderRadius: 4 }}>USDC</span>
           <div className="flex-1" />
           <span className="hidden sm:inline text-[10px] text-bull font-medium">● Live</span>
           <button onClick={handleRefresh} className={`text-[11px] text-txt-1 hover:text-txt-0 transition-colors ${isRefreshing ? 'opacity-50' : ''}`}>
@@ -239,28 +239,27 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
               <div className="flex-1 space-y-3">
                 <h2 className="text-[12px] font-semibold text-txt-1 uppercase tracking-widest">Insurance Fund</h2>
                 {dataLoaded ? (
-                  <div className="text-[40px] sm:text-[48px] font-bold tracking-tight leading-none font-mono tabular-nums">
-                    <span className="text-bull">$</span>
-                    <span className="text-txt-0">{fundStats!.vaultBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <div className="text-[40px] sm:text-[48px] font-bold tracking-tight leading-none font-mono tabular-nums text-txt-0">
+                    ${fundStats!.vaultBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                 ) : <Skeleton className="h-14 w-64" />}
                 <p className="text-[13px] text-txt-1 leading-relaxed max-w-lg">
-                  Stake USDC to earn <span className="text-accent font-semibold">{ifFeePct}%</span> of protocol revenue while backstopping the exchange against socialized losses.
+                  Stake USDC to earn <span className="text-txt-0 font-semibold">{ifFeePct}%</span> of protocol revenue while backstopping the exchange against socialized losses.
                 </p>
               </div>
             </div>
             {/* Icon chips */}
             <div className="flex flex-wrap items-center gap-2.5 mt-5">
               <div className="flex items-center gap-1.5 px-3 py-1.5 bg-drift-elevated border border-drift-border" style={{ borderRadius: 4 }}>
-                <Shield className="w-3.5 h-3.5 text-accent" />
+                <Shield className="w-3.5 h-3.5 text-txt-2" />
                 <span className="text-[11px] font-medium text-txt-0">Backstop Protection</span>
               </div>
               <div className="flex items-center gap-1.5 px-3 py-1.5 bg-drift-elevated border border-drift-border" style={{ borderRadius: 4 }}>
-                <TrendingUp className="w-3.5 h-3.5 text-bull" />
+                <TrendingUp className="w-3.5 h-3.5 text-txt-2" />
                 <span className="text-[11px] font-medium text-txt-0">Revenue Share</span>
               </div>
               <div className="flex items-center gap-1.5 px-3 py-1.5 bg-drift-elevated border border-drift-border" style={{ borderRadius: 4 }}>
-                <Zap className="w-3.5 h-3.5 text-yellow" />
+                <Zap className="w-3.5 h-3.5 text-txt-2" />
                 <span className="text-[11px] font-medium text-txt-0">Instant Withdrawal</span>
               </div>
             </div>
@@ -274,7 +273,7 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
           {/* Primary: Vault Balance */}
           <div className="border border-drift-border bg-drift-panel p-4 flex flex-col gap-2">
             <div className="flex items-center gap-1.5">
-              <Wallet className="w-3.5 h-3.5 text-accent" />
+              <Wallet className="w-3.5 h-3.5 text-txt-2" />
               <span className="text-[11px] text-txt-1 uppercase tracking-wide font-semibold">Vault Balance</span>
             </div>
             {!dataLoaded ? <Skeleton className="h-7 w-20" /> : (
@@ -321,7 +320,7 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
           {/* Primary: Fees Collected */}
           <div className="border border-drift-border bg-drift-panel p-4 flex flex-col gap-2 col-span-2 sm:col-span-1">
             <div className="flex items-center gap-1.5">
-              <DollarSign className="w-3.5 h-3.5 text-accent" />
+              <DollarSign className="w-3.5 h-3.5 text-txt-2" />
               <span className="text-[11px] text-txt-1 uppercase tracking-wide font-semibold">Fees Collected</span>
             </div>
             {!dataLoaded ? <Skeleton className="h-7 w-20" /> : (
@@ -351,7 +350,7 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
                   return (
                     <button key={tab} onClick={() => { setActiveTab(tab); setError(null); }}
                       className={`flex-1 py-3 text-[13px] font-semibold text-center transition-colors ${
-                        act ? (isS ? 'text-bull border-b-2 border-bull bg-bull/5' : 'text-bear border-b-2 border-bear bg-bear/5')
+                        act ? (isS ? 'text-txt-0 border-b-2 border-txt-0' : 'text-txt-0 border-b-2 border-txt-0')
                           : 'text-txt-3 hover:text-txt-1'
                       }`}>
                       <span className="flex items-center justify-center gap-1.5">
@@ -376,7 +375,7 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
                   {/* Amount input */}
                   <div>
                     <label className="text-[11px] text-txt-3 uppercase tracking-wide mb-2 block">Deposit Amount</label>
-                    <div className="flex items-center h-12 bg-drift-input border border-drift-border focus-within:border-accent/40 transition-colors" style={{ borderRadius: 4 }}>
+                    <div className="flex items-center h-12 bg-drift-input border border-drift-border focus-within:border-txt-3/40 transition-colors" style={{ borderRadius: 4 }}>
                       <span className="pl-4 text-[12px] font-semibold text-txt-1">USDC</span>
                       <input type="number" step="0.01" min="0" value={stakeAmount} onChange={e => setStakeAmount(e.target.value)} placeholder="0.00"
                         className="flex-1 px-3 h-full bg-transparent text-right text-txt-0 text-[18px] font-semibold font-mono tabular-nums placeholder:text-txt-3/30 focus:outline-none" />
@@ -460,7 +459,7 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
                       )}
                       <div>
                         <label className="text-[11px] text-txt-3 uppercase tracking-wide mb-2 block">Withdraw Amount</label>
-                        <div className="flex items-center h-12 bg-drift-input border border-drift-border focus-within:border-bear/40 transition-colors" style={{ borderRadius: 4 }}>
+                        <div className="flex items-center h-12 bg-drift-input border border-drift-border focus-within:border-txt-3/40 transition-colors" style={{ borderRadius: 4 }}>
                           <span className="pl-4 text-[12px] font-semibold text-txt-1">USDC</span>
                           <input type="number" step="0.01" min="0" value={unstakeAmount} onChange={e => setUnstakeAmount(e.target.value)} placeholder="0.00"
                             className="flex-1 px-3 h-full bg-transparent text-right text-txt-0 text-[18px] font-semibold font-mono tabular-nums placeholder:text-txt-3/30 focus:outline-none" />
@@ -513,11 +512,8 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
               <div className="flex items-center justify-between px-6 py-4 border-b border-drift-border">
                 <h3 className="text-[13px] font-semibold text-txt-0 uppercase tracking-wide">Your Position</h3>
                 {userStake?.isInitialized && (
-                  <span className="flex items-center gap-1.5 text-[10px] px-2.5 py-1 border border-bull/20 text-bull font-semibold bg-bull/5" style={{ borderRadius: 12 }}>
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-bull opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-bull" />
-                    </span>
+                  <span className="flex items-center gap-1.5 text-[10px] px-2.5 py-1 border border-drift-border text-txt-1 font-semibold bg-drift-surface" style={{ borderRadius: 12 }}>
+                    <span className="w-2 h-2 rounded-full bg-bull" />
                     Active
                   </span>
                 )}
@@ -534,7 +530,7 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
                     <p className="text-[13px] font-medium text-txt-1 mb-1.5">No Active Stake</p>
                     <p className="text-[11px] text-txt-3 mb-3">Deposit USDC to start earning yield</p>
                     <button onClick={() => setActiveTab('stake')}
-                      className="text-[12px] text-accent font-semibold hover:underline transition-colors">
+                      className="text-[12px] text-txt-1 font-semibold hover:text-txt-0 hover:underline transition-colors">
                       Get Started &rarr;
                     </button>
                   </div>
@@ -544,8 +540,7 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
                     <div className="text-center">
                       <div className="text-[10px] text-txt-3 uppercase tracking-wider mb-2">Staked Value</div>
                       <div className="text-[36px] font-bold font-mono tracking-tight leading-none tabular-nums">
-                        <span className="text-bull">$</span>
-                        <span className="text-txt-0">{userStake.stakeValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <span className="text-txt-0">${userStake.stakeValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       </div>
                       {/* P&L with $ and % */}
                       <div className="flex items-center justify-center gap-2 mt-2">
@@ -578,9 +573,9 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
 
                     {/* Pending unstake */}
                     {hasPendingWithdraw && (
-                      <div className="bg-yellow/5 border border-yellow/15 px-3.5 py-2.5 flex items-center justify-between">
-                        <span className="text-[11px] text-txt-1">Pending Unstake</span>
-                        <span className="text-[12px] font-semibold font-mono text-yellow tabular-nums">{formatUsdPlain(userStake.lastWithdrawRequestValue)}</span>
+                    <div className="bg-drift-surface border border-drift-border px-3.5 py-2.5 flex items-center justify-between">
+                      <span className="text-[11px] text-txt-1">Pending Unstake</span>
+                      <span className="text-[12px] font-semibold font-mono text-txt-0 tabular-nums">{formatUsdPlain(userStake.lastWithdrawRequestValue)}</span>
                       </div>
                     )}
                   </div>
@@ -599,9 +594,9 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
                 <div className="px-6 pb-6 pt-2">
                   <div className="relative">
                     {[
-                      { icon: <Wallet className="w-4 h-4 text-accent" />, title: 'Stake USDC', desc: 'Deposit from your wallet into the vault' },
-                      { icon: <Percent className="w-4 h-4 text-bull" />, title: 'Earn Protocol Revenue', desc: `${ifFeePct}% of fees flow to the fund` },
-                      { icon: <ArrowUpFromLine className="w-4 h-4 text-yellow" />, title: 'Withdraw Anytime', desc: 'No lock-up — instant withdrawals' },
+                      { icon: <Wallet className="w-4 h-4 text-txt-2" />, title: 'Stake USDC', desc: 'Deposit from your wallet into the vault' },
+                      { icon: <Percent className="w-4 h-4 text-txt-2" />, title: 'Earn Protocol Revenue', desc: `${ifFeePct}% of fees flow to the fund` },
+                      { icon: <ArrowUpFromLine className="w-4 h-4 text-txt-2" />, title: 'Withdraw Anytime', desc: 'No lock-up — instant withdrawals' },
                     ].map((s, i) => (
                       <div key={i} className="flex gap-3 items-start relative">
                         {/* Connecting line */}
@@ -623,10 +618,10 @@ export const InsuranceFundPage: React.FC<InsuranceFundPageProps> = ({ onBack, em
             </div>
 
             {/* 6. RISK DISCLOSURE — amber warning card */}
-            <div className="border-l-4 border border-yellow/30 border-l-yellow bg-drift-panel p-5 space-y-2">
+            <div className="border border-drift-border bg-drift-panel p-5 space-y-2">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-yellow shrink-0" />
-                <span className="text-[13px] font-semibold text-yellow">Risk Disclosure</span>
+                <AlertTriangle className="w-4 h-4 text-txt-2 shrink-0" />
+                <span className="text-[13px] font-semibold text-txt-1">Risk Disclosure</span>
               </div>
               <p className="text-[12px] text-txt-2 leading-relaxed">
                 Stakers take on the risk of covering bankrupt accounts. If liquidation losses exceed the fund, you may lose part of your deposit.

@@ -79,7 +79,7 @@ const PageHeader: React.FC<{ onBack: () => void; pubkey?: string }> = ({ onBack,
     <span className="text-[14px] font-semibold text-txt-0">Account</span>
     <div className="flex-1" />
     {pubkey && <span className="text-[10px] text-txt-1 font-mono">{pubkey}</span>}
-    <span className="text-[10px] text-purple font-semibold">DEVNET</span>
+    <span className="text-[10px] text-txt-2 font-semibold">DEVNET</span>
   </div>
 );
 
@@ -231,7 +231,7 @@ export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack, trading,
       const msg = e?.message || String(e);
       if (msg.includes('InsufficientCollateral') || msg.includes('0x1773')) {
         const free = accountState?.freeCollateral ?? 0;
-        setFaucetMsg({ type: 'err', text: `Insufficient collateral. Free: $${free.toFixed(2)}` });
+        setFaucetMsg({ type: 'err', text: `Insufficient collateral. Free: $${free.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` });
       } else {
         setFaucetMsg({ type: 'err', text: msg });
       }
@@ -310,24 +310,21 @@ export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack, trading,
                   {/* Equity */}
                   <div className="px-4 py-4 border-b sm:border-b-0 sm:border-r border-drift-border">
                     <span className="text-[11px] text-txt-1 uppercase tracking-wide block mb-1">Equity</span>
-                    <span className="text-[22px] font-bold font-mono tabular-nums text-txt-0 leading-none">${equity.toFixed(2)}</span>
+                    <span className="text-[22px] font-bold font-mono tabular-nums text-txt-0 leading-none">${equity.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                   {/* Free Collateral */}
                   <div className="px-4 py-4 border-b sm:border-b-0 sm:border-r border-drift-border">
                     <span className="text-[11px] text-txt-1 uppercase tracking-wide block mb-1">Free Collateral</span>
-                    <span className="text-[22px] font-bold font-mono tabular-nums text-accent leading-none">${freeCollateral.toFixed(2)}</span>
+                    <span className="text-[22px] font-bold font-mono tabular-nums text-txt-0 leading-none">${freeCollateral.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                   {/* Leverage */}
                   <div className="px-4 py-4 border-b sm:border-b-0 sm:border-r border-drift-border">
                     <span className="text-[11px] text-txt-1 uppercase tracking-wide block mb-1">Leverage</span>
                     <span className="text-[22px] font-bold font-mono tabular-nums text-txt-0 leading-none">{leverage.toFixed(2)}&times;</span>
-                  </div>
-                  {/* Unrealized P&L */}
-                  <div className="px-4 py-4 border-b sm:border-b-0 border-drift-border">
                     <span className="text-[11px] text-txt-1 uppercase tracking-wide block mb-1">Unrealized P&L</span>
                     <div className="flex items-baseline gap-2">
                       <span className={`text-[22px] font-bold font-mono tabular-nums leading-none ${unrealizedPnl >= 0 ? 'text-bull' : 'text-bear'}`}>
-                        {unrealizedPnl >= 0 ? '+' : ''}${unrealizedPnl.toFixed(2)}
+                        {unrealizedPnl >= 0 ? '+' : ''}${unrealizedPnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                       <span className={`text-[12px] font-mono tabular-nums ${unrealizedPnl >= 0 ? 'text-bull/70' : 'text-bear/70'}`}>
                         {pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%
@@ -355,7 +352,7 @@ export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack, trading,
                   right={
                     <div className="relative" ref={faucetRef}>
                       <button onClick={() => setFaucetOpen(!faucetOpen)}
-                        className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-purple hover:bg-purple/8 transition-colors" style={{ borderRadius: 6 }}>
+                        className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-txt-1 hover:bg-drift-surface/60 transition-colors" style={{ borderRadius: 6 }}>
                         Faucet <ChevronDown className="w-3 h-3" />
                       </button>
                       {faucetOpen && (
@@ -377,7 +374,7 @@ export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack, trading,
                   {/* SOL row */}
                   <div className="flex items-center justify-between px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <span className="w-7 h-7 rounded-full bg-purple/10 flex items-center justify-center text-[12px] font-bold text-purple">◎</span>
+                      <span className="w-7 h-7 rounded-full bg-drift-surface flex items-center justify-center text-[12px] font-bold text-txt-1">◎</span>
                       <div>
                         <span className="text-[14px] text-txt-0 font-semibold font-mono tabular-nums block leading-tight">
                           {solBalance != null ? solBalance.toFixed(4) : '—'}
@@ -389,7 +386,7 @@ export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack, trading,
                   {/* USDC row */}
                   <div className="flex items-center justify-between px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <span className="w-7 h-7 rounded-full bg-bull/10 flex items-center justify-center text-[12px] font-bold text-bull">$</span>
+                      <span className="w-7 h-7 rounded-full bg-drift-surface flex items-center justify-center text-[12px] font-bold text-txt-1">$</span>
                       <div>
                         <span className="text-[14px] text-txt-0 font-semibold font-mono tabular-nums block leading-tight">
                           {usdcBalance != null ? usdcBalance.toLocaleString() : '—'}
@@ -419,7 +416,7 @@ export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack, trading,
                       <button onClick={() => { setActiveTab('deposit'); setConfirmStep(false); }}
                         className={`flex-1 py-2.5 text-[13px] font-semibold text-center transition-colors ${
                           activeTab === 'deposit'
-                            ? 'text-bull border-b-2 border-bull'
+                            ? 'text-txt-0 border-b-2 border-txt-0'
                             : 'text-txt-3 hover:text-txt-1'
                         }`}>
                         Deposit
@@ -427,7 +424,7 @@ export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack, trading,
                       <button onClick={() => { setActiveTab('withdraw'); setConfirmStep(false); }}
                         className={`flex-1 py-2.5 text-[13px] font-semibold text-center transition-colors ${
                           activeTab === 'withdraw'
-                            ? 'text-bear border-b-2 border-bear'
+                            ? 'text-txt-0 border-b-2 border-txt-0'
                             : 'text-txt-3 hover:text-txt-1'
                         }`}>
                         Withdraw
@@ -442,7 +439,7 @@ export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack, trading,
                         <span className="text-[11px] text-txt-0 font-mono tabular-nums font-semibold">
                           {activeTab === 'deposit'
                             ? `${(usdcBalance ?? 0).toLocaleString()} USDC`
-                            : `$${freeCollateral.toFixed(2)}`
+                            : `$${freeCollateral.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                           }
                         </span>
                       </div>
@@ -452,7 +449,7 @@ export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack, trading,
                           placeholder="0.00" step="any" min="0"
                           className="flex-1 h-full px-3 bg-transparent text-[13px] text-txt-0 font-mono tabular-nums outline-none" />
                         <button onClick={handleMax}
-                          className="px-2.5 py-1 mr-1.5 text-[10px] font-bold bg-accent/10 text-accent hover:bg-accent/18 transition-colors" style={{ borderRadius: 4 }}>
+                          className="px-2.5 py-1 mr-1.5 text-[10px] font-bold bg-drift-surface text-txt-1 hover:text-txt-0 hover:bg-drift-elevated transition-colors" style={{ borderRadius: 4 }}>
                           MAX
                         </button>
                         <span className="text-[11px] text-txt-1 pr-3 font-medium">USDC</span>
@@ -468,8 +465,8 @@ export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack, trading,
                           disabled={!(parseFloat(amount) > 0)}
                           className={`w-full h-10 text-[12px] font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
                             activeTab === 'deposit'
-                              ? 'bg-bull/10 text-bull hover:bg-bull/18'
-                              : 'bg-bear/10 text-bear hover:bg-bear/18'
+                              ? 'bg-drift-surface text-txt-0 hover:bg-drift-elevated border border-drift-border'
+                              : 'bg-drift-surface text-txt-0 hover:bg-drift-elevated border border-drift-border'
                           }`} style={{ borderRadius: 6 }}>
                           {activeTab === 'deposit' ? 'Review Deposit' : 'Review Withdrawal'}
                         </button>
@@ -523,7 +520,7 @@ export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack, trading,
                             placeholder="1000" step="any" min="0"
                             className="flex-1 h-full px-3 bg-transparent text-[12px] text-txt-0 tabular-nums outline-none" />
                           <button onClick={() => setAmount(String(usdcBalance ?? 0))}
-                            className="px-2 py-0.5 mr-1 text-[10px] font-bold bg-accent/10 text-accent hover:bg-accent/18 transition-colors" style={{ borderRadius: 4 }}>
+                            className="px-2 py-0.5 mr-1 text-[10px] font-bold bg-drift-surface text-txt-1 hover:text-txt-0 hover:bg-drift-elevated transition-colors" style={{ borderRadius: 4 }}>
                             MAX
                           </button>
                           <span className="text-[10px] text-txt-3 pr-3">USDC</span>
@@ -537,7 +534,7 @@ export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack, trading,
                       )}
                       <button onClick={handleCreate}
                         disabled={!!loading || (solBalance ?? 0) < 0.01 || (usdcBalance ?? 0) <= 0 || !(parseFloat(amount) > 0)}
-                        className="w-full h-10 text-[12px] font-semibold bg-accent text-white hover:brightness-110 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2" style={{ borderRadius: 6 }}>
+                        className="w-full h-10 text-[12px] font-semibold bg-bull text-white hover:brightness-110 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2" style={{ borderRadius: 6 }}>
                         {loading === 'create' ? (
                           <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Creating&hellip;</>
                         ) : (
@@ -558,8 +555,8 @@ export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack, trading,
                 <div className="border border-drift-border overflow-hidden">
                   <SectionLabel label={`Sub-Accounts (${subAccounts.length})`}
                     right={
-                      <button onClick={() => setShowCreateSub(!showCreateSub)}
-                        className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-accent hover:bg-accent/8 transition-colors" style={{ borderRadius: 6 }}>
+                        <button onClick={() => setShowCreateSub(!showCreateSub)}
+                        className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-txt-1 hover:text-txt-0 hover:bg-drift-surface/60 transition-colors" style={{ borderRadius: 6 }}>
                         <Plus className="w-3 h-3" /> New
                       </button>
                     }
@@ -581,13 +578,13 @@ export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack, trading,
                               <span className="text-[13px] font-semibold text-txt-0 truncate">{acct.name}</span>
                               <span className="text-[10px] text-txt-3">#{acct.subAccountId}</span>
                               {isActive && (
-                                <span className="px-1.5 py-px text-[9px] font-bold bg-accent text-white shrink-0" style={{ borderRadius: 12 }}>Active</span>
+                                <span className="px-1.5 py-px text-[9px] font-bold bg-drift-surface text-txt-0 border border-drift-border shrink-0" style={{ borderRadius: 12 }}>Active</span>
                               )}
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
                               {!isActive && (
                                 <button onClick={() => handleSetActiveSubAccount(acct.subAccountId)}
-                                  className="px-2.5 py-1 text-[10px] font-semibold bg-accent/10 text-accent hover:bg-accent/18 transition-colors" style={{ borderRadius: 6 }}>
+                                  className="px-2.5 py-1 text-[10px] font-semibold bg-drift-surface text-txt-1 hover:text-txt-0 hover:bg-drift-elevated transition-colors" style={{ borderRadius: 6 }}>
                                   Switch
                                 </button>
                               )}
@@ -604,13 +601,13 @@ export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack, trading,
                           <div className="flex items-center gap-4 mb-2">
                             <div>
                               <span className="text-[20px] font-bold font-mono tabular-nums text-txt-0 leading-none">
-                                ${acct.totalCollateral.toFixed(2)}
+                                ${acct.totalCollateral.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </span>
                             </div>
                             <div className="flex items-center gap-3 text-[11px]">
                               <span className="text-txt-1 tabular-nums font-mono">{acct.openPositions} position{acct.openPositions !== 1 ? 's' : ''}</span>
                               <span className={`tabular-nums font-mono font-semibold ${acctPnl >= 0 ? 'text-bull' : 'text-bear'}`}>
-                                {acctPnl >= 0 ? '+' : ''}{acctPnl.toFixed(2)}
+                                {acctPnl >= 0 ? '+' : ''}{acctPnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </span>
                             </div>
                           </div>
@@ -642,7 +639,7 @@ export const UserManagement: React.FC<Props> = ({ forceRefresh, onBack, trading,
                         </div>
                         <button onClick={() => { handleCreate(); setShowCreateSub(false); }}
                           disabled={!!loading || !(parseFloat(amount) > 0)}
-                          className="h-8 px-4 text-[11px] font-semibold bg-accent text-white hover:brightness-110 disabled:opacity-30 disabled:cursor-not-allowed transition-all whitespace-nowrap" style={{ borderRadius: 6 }}>
+                          className="h-8 px-4 text-[11px] font-semibold bg-bull text-white hover:brightness-110 disabled:opacity-30 disabled:cursor-not-allowed transition-all whitespace-nowrap" style={{ borderRadius: 6 }}>
                           {loading === 'create' ? 'Creating\u2026' : 'Create'}
                         </button>
                       </div>
