@@ -825,7 +825,7 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
             {/* Clock / Flame icon */}
             {timeRemainingMs < 15000
               ? <Flame className="w-14 h-14 sm:w-16 sm:h-16 text-[#ED4B9E] animate-pulse" />
-              : <img src="/clock.png" alt="clock" className="w-16 h-16 sm:w-20 sm:h-20 object-contain" />
+              : <img src="/clock.png" alt="clock" className="w-16 h-16 sm:w-20 sm:h-20 object-contain scale-[1.8]" />
             }
 
             {/* Time display */}
