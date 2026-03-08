@@ -7,7 +7,7 @@ import { AssetIcon } from './icons/AssetIcon';
 import DRIFT_CONFIG from '../config';
 import { useDriftStore } from '../stores/useDriftStore';
 
-export type Page = 'home' | 'trade' | 'user' | 'learn' | 'insurance' | 'positions' | 'prediction' | 'admin';
+export type Page = 'home' | 'trade' | 'user' | 'learn' | 'insurance' | 'positions' | 'prediction' | 'admin' | 'portfolio';
 
 interface HeaderProps {
   currentPage?: Page;
@@ -18,6 +18,7 @@ interface HeaderProps {
 const NAV: { id: Page; label: string }[] = [
   { id: 'home', label: 'Home' },
   { id: 'trade', label: 'Futures' },
+  { id: 'portfolio', label: 'Portfolio' },
   { id: 'insurance', label: 'Vault' },
   { id: 'user', label: 'Account' },
   { id: 'positions', label: 'Positions' },
