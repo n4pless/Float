@@ -159,9 +159,7 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
   const isLiveGlow = isLive;
   const isMuted = isExpired || isLater;
   const liveGlowClass = isLiveGlow
-    ? isGrace
-      ? 'live-card-glow-grace border-2'
-      : liveDir === 'bull'
+    ? liveDir === 'bull'
       ? 'live-card-glow-up border-2'
       : liveDir === 'bear'
       ? 'live-card-glow-down border-2'
@@ -182,14 +180,12 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
 
       {/* ═══ HEADER STRIP ═══ */}
       <div className="flex items-center justify-between px-4 py-2" style={{
-        background: isGrace ? 'rgba(240,185,11,0.12)'
-          : isExpired && round.result === 'bull' ? 'rgba(49,208,170,0.15)'
+        background: isExpired && round.result === 'bull' ? 'rgba(49,208,170,0.15)'
           : isExpired && round.result === 'bear' ? 'rgba(237,75,158,0.15)'
           : C.card
       }}>
         <div className="flex items-center gap-1.5">
-          {isLive && !isGrace && <div className="w-2 h-2 rounded-full bg-[#31D0AA] animate-pulse" />}
-          {isGrace && <img src="/sphere.gif" alt="" className="w-4 h-4 object-contain" />}
+          {isLive && <div className="w-2 h-2 rounded-full bg-[#31D0AA] animate-pulse" />}
           {isNext && <div className="w-2 h-2 rounded-full bg-[#7645D9] animate-pulse" />}
           {isCalc && <Loader2 className="w-3 h-3 text-[#F0B90B] animate-spin" />}
           {isLater && <div className="w-2 h-2 rounded-full bg-[#8C8CA1]/40" />}
@@ -201,13 +197,12 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
               : <CheckCircle2 className="w-3 h-3 text-[#8C8CA1]/40" />
           )}
           <span className={`text-[11px] font-bold tracking-wide ${
-            isGrace ? 'text-[#F0B90B]'
-            : isLive ? 'text-[#31D0AA]' : isNext ? 'text-[#7645D9]' : isCalc ? 'text-[#F0B90B]'
+            isLive ? 'text-[#31D0AA]' : isNext ? 'text-[#7645D9]' : isCalc ? 'text-[#F0B90B]'
             : isExpired && round.result === 'bull' ? 'text-[#31D0AA]'
             : isExpired && round.result === 'bear' ? 'text-[#ED4B9E]'
             : 'text-[#8C8CA1]'
           }`}>
-            {isGrace ? 'CLOSING...' : isLive ? 'LIVE' : isNext ? 'Next' : isCalc ? 'Calculating'
+            {isLive ? 'LIVE' : isNext ? 'Next' : isCalc ? 'Calculating'
               : isExpired && round.result === 'bull' ? 'UP Won'
               : isExpired && round.result === 'bear' ? 'DOWN Won'
               : isExpired ? 'Expired'
@@ -240,6 +235,7 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
       )}
 
       {/* ═══ UP SHIELD BANNER ═══ */}
+      {!isGrace && (
       <div className={`relative transition-all duration-500 ${upHighlight ? 'shield-glow-up' : ''}`} style={{ height: 56 }}>
         <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
           <path
@@ -264,8 +260,29 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
           )}
         </div>
       </div>
+      )}
+
+      {/* ═══ GRACE PERIOD — Big Sphere ═══ */}
+      {isGrace && (
+        <div className="flex flex-col items-center justify-center py-4 sm:py-6 flex-1 min-h-[220px] sm:min-h-[260px]">
+          <img src="/sphere.gif" alt="Closing" className="w-32 h-32 sm:w-44 sm:h-44 object-contain sphere-grace" />
+          <span className="text-[16px] sm:text-[20px] font-extrabold tracking-wide mt-3" style={{ color: '#F0B90B' }}>Closing Round</span>
+          <span className="text-[11px] sm:text-[12px] font-medium mt-1" style={{ color: 'rgba(240,185,11,0.5)' }}>Locking prices...</span>
+          {bet && (
+            <div className={`mt-3 flex items-center gap-2 px-3 py-1.5 rounded-lg border ${
+              bet.position === 'bull' ? 'border-[#31D0AA]/20 bg-[#31D0AA]/5' : 'border-[#ED4B9E]/20 bg-[#ED4B9E]/5'
+            }`}>
+              {bet.position === 'bull'
+                ? <ArrowUp className="w-3.5 h-3.5 text-[#31D0AA]" />
+                : <ArrowDown className="w-3.5 h-3.5 text-[#ED4B9E]" />}
+              <span className="text-[12px] font-semibold text-[#F4EEFF]">{fmtSol(bet.amount)} SOL</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ═══ MAIN INFO BOX ═══ */}
+      {!isGrace && (
       <div
         className="mx-2 sm:mx-3 my-1 rounded-xl border-2 flex-1 min-h-[160px] sm:min-h-[180px] flex flex-col transition-all duration-500 px-3 sm:px-4 py-2.5 sm:py-3"
         style={{
@@ -540,8 +557,10 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
           </div>
         )}
       </div>
+      )}
 
       {/* ═══ DOWN SHIELD BANNER ═══ */}
+      {!isGrace && (
       <div className={`relative transition-all duration-500 ${downHighlight ? 'shield-glow-down' : ''}`} style={{ height: 56 }}>
         <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
           <path
@@ -566,6 +585,7 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
           )}
         </div>
       </div>
+      )}
     </div>
   );
 };
