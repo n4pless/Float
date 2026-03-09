@@ -120,14 +120,21 @@ function toDisplayRound(r: RoundAccount, game: GameAccount): DisplayRound {
   let payoutMultiplier: number | undefined;
 
   if (r.oracleCalled) {
-    if (r.lockPrice === r.closePrice || r.bullAmount === 0 || r.bearAmount === 0) {
-      result = 'tie';
-    } else if (r.closePrice > r.lockPrice) {
+    // Determine result purely by price direction
+    if (r.closePrice > r.lockPrice) {
       result = 'bull';
-      payoutMultiplier = r.bullAmount > 0 ? r.rewardAmount / r.bullAmount : 0;
-    } else {
+    } else if (r.closePrice < r.lockPrice) {
       result = 'bear';
-      payoutMultiplier = r.bearAmount > 0 ? r.rewardAmount / r.bearAmount : 0;
+    } else {
+      result = 'tie';
+    }
+    // Payout multiplier only when both sides have bets (otherwise it's a refund round)
+    if (r.bullAmount > 0 && r.bearAmount > 0) {
+      if (result === 'bull' && r.bullAmount > 0) {
+        payoutMultiplier = r.rewardAmount / r.bullAmount;
+      } else if (result === 'bear' && r.bearAmount > 0) {
+        payoutMultiplier = r.rewardAmount / r.bearAmount;
+      }
     }
   }
 

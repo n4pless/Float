@@ -126,10 +126,12 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
   const upPayoutSol = depositSol > 0 && upMulti > 0 ? depositSol * upMulti : 0;
   const downPayoutSol = depositSol > 0 && downMulti > 0 ? depositSol * downMulti : 0;
 
+  // User wins if they picked the right side, or if it's a tie, or if it's a refund round (one side has 0 bets)
+  const isRefundRound = round.bullAmount === 0 || round.bearAmount === 0 || round.result === 'tie';
   const userWon = isExpired && bet && round.result && (
     (round.result === 'bull' && bet.position === 'bull') ||
     (round.result === 'bear' && bet.position === 'bear') ||
-    round.result === 'tie'
+    isRefundRound
   );
   const userLost = isExpired && bet && !userWon;
   const claimable = userWon && bet && !bet.claimed && bet.payout > 0;
