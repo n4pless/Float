@@ -58,6 +58,11 @@ interface PredictionStore {
   loading: boolean;
   error: string | null;
 
+  // Full history (all epochs)
+  historyRounds: DisplayRound[];
+  historyBets: DisplayBet[];
+  historyLoading: boolean;
+
   // Live price (from Binance WS, not on-chain)
   livePrice: number;
   setLivePrice: (p: number) => void;
@@ -68,6 +73,7 @@ interface PredictionStore {
 
   // Actions
   refresh: (wallet?: PublicKey) => Promise<void>;
+  refreshHistory: (wallet: PublicKey) => Promise<void>;
   placeBet: (
     wallet: PublicKey,
     epoch: number,
@@ -173,6 +179,10 @@ export const usePredictionStore = create<PredictionStore>((set, get) => ({
   loading: false,
   error: null,
 
+  historyRounds: [],
+  historyBets: [],
+  historyLoading: false,
+
   livePrice: 0,
   setLivePrice: (p) => set({ livePrice: p }),
 
@@ -225,6 +235,60 @@ export const usePredictionStore = create<PredictionStore>((set, get) => ({
     } catch (err: any) {
       console.error('Prediction refresh error:', err);
       set({ error: err.message || 'Failed to fetch' });
+    }
+  },
+
+  refreshHistory: async (wallet: PublicKey) => {
+    const conn = get().connection;
+    const game = get().game;
+    if (!conn || !game || !game.genesisStart) return;
+
+    set({ historyLoading: true });
+    try {
+      const maxEpoch = game.currentEpoch;
+      // Fetch ALL epochs from 1..maxEpoch in batches of 100 (getMultipleAccountsInfo limit)
+      const allEpochs: number[] = [];
+      for (let e = 1; e <= maxEpoch; e++) allEpochs.push(e);
+
+      const BATCH = 100;
+      const roundMap = new Map<number, RoundAccount>();
+      const betMap = new Map<number, UserBetAccount>();
+
+      for (let i = 0; i < allEpochs.length; i += BATCH) {
+        const batch = allEpochs.slice(i, i + BATCH);
+        const [rounds, bets] = await Promise.all([
+          fetchRounds(conn, batch),
+          fetchUserBets(conn, batch, wallet),
+        ]);
+        rounds.forEach((v, k) => roundMap.set(k, v));
+        bets.forEach((v, k) => betMap.set(k, v));
+      }
+
+      const historyRounds: DisplayRound[] = [];
+      const historyBets: DisplayBet[] = [];
+
+      for (const ep of allEpochs) {
+        const r = roundMap.get(ep);
+        if (!r) continue;
+        const dr = toDisplayRound(r, game);
+        historyRounds.push(dr);
+
+        const b = betMap.get(ep);
+        if (b) {
+          historyBets.push({
+            epoch: ep,
+            amount: lamToSol(b.amount),
+            position: b.position === 0 ? 'bull' : 'bear',
+            claimed: b.claimed,
+            payout: computePayout(r, b),
+          });
+        }
+      }
+
+      set({ historyRounds, historyBets, historyLoading: false });
+    } catch (err: any) {
+      console.error('History refresh error:', err);
+      set({ historyLoading: false });
     }
   },
 

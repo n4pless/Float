@@ -182,11 +182,24 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
           {isNext && <div className="w-2 h-2 rounded-full bg-[#7645D9] animate-pulse" />}
           {isCalc && <Loader2 className="w-3 h-3 text-[#F0B90B] animate-spin" />}
           {isLater && <div className="w-2 h-2 rounded-full bg-[#8C8CA1]/40" />}
-          {isExpired && <CheckCircle2 className="w-3 h-3 text-[#8C8CA1]/40" />}
+          {isExpired && (
+            round.result === 'bull'
+              ? <ArrowUp className="w-3.5 h-3.5 text-[#31D0AA]" />
+              : round.result === 'bear'
+              ? <ArrowDown className="w-3.5 h-3.5 text-[#ED4B9E]" />
+              : <CheckCircle2 className="w-3 h-3 text-[#8C8CA1]/40" />
+          )}
           <span className={`text-[11px] font-bold tracking-wide ${
-            isLive ? 'text-[#31D0AA]' : isNext ? 'text-[#7645D9]' : isCalc ? 'text-[#F0B90B]' : 'text-[#8C8CA1]'
+            isLive ? 'text-[#31D0AA]' : isNext ? 'text-[#7645D9]' : isCalc ? 'text-[#F0B90B]'
+            : isExpired && round.result === 'bull' ? 'text-[#31D0AA]'
+            : isExpired && round.result === 'bear' ? 'text-[#ED4B9E]'
+            : 'text-[#8C8CA1]'
           }`}>
-            {isLive ? 'LIVE' : isNext ? 'Next' : isCalc ? 'Calculating' : isExpired ? 'Expired' : 'Later'}
+            {isLive ? 'LIVE' : isNext ? 'Next' : isCalc ? 'Calculating'
+              : isExpired && round.result === 'bull' ? 'UP Won'
+              : isExpired && round.result === 'bear' ? 'DOWN Won'
+              : isExpired ? 'Expired'
+              : 'Later'}
           </span>
         </div>
         <span className="text-[11px] text-[#8C8CA1]/50 font-mono">#{epoch}</span>
@@ -531,6 +544,7 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
     game, rounds, userBets, livePrice, timeRemainingMs, loading, error,
     setConnection, refresh, placeBet, claimWinnings,
     setLivePrice, setTimeRemainingMs,
+    historyRounds, historyBets, historyLoading, refreshHistory,
   } = usePredictionStore();
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -770,7 +784,11 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
           <div className="flex items-center gap-1.5 sm:gap-2">
             {/* History */}
             <button
-              onClick={() => setShowHistory(!showHistory)}
+              onClick={() => {
+                const next = !showHistory;
+                setShowHistory(next);
+                if (next && publicKey) refreshHistory(publicKey);
+              }}
               className={`p-2 sm:p-2.5 rounded-lg sm:rounded-xl transition-all ${
                 showHistory ? 'text-[#7645D9]' : 'text-[#8C8CA1] hover:text-[#F4EEFF]'
               }`}
@@ -1010,11 +1028,237 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
         )}
       </div>
 
+      {/* ═══ HISTORY OVERLAY ═══ */}
+      {showHistory && (
+        <div className="absolute inset-0 z-[60] flex flex-col" style={{ background: C.bg }}>
+          {/* Header */}
+          <div className="shrink-0 flex items-center justify-between px-4 sm:px-6 py-3 border-b border-white/[0.06]" style={{ background: C.cardDark }}>
+            <div className="flex items-center gap-3">
+              <History className="w-5 h-5 text-[#7645D9]" />
+              <h2 className="text-[16px] sm:text-[18px] font-bold" style={{ color: C.text }}>Prediction History</h2>
+            </div>
+            <button
+              onClick={() => setShowHistory(false)}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-[#8C8CA1] hover:text-[#F4EEFF] transition-all text-[14px]"
+              style={{ background: 'rgba(255,255,255,0.06)' }}
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto">
+            {historyLoading ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-3">
+                <Loader2 className="w-8 h-8 animate-spin text-[#7645D9]" />
+                <p className="text-[13px] text-[#8C8CA1]">Loading history...</p>
+              </div>
+            ) : !publicKey ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-3">
+                <History className="w-10 h-10 text-[#8C8CA1]/20" />
+                <p className="text-[13px] text-[#8C8CA1]/60">Connect wallet to see history</p>
+              </div>
+            ) : historyBets.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-3">
+                <History className="w-10 h-10 text-[#8C8CA1]/20" />
+                <p className="text-[13px] text-[#8C8CA1]/60">No predictions found</p>
+                <p className="text-[10px] text-[#8C8CA1]/30">Place your first prediction to see history</p>
+              </div>
+            ) : (
+              <>
+                {/* Summary stats */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 px-4 sm:px-6 py-4">
+                  {(() => {
+                    const hWins = historyBets.filter(b => b.payout > b.amount).length;
+                    const hLosses = historyBets.filter(b => b.payout === 0).length;
+                    const hWagered = historyBets.reduce((s, b) => s + b.amount, 0);
+                    const hWon = historyBets.filter(b => b.payout > b.amount).reduce((s, b) => s + b.payout, 0);
+                    const hNet = hWon - hWagered;
+                    const unclaimed = historyBets.filter(b => (b.payout > b.amount || (b.payout === b.amount && b.payout > 0)) && !b.claimed).length;
+                    return (
+                      <>
+                        <div className="rounded-xl p-3 border border-white/[0.06]" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                          <div className="text-[9px] uppercase tracking-wider font-medium mb-1" style={{ color: C.muted }}>Total Rounds</div>
+                          <div className="text-[18px] font-bold font-mono" style={{ color: C.text }}>{historyBets.length}</div>
+                        </div>
+                        <div className="rounded-xl p-3 border border-white/[0.06]" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                          <div className="text-[9px] uppercase tracking-wider font-medium mb-1" style={{ color: C.muted }}>Win / Loss</div>
+                          <div className="text-[18px] font-bold font-mono" style={{ color: hWins > hLosses ? C.up : hLosses > hWins ? C.down : C.text }}>{hWins} / {hLosses}</div>
+                        </div>
+                        <div className="rounded-xl p-3 border border-white/[0.06]" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                          <div className="text-[9px] uppercase tracking-wider font-medium mb-1" style={{ color: C.muted }}>Net P&L</div>
+                          <div className="text-[18px] font-bold font-mono" style={{ color: hNet >= 0 ? C.up : C.down }}>{hNet >= 0 ? '+' : ''}{fmtSol(Math.abs(hNet))} SOL</div>
+                        </div>
+                        <div className="rounded-xl p-3 border border-white/[0.06]" style={{ background: unclaimed > 0 ? 'rgba(49,208,170,0.05)' : 'rgba(255,255,255,0.02)', borderColor: unclaimed > 0 ? 'rgba(49,208,170,0.15)' : undefined }}>
+                          <div className="text-[9px] uppercase tracking-wider font-medium mb-1" style={{ color: unclaimed > 0 ? C.up : C.muted }}>Unclaimed</div>
+                          <div className="text-[18px] font-bold font-mono" style={{ color: unclaimed > 0 ? C.up : C.text }}>{unclaimed}</div>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+
+                {/* Desktop table */}
+                <div className="hidden sm:block px-4 sm:px-6 pb-4">
+                  <table className="w-full text-[12px]">
+                    <thead className="sticky top-0" style={{ background: C.bg }}>
+                      <tr style={{ color: C.muted }} className="border-b border-white/[0.06]">
+                        <th className="text-left px-4 py-3 font-medium">Round</th>
+                        <th className="text-left px-2 py-3 font-medium">Your Position</th>
+                        <th className="text-left px-2 py-3 font-medium">Round Result</th>
+                        <th className="text-right px-2 py-3 font-medium">Amount</th>
+                        <th className="text-right px-2 py-3 font-medium">Payout</th>
+                        <th className="text-center px-2 py-3 font-medium">Status</th>
+                        <th className="text-right px-4 py-3 font-medium">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...historyBets].sort((a, b) => b.epoch - a.epoch).map(b => {
+                        const r = historyRounds.find(rr => rr.epoch === b.epoch);
+                        const pending = !r?.oracleCalled;
+                        const won = b.payout > b.amount;
+                        const tie = b.payout === b.amount && b.payout > 0;
+                        const canClaim = (won || tie) && !b.claimed;
+                        return (
+                          <tr key={b.epoch} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
+                            <td className="px-4 py-3 font-mono" style={{ color: C.muted }}>#{b.epoch}</td>
+                            <td className="px-2 py-3">
+                              <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md ${
+                                b.position === 'bull' ? 'bg-[#31D0AA]/8 text-[#31D0AA]' : 'bg-[#ED4B9E]/8 text-[#ED4B9E]'
+                              }`}>
+                                {b.position === 'bull' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+                                {b.position === 'bull' ? 'UP' : 'DOWN'}
+                              </span>
+                            </td>
+                            <td className="px-2 py-3">
+                              {pending ? (
+                                <span className="text-[#F0B90B] text-[11px]">Pending</span>
+                              ) : r?.result === 'bull' ? (
+                                <span className="inline-flex items-center gap-1 text-[#31D0AA] text-[11px] font-medium">
+                                  <ArrowUp className="w-3 h-3" /> UP Won
+                                </span>
+                              ) : r?.result === 'bear' ? (
+                                <span className="inline-flex items-center gap-1 text-[#ED4B9E] text-[11px] font-medium">
+                                  <ArrowDown className="w-3 h-3" /> DOWN Won
+                                </span>
+                              ) : (
+                                <span className="text-[#F0B90B] text-[11px]">Tie</span>
+                              )}
+                            </td>
+                            <td className="px-2 py-3 text-right font-mono" style={{ color: C.text }}>{fmtSol(b.amount)} SOL</td>
+                            <td className="px-2 py-3 text-right font-mono" style={{ color: won ? C.up : tie ? C.yellow : C.down }}>
+                              {pending ? '—' : won ? `+${fmtSol(b.payout)}` : tie ? fmtSol(b.payout) : '0'} SOL
+                            </td>
+                            <td className="px-2 py-3 text-center">
+                              {pending ? (
+                                <span className="text-[#F0B90B] bg-[#F0B90B]/10 px-2 py-0.5 rounded-md text-[10px] font-medium">Live</span>
+                              ) : won ? (
+                                <span className="text-[#31D0AA] bg-[#31D0AA]/10 px-2 py-0.5 rounded-md text-[10px] font-medium">Won</span>
+                              ) : tie ? (
+                                <span className="text-[#F0B90B] bg-[#F0B90B]/10 px-2 py-0.5 rounded-md text-[10px] font-medium">Tie</span>
+                              ) : (
+                                <span className="text-[#ED4B9E] bg-[#ED4B9E]/10 px-2 py-0.5 rounded-md text-[10px] font-medium">Lost</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              {canClaim ? (
+                                <button
+                                  onClick={() => handleClaim(b.epoch)}
+                                  className="text-[11px] font-bold px-4 py-2 rounded-lg transition-all hover:brightness-110 border active:scale-95"
+                                  style={{ color: '#fff', background: C.up, borderColor: 'rgba(49,208,170,0.3)' }}
+                                >
+                                  <span className="flex items-center gap-1.5">
+                                    <Trophy className="w-3.5 h-3.5" />
+                                    {tie ? 'Refund' : `Collect ${fmtSol(b.payout)} SOL`}
+                                  </span>
+                                </button>
+                              ) : b.claimed ? (
+                                <span className="text-[11px] flex items-center justify-end gap-1" style={{ color: 'rgba(49,208,170,0.6)' }}>
+                                  <CheckCircle2 className="w-3 h-3" /> Collected
+                                </span>
+                              ) : pending ? (
+                                <span className="text-[11px]" style={{ color: 'rgba(140,140,161,0.3)' }}>—</span>
+                              ) : (
+                                <span className="text-[11px] text-[#ED4B9E]/50">-{fmtSol(b.amount)}</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile card view */}
+                <div className="sm:hidden flex flex-col divide-y divide-white/[0.04] px-2 pb-4">
+                  {[...historyBets].sort((a, b) => b.epoch - a.epoch).map(b => {
+                    const r = historyRounds.find(rr => rr.epoch === b.epoch);
+                    const pending = !r?.oracleCalled;
+                    const won = b.payout > b.amount;
+                    const tie = b.payout === b.amount && b.payout > 0;
+                    const canClaim = (won || tie) && !b.claimed;
+                    return (
+                      <div key={b.epoch} className="flex items-center justify-between px-3 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                            b.position === 'bull' ? 'bg-[#31D0AA]/10' : 'bg-[#ED4B9E]/10'
+                          }`}>
+                            {b.position === 'bull'
+                              ? <ArrowUp className="w-4 h-4 text-[#31D0AA]" />
+                              : <ArrowDown className="w-4 h-4 text-[#ED4B9E]" />}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[12px] font-bold" style={{ color: C.text }}>
+                                {b.position === 'bull' ? 'UP' : 'DOWN'}
+                              </span>
+                              <span className="text-[10px] font-mono" style={{ color: C.muted }}>#{b.epoch}</span>
+                              {!pending && r?.result && (
+                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                                  r.result === 'bull' ? 'bg-[#31D0AA]/10 text-[#31D0AA]'
+                                  : r.result === 'bear' ? 'bg-[#ED4B9E]/10 text-[#ED4B9E]'
+                                  : 'bg-[#F0B90B]/10 text-[#F0B90B]'
+                                }`}>
+                                  {r.result === 'bull' ? '↑ UP Won' : r.result === 'bear' ? '↓ DOWN Won' : 'Tie'}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[11px] font-mono" style={{ color: C.muted }}>{fmtSol(b.amount)} SOL</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {canClaim ? (
+                            <button
+                              onClick={() => handleClaim(b.epoch)}
+                              className="text-[11px] font-bold px-3 py-2 rounded-lg border active:scale-95 transition-all text-white"
+                              style={{ background: C.up, borderColor: 'rgba(49,208,170,0.3)' }}
+                            >
+                              {tie ? 'Refund' : `+${fmtSol(b.payout)}`}
+                            </button>
+                          ) : b.claimed ? (
+                            <span className="text-[10px] flex items-center gap-1 text-[#31D0AA]/60">
+                              <CheckCircle2 className="w-3 h-3" /> Done
+                            </span>
+                          ) : pending ? (
+                            <span className="text-[#F0B90B] bg-[#F0B90B]/10 px-2 py-1 rounded-md text-[10px] font-bold">Live</span>
+                          ) : won ? (
+                            <span className="text-[#31D0AA] text-[11px] font-mono">+{fmtSol(b.payout)}</span>
+                          ) : (
+                            <span className="text-[#ED4B9E]/70 text-[11px] font-mono">-{fmtSol(b.amount)}</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ═══ BOTTOM BAR ═══ */}
       <div className="shrink-0 relative z-10 border-t border-white/[0.06] pb-[env(safe-area-inset-bottom)]" style={{ background: `${C.cardDark}e6` }}>
-        {showHistory ? (
-          <HistoryPanel rounds={rounds} bets={myBets} onClaim={handleClaim} />
-        ) : (
           <div className="flex items-center justify-between px-3 sm:px-6 py-2 sm:py-3">
             {/* Left: Stats */}
             <div className="flex items-center gap-3 sm:gap-8 overflow-x-auto scrollbar-hide">
@@ -1039,7 +1283,6 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
               </div>
             </div>
           </div>
-        )}
       </div>
     </div>
   );
@@ -1058,168 +1301,6 @@ const StatPill: React.FC<{
     <div className="text-[12px] sm:text-[14px] font-bold font-mono tabular-nums whitespace-nowrap" style={{ color: color ?? C.text }}>{value}</div>
   </div>
 );
-
-
-const HistoryPanel: React.FC<{
-  rounds: DisplayRound[];
-  bets: DisplayBet[];
-  onClaim: (epoch: number) => void;
-}> = ({ rounds, bets, onClaim }) => {
-  const sorted = [...bets].sort((a, b) => b.epoch - a.epoch);
-
-  return (
-    <div className="max-h-[220px] overflow-y-auto">
-      {sorted.length === 0 ? (
-        <div className="text-center py-10">
-          <div className="w-12 h-12 rounded-xl border flex items-center justify-center mx-auto mb-3" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.05)' }}>
-            <History className="w-5 h-5" style={{ color: 'rgba(140,140,161,0.2)' }} />
-          </div>
-          <p className="text-[12px]" style={{ color: 'rgba(140,140,161,0.4)' }}>No predictions yet</p>
-          <p className="text-[10px] mt-1" style={{ color: 'rgba(140,140,161,0.25)' }}>Place your first prediction to see history</p>
-        </div>
-      ) : (
-        <>
-          {/* Desktop: table view */}
-          <table className="hidden sm:table w-full text-[11px]">
-            <thead className="sticky top-0" style={{ background: `${C.cardDark}f0` }}>
-              <tr style={{ color: 'rgba(140,140,161,0.5)' }} className="border-b border-white/[0.06]">
-                <th className="text-left px-5 py-2.5 font-medium">Round</th>
-                <th className="text-left px-2 py-2.5 font-medium">Position</th>
-                <th className="text-right px-2 py-2.5 font-medium">Amount</th>
-                <th className="text-center px-2 py-2.5 font-medium">Result</th>
-                <th className="text-right px-5 py-2.5 font-medium">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sorted.map(b => {
-                const r = rounds.find(rr => rr.epoch === b.epoch);
-                const pending = !r?.oracleCalled;
-                const won = b.payout > b.amount;
-                const tie = b.payout === b.amount && b.payout > 0;
-                return (
-                  <tr key={b.epoch} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
-                    <td className="px-5 py-3 font-mono" style={{ color: C.muted }}>#{b.epoch}</td>
-                    <td className="px-2 py-3">
-                      <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md ${
-                        b.position === 'bull' ? 'bg-[#31D0AA]/8 text-[#31D0AA]' : 'bg-[#ED4B9E]/8 text-[#ED4B9E]'
-                      }`}>
-                        {b.position === 'bull' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
-                        {b.position === 'bull' ? 'UP' : 'DOWN'}
-                      </span>
-                    </td>
-                    <td className="px-2 py-3 text-right font-mono" style={{ color: C.text }}>{fmtSol(b.amount)}</td>
-                    <td className="px-2 py-3 text-center">
-                      {pending ? (
-                        <span className="text-[#F0B90B] bg-[#F0B90B]/10 px-2 py-0.5 rounded-md text-[10px] font-medium">Live</span>
-                      ) : won ? (
-                        <span className="text-[#31D0AA] bg-[#31D0AA]/10 px-2 py-0.5 rounded-md text-[10px] font-medium">Won</span>
-                      ) : tie ? (
-                        <span className="text-[#F0B90B] bg-[#F0B90B]/10 px-2 py-0.5 rounded-md text-[10px] font-medium">Tie</span>
-                      ) : (
-                        <span className="text-[#ED4B9E] bg-[#ED4B9E]/10 px-2 py-0.5 rounded-md text-[10px] font-medium">Lost</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3 text-right">
-                      {(won || tie) && !b.claimed ? (
-                        <button
-                          onClick={() => onClaim(b.epoch)}
-                          className="text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all hover:brightness-110 border"
-                          style={{ color: C.up, background: 'rgba(49,208,170,0.1)', borderColor: 'rgba(49,208,170,0.15)' }}
-                        >
-                          {tie ? 'Refund' : 'Collect'}
-                        </button>
-                      ) : b.claimed ? (
-                        <span className="text-[10px] flex items-center justify-end gap-1" style={{ color: 'rgba(49,208,170,0.6)' }}>
-                          <CheckCircle2 className="w-3 h-3" /> Done
-                        </span>
-                      ) : pending ? (
-                        <span className="text-[10px]" style={{ color: 'rgba(140,140,161,0.3)' }}>—</span>
-                      ) : (
-                        <span className="text-[10px]" style={{ color: 'rgba(237,75,158,0.5)' }}>-{fmtSol(b.amount)}</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-
-          {/* Mobile: card view */}
-          <div className="sm:hidden flex flex-col divide-y divide-white/[0.04]">
-            {sorted.map(b => {
-              const r = rounds.find(rr => rr.epoch === b.epoch);
-              const pending = !r?.oracleCalled;
-              const won = b.payout > b.amount;
-              const tie = b.payout === b.amount && b.payout > 0;
-              return (
-                <div key={b.epoch} className="flex items-center justify-between px-3 py-2.5">
-                  {/* Left: direction + details */}
-                  <div className="flex items-center gap-2.5">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                      b.position === 'bull' ? 'bg-[#31D0AA]/10' : 'bg-[#ED4B9E]/10'
-                    }`}>
-                      {b.position === 'bull'
-                        ? <ArrowUp className="w-4 h-4 text-[#31D0AA]" />
-                        : <ArrowDown className="w-4 h-4 text-[#ED4B9E]" />}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[12px] font-bold" style={{ color: C.text }}>
-                          {b.position === 'bull' ? 'UP' : 'DOWN'}
-                        </span>
-                        <span className="text-[10px] font-mono" style={{ color: C.muted }}>#{b.epoch}</span>
-                      </div>
-                      <span className="text-[11px] font-mono" style={{ color: C.muted }}>{fmtSol(b.amount)} SOL</span>
-                    </div>
-                  </div>
-
-                  {/* Right: result + action */}
-                  <div className="flex items-center gap-2">
-                    {pending ? (
-                      <span className="text-[#F0B90B] bg-[#F0B90B]/10 px-2 py-1 rounded-md text-[10px] font-bold">Live</span>
-                    ) : won ? (
-                      (won || tie) && !b.claimed ? (
-                        <button
-                          onClick={() => onClaim(b.epoch)}
-                          className="text-[10px] font-bold px-3 py-1.5 rounded-lg border active:scale-95 transition-all"
-                          style={{ color: C.up, background: 'rgba(49,208,170,0.1)', borderColor: 'rgba(49,208,170,0.15)' }}
-                        >
-                          {tie ? 'Refund' : `+${fmtSol(b.payout)}`}
-                        </button>
-                      ) : b.claimed ? (
-                        <span className="text-[10px] flex items-center gap-1 text-[#31D0AA]/60">
-                          <CheckCircle2 className="w-3 h-3" /> Done
-                        </span>
-                      ) : (
-                        <span className="text-[#31D0AA] bg-[#31D0AA]/10 px-2 py-1 rounded-md text-[10px] font-bold">Won</span>
-                      )
-                    ) : tie ? (
-                      !b.claimed ? (
-                        <button
-                          onClick={() => onClaim(b.epoch)}
-                          className="text-[10px] font-bold px-3 py-1.5 rounded-lg border active:scale-95 transition-all"
-                          style={{ color: C.yellow, background: 'rgba(240,185,11,0.1)', borderColor: 'rgba(240,185,11,0.15)' }}
-                        >
-                          Refund
-                        </button>
-                      ) : (
-                        <span className="text-[10px] flex items-center gap-1 text-[#31D0AA]/60">
-                          <CheckCircle2 className="w-3 h-3" /> Done
-                        </span>
-                      )
-                    ) : (
-                      <span className="text-[#ED4B9E]/70 text-[10px] font-mono">-{fmtSol(b.amount)}</span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </>
-      )}
-    </div>
-  );
-};
 
 
 export default PredictionPage;
