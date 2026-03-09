@@ -255,7 +255,7 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
           <span className={`text-[10px] sm:text-[11px] font-bold transition-colors duration-500 ${
             upHighlight ? 'text-[#1a1b2e]/70' : 'text-[#8C8CA1]/50'
           }`}>
-            {upMulti > 0 ? `${upMulti.toFixed(2)}x` : '—'} Payout
+            {upMulti > 0 ? `${upMulti.toFixed(2)}x` : '—'} Payout · {fmtSol(round.bullAmount)} SOL
           </span>
           {bet?.position === 'bull' && (
             <span className={`text-[8px] font-bold mt-0.5 px-1.5 py-0.5 rounded-sm ${
@@ -583,7 +583,7 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
           <span className={`text-[10px] sm:text-[11px] font-bold transition-colors duration-500 ${
             downHighlight ? 'text-white/80' : 'text-[#8C8CA1]/50'
           }`}>
-            {downMulti > 0 ? `${downMulti.toFixed(2)}x` : '—'} Payout
+            {downMulti > 0 ? `${downMulti.toFixed(2)}x` : '—'} Payout · {fmtSol(round.bearAmount)} SOL
           </span>
           <span className={`text-[15px] sm:text-[18px] font-extrabold tracking-wider transition-colors duration-500 ${
             downHighlight ? 'text-white' : 'text-[#ED4B9E]/60'
