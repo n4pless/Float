@@ -220,12 +220,16 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
             style={{
               width: isGrace ? '100%' : `${Math.min(100, pct * 100)}%`,
               background: isGrace
-                ? 'linear-gradient(90deg, #F0B90B, #FFD54F)'
+                ? liveDir === 'bull' ? 'linear-gradient(90deg, #31D0AA, #5EECC4)'
+                : liveDir === 'bear' ? 'linear-gradient(90deg, #ED4B9E, #F77FBC)'
+                : `linear-gradient(90deg, ${C.purple}, #9a6ef5)`
                 : timeRemainingMs < 15000
                 ? 'linear-gradient(90deg, #ED4B9E, #ED4B9E)'
                 : `linear-gradient(90deg, ${C.purple}, #31D0AA)`,
               boxShadow: isGrace
-                ? '0 0 10px rgba(240,185,11,0.6)'
+                ? liveDir === 'bull' ? '0 0 10px rgba(49,208,170,0.6)'
+                : liveDir === 'bear' ? '0 0 10px rgba(237,75,158,0.6)'
+                : '0 0 10px rgba(118,69,217,0.6)'
                 : timeRemainingMs < 15000
                 ? '0 0 8px rgba(237,75,158,0.5)'
                 : `0 0 8px rgba(118,69,217,0.4)`,
@@ -265,9 +269,15 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
       {/* ═══ GRACE PERIOD — Big Sphere ═══ */}
       {isGrace && (
         <div className="flex flex-col items-center justify-center py-4 sm:py-6 flex-1 min-h-[220px] sm:min-h-[260px]">
-          <img src="/sphere.gif" alt="Closing" className="w-32 h-32 sm:w-44 sm:h-44 object-contain sphere-grace" />
-          <span className="text-[16px] sm:text-[20px] font-extrabold tracking-wide mt-3" style={{ color: '#F0B90B' }}>Closing Round</span>
-          <span className="text-[11px] sm:text-[12px] font-medium mt-1" style={{ color: 'rgba(240,185,11,0.5)' }}>Locking prices...</span>
+          <img src="/sphere.gif" alt="Closing" className={`w-32 h-32 sm:w-44 sm:h-44 object-contain ${
+            liveDir === 'bull' ? 'sphere-grace-up' : liveDir === 'bear' ? 'sphere-grace-down' : 'sphere-grace-neutral'
+          }`} />
+          <span className={`text-[16px] sm:text-[20px] font-extrabold tracking-wide mt-3 ${
+            liveDir === 'bull' ? 'text-[#31D0AA]' : liveDir === 'bear' ? 'text-[#ED4B9E]' : 'text-[#7645D9]'
+          }`}>Closing Round</span>
+          <span className={`text-[11px] sm:text-[12px] font-medium mt-1 ${
+            liveDir === 'bull' ? 'text-[#31D0AA]/50' : liveDir === 'bear' ? 'text-[#ED4B9E]/50' : 'text-[#7645D9]/50'
+          }`}>Locking prices...</span>
           {bet && (
             <div className={`mt-3 flex items-center gap-2 px-3 py-1.5 rounded-lg border ${
               bet.position === 'bull' ? 'border-[#31D0AA]/20 bg-[#31D0AA]/5' : 'border-[#ED4B9E]/20 bg-[#ED4B9E]/5'
@@ -732,6 +742,10 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
   const liveRound = rounds.find(r => r.status === 'live');
   const intervalMs = (game?.intervalSeconds ?? 300) * 1000;
   const pct = liveRound ? Math.max(0, (liveRound.closeTimestamp * 1000 - Date.now()) / intervalMs) : 0;
+  const pageLiveDir = liveRound && liveRound.lockPrice > 0 && livePrice > 0
+    ? (livePrice > liveRound.lockPrice ? 'bull' : livePrice < liveRound.lockPrice ? 'bear' : null)
+    : null;
+  const graceColor = pageLiveDir === 'bull' ? '#31D0AA' : pageLiveDir === 'bear' ? '#ED4B9E' : '#7645D9';
 
   const notReady = !game || !game.genesisStart;
 
@@ -812,13 +826,21 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
         .shield-glow-down {
           filter: drop-shadow(0 -4px 12px rgba(237,75,158,0.35)) drop-shadow(0 -2px 6px rgba(237,75,158,0.2));
         }
-        @keyframes sphere-float {
-          0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 12px rgba(240,185,11,0.5)) drop-shadow(0 0 30px rgba(240,185,11,0.2)); }
-          50% { transform: translateY(-4px); filter: drop-shadow(0 0 20px rgba(240,185,11,0.7)) drop-shadow(0 0 45px rgba(240,185,11,0.35)); }
+        @keyframes sphere-float-up {
+          0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 14px rgba(49,208,170,0.5)) drop-shadow(0 0 30px rgba(49,208,170,0.2)); }
+          50% { transform: translateY(-4px); filter: drop-shadow(0 0 22px rgba(49,208,170,0.8)) drop-shadow(0 0 45px rgba(49,208,170,0.35)); }
         }
-        .sphere-grace {
-          animation: sphere-float 1.8s ease-in-out infinite;
+        @keyframes sphere-float-down {
+          0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 14px rgba(237,75,158,0.5)) drop-shadow(0 0 30px rgba(237,75,158,0.2)); }
+          50% { transform: translateY(-4px); filter: drop-shadow(0 0 22px rgba(237,75,158,0.8)) drop-shadow(0 0 45px rgba(237,75,158,0.35)); }
         }
+        @keyframes sphere-float-neutral {
+          0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 14px rgba(118,69,217,0.5)) drop-shadow(0 0 30px rgba(118,69,217,0.2)); }
+          50% { transform: translateY(-4px); filter: drop-shadow(0 0 22px rgba(118,69,217,0.8)) drop-shadow(0 0 45px rgba(118,69,217,0.35)); }
+        }
+        .sphere-grace-up { animation: sphere-float-up 1.8s ease-in-out infinite; }
+        .sphere-grace-down { animation: sphere-float-down 1.8s ease-in-out infinite; }
+        .sphere-grace-neutral { animation: sphere-float-neutral 1.8s ease-in-out infinite; }
         @keyframes grace-bar-pulse {
           0%, 100% { opacity: 0.7; }
           50% { opacity: 1; }
@@ -833,8 +855,8 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
           background-size: 24px 24px;
         }
         @keyframes grace-glow-card {
-          0%, 100% { box-shadow: 0 0 15px rgba(240,185,11,0.4), 0 0 30px rgba(240,185,11,0.12); border-color: #F0B90B; }
-          50% { box-shadow: 0 0 28px rgba(240,185,11,0.65), 0 0 55px rgba(240,185,11,0.25); border-color: #FFD54F; }
+          0%, 100% { box-shadow: 0 0 15px rgba(118,69,217,0.4), 0 0 30px rgba(118,69,217,0.12); border-color: #7645D9; }
+          50% { box-shadow: 0 0 28px rgba(118,69,217,0.65), 0 0 55px rgba(118,69,217,0.25); border-color: #9a6ef5; }
         }
         .live-card-glow-grace {
           animation: grace-glow-card 1.6s ease-in-out infinite;
@@ -921,16 +943,16 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
             className="flex items-center gap-2.5 sm:gap-4 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl border"
             style={{
               background: timeRemainingMs <= 0
-                ? 'rgba(60,50,30,0.6)'
+                ? `rgba(${pageLiveDir === 'bull' ? '49,208,170' : pageLiveDir === 'bear' ? '237,75,158' : '118,69,217'},0.08)`
                 : 'rgba(53,53,71,0.55)',
               borderColor: timeRemainingMs <= 0
-                ? 'rgba(240,185,11,0.4)'
+                ? `rgba(${pageLiveDir === 'bull' ? '49,208,170' : pageLiveDir === 'bear' ? '237,75,158' : '118,69,217'},0.4)`
                 : timeRemainingMs < 15000
                 ? 'rgba(237,75,158,0.35)'
                 : 'rgba(118,69,217,0.25)',
               backdropFilter: 'blur(12px)',
               boxShadow: timeRemainingMs <= 0
-                ? '0 0 25px rgba(240,185,11,0.2), 0 0 50px rgba(240,185,11,0.08)'
+                ? `0 0 25px rgba(${pageLiveDir === 'bull' ? '49,208,170' : pageLiveDir === 'bear' ? '237,75,158' : '118,69,217'},0.2), 0 0 50px rgba(${pageLiveDir === 'bull' ? '49,208,170' : pageLiveDir === 'bear' ? '237,75,158' : '118,69,217'},0.08)`
                 : timeRemainingMs < 15000
                 ? '0 0 20px rgba(237,75,158,0.15)'
                 : '0 0 20px rgba(118,69,217,0.1)',
@@ -938,7 +960,9 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
           >
             {/* Clock / Flame / Sphere icon */}
             {timeRemainingMs <= 0
-              ? <img src="/sphere.gif" alt="closing" className="w-14 h-14 sm:w-18 sm:h-18 object-contain sphere-grace" />
+              ? <img src="/sphere.gif" alt="closing" className={`w-14 h-14 sm:w-18 sm:h-18 object-contain ${
+                  pageLiveDir === 'bull' ? 'sphere-grace-up' : pageLiveDir === 'bear' ? 'sphere-grace-down' : 'sphere-grace-neutral'
+                }`} />
               : timeRemainingMs < 15000
               ? <Flame className="w-14 h-14 sm:w-16 sm:h-16 text-[#ED4B9E] animate-pulse" />
               : <img src="/clock.png" alt="clock" className="w-16 h-16 sm:w-20 sm:h-20 object-contain scale-[1.8]" />
@@ -950,15 +974,15 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
                 /* ── Grace period state ── */
                 <>
                   <div className="flex items-center gap-1.5 sm:gap-2">
-                    <span className="text-[20px] sm:text-[28px] font-extrabold tracking-tight leading-none" style={{ color: '#F0B90B' }}>
+                    <span className="text-[20px] sm:text-[28px] font-extrabold tracking-tight leading-none" style={{ color: graceColor }}>
                       Closing
                     </span>
-                    <div className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-md" style={{ background: 'rgba(240,185,11,0.12)' }}>
-                      <div className="w-1.5 h-1.5 rounded-full bg-[#F0B90B] animate-pulse" />
-                      <span className="text-[9px] sm:text-[10px] font-bold text-[#F0B90B] tracking-wide">GRACE</span>
+                    <div className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-md" style={{ background: `${graceColor}1F` }}>
+                      <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: graceColor }} />
+                      <span className="text-[9px] sm:text-[10px] font-bold tracking-wide" style={{ color: graceColor }}>GRACE</span>
                     </div>
                   </div>
-                  <span className="text-[10px] sm:text-[11px] font-medium mt-0.5" style={{ color: '#F0B90B80' }}>
+                  <span className="text-[10px] sm:text-[11px] font-medium mt-0.5" style={{ color: `${graceColor}80` }}>
                     #{liveRound.epoch} · Locking prices...
                   </span>
                 </>
