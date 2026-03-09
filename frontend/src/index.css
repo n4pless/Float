@@ -319,7 +319,12 @@ input[type="range"]::-moz-range-thumb {
 }
 
 /* ── Dropdown (connected wallet menu) ── */
+.wallet-adapter-dropdown {
+  position: static !important;
+}
 .wallet-adapter-dropdown-list {
+  position: fixed !important;
+  z-index: 9999 !important;
   background: var(--bg-surface) !important;
   border: 1px solid var(--border-default) !important;
   border-radius: 12px !important;

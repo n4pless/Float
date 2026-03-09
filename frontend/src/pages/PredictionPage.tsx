@@ -739,7 +739,7 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
       `}</style>
 
       {/* ═══ TOP BAR ═══ */}
-      <div className="shrink-0 relative z-10 border-b border-white/[0.06]" style={{ background: `${C.cardDark}e6` }}>
+      <div className="shrink-0 relative z-50 border-b border-white/[0.06]" style={{ background: `${C.cardDark}e6` }}>
         <div className="flex items-center justify-between px-3 sm:px-6 py-2 sm:py-3">
 
           {/* Left: Logo + Back + SOL Price Ticker */}
@@ -799,7 +799,7 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
             </button>
 
             {/* Wallet — compact on mobile */}
-            <div className="[&_.wallet-adapter-button]:!h-8 [&_.wallet-adapter-button]:!rounded-lg [&_.wallet-adapter-button]:!text-[11px] [&_.wallet-adapter-button]:!font-semibold [&_.wallet-adapter-button]:!bg-[#7645D9]/20 [&_.wallet-adapter-button]:!border [&_.wallet-adapter-button]:!border-[#7645D9]/30 [&_.wallet-adapter-button]:hover:!bg-[#7645D9]/30 [&_.wallet-adapter-button]:!px-2.5 sm:[&_.wallet-adapter-button]:!h-9 sm:[&_.wallet-adapter-button]:!rounded-xl sm:[&_.wallet-adapter-button]:!text-[12px] sm:[&_.wallet-adapter-button]:!px-3">
+            <div className="relative z-[100] [&_.wallet-adapter-button]:!h-8 [&_.wallet-adapter-button]:!rounded-lg [&_.wallet-adapter-button]:!text-[11px] [&_.wallet-adapter-button]:!font-semibold [&_.wallet-adapter-button]:!bg-[#7645D9]/20 [&_.wallet-adapter-button]:!border [&_.wallet-adapter-button]:!border-[#7645D9]/30 [&_.wallet-adapter-button]:hover:!bg-[#7645D9]/30 [&_.wallet-adapter-button]:!px-2.5 sm:[&_.wallet-adapter-button]:!h-9 sm:[&_.wallet-adapter-button]:!rounded-xl sm:[&_.wallet-adapter-button]:!text-[12px] sm:[&_.wallet-adapter-button]:!px-3 [&_.wallet-adapter-dropdown]:!z-[100]">
               <WalletMultiButton />
             </div>
           </div>
