@@ -176,7 +176,11 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
     >
 
       {/* ═══ HEADER STRIP ═══ */}
-      <div className="flex items-center justify-between px-4 py-2" style={{ background: C.card }}>
+      <div className="flex items-center justify-between px-4 py-2" style={{
+        background: isExpired && round.result === 'bull' ? 'rgba(49,208,170,0.15)'
+          : isExpired && round.result === 'bear' ? 'rgba(237,75,158,0.15)'
+          : C.card
+      }}>
         <div className="flex items-center gap-1.5">
           {isLive && <div className="w-2 h-2 rounded-full bg-[#31D0AA] animate-pulse" />}
           {isNext && <div className="w-2 h-2 rounded-full bg-[#7645D9] animate-pulse" />}
@@ -313,6 +317,32 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
         {/* ── EXPIRED Content ── */}
         {isExpired && (
           <div className="flex-1 flex flex-col justify-center space-y-2">
+            {/* BIG RESULT BANNER */}
+            <div className={`flex items-center justify-center gap-2 py-2 -mx-1 rounded-lg ${
+              round.result === 'bull'
+                ? 'bg-[#31D0AA]/15 border border-[#31D0AA]/30'
+                : round.result === 'bear'
+                ? 'bg-[#ED4B9E]/15 border border-[#ED4B9E]/30'
+                : 'bg-[#8C8CA1]/10 border border-[#8C8CA1]/20'
+            }`}>
+              {round.result === 'bull'
+                ? <ArrowUp className="w-5 h-5 text-[#31D0AA]" />
+                : round.result === 'bear'
+                ? <ArrowDown className="w-5 h-5 text-[#ED4B9E]" />
+                : null}
+              <span className={`text-[14px] sm:text-[16px] font-extrabold tracking-wide ${
+                round.result === 'bull' ? 'text-[#31D0AA]'
+                : round.result === 'bear' ? 'text-[#ED4B9E]'
+                : 'text-[#8C8CA1]'
+              }`}>
+                {round.result === 'bull' ? 'UP WON' : round.result === 'bear' ? 'DOWN WON' : 'TIE'}
+              </span>
+              {round.result === 'bull'
+                ? <ArrowUp className="w-5 h-5 text-[#31D0AA]" />
+                : round.result === 'bear'
+                ? <ArrowDown className="w-5 h-5 text-[#ED4B9E]" />
+                : null}
+            </div>
             <div className="text-[10px] text-[#8C8CA1] uppercase tracking-wider font-medium">Closed Price</div>
             <div className={`text-[20px] sm:text-[24px] font-extrabold font-mono tabular-nums leading-none ${
               round.result === 'bull' ? 'text-[#31D0AA]' : round.result === 'bear' ? 'text-[#ED4B9E]' : 'text-[#F4EEFF]'
@@ -674,10 +704,10 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
   const notReady = !game || !game.genesisStart;
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.bgDark} 100%)` }}>
+    <div className="flex-1 flex flex-col min-h-0 relative" style={{ background: `linear-gradient(180deg, ${C.bg} 0%, ${C.bgDark} 100%)` }}>
 
       {/* ═══ Background decorations ═══ */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
         {/* Subtle grid */}
         <div className="absolute inset-0 opacity-[0.025]" style={{
           backgroundImage: 'linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px)',
@@ -753,7 +783,7 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
       `}</style>
 
       {/* ═══ TOP BAR ═══ */}
-      <div className="shrink-0 relative z-50 border-b border-white/[0.06]" style={{ background: `${C.cardDark}e6` }}>
+      <div className="shrink-0 relative z-50 border-b border-white/[0.06] overflow-visible" style={{ background: `${C.cardDark}e6` }}>
         <div className="flex items-center justify-between px-3 sm:px-6 py-2 sm:py-3">
 
           {/* Left: Logo + Back + SOL Price Ticker */}
@@ -817,7 +847,7 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
             </button>
 
             {/* Wallet — compact on mobile */}
-            <div className="relative z-[100] [&_.wallet-adapter-button]:!h-8 [&_.wallet-adapter-button]:!rounded-lg [&_.wallet-adapter-button]:!text-[11px] [&_.wallet-adapter-button]:!font-semibold [&_.wallet-adapter-button]:!bg-[#7645D9]/20 [&_.wallet-adapter-button]:!border [&_.wallet-adapter-button]:!border-[#7645D9]/30 [&_.wallet-adapter-button]:hover:!bg-[#7645D9]/30 [&_.wallet-adapter-button]:!px-2.5 sm:[&_.wallet-adapter-button]:!h-9 sm:[&_.wallet-adapter-button]:!rounded-xl sm:[&_.wallet-adapter-button]:!text-[12px] sm:[&_.wallet-adapter-button]:!px-3 [&_.wallet-adapter-dropdown]:!z-[100]">
+            <div className="relative z-[100] overflow-visible [&_.wallet-adapter-button]:!h-8 [&_.wallet-adapter-button]:!rounded-lg [&_.wallet-adapter-button]:!text-[11px] [&_.wallet-adapter-button]:!font-semibold [&_.wallet-adapter-button]:!bg-[#7645D9]/20 [&_.wallet-adapter-button]:!border [&_.wallet-adapter-button]:!border-[#7645D9]/30 [&_.wallet-adapter-button]:hover:!bg-[#7645D9]/30 [&_.wallet-adapter-button]:!px-2.5 sm:[&_.wallet-adapter-button]:!h-9 sm:[&_.wallet-adapter-button]:!rounded-xl sm:[&_.wallet-adapter-button]:!text-[12px] sm:[&_.wallet-adapter-button]:!px-3 [&_.wallet-adapter-dropdown]:!z-[9999] [&_.wallet-adapter-dropdown-list]:!z-[9999]">
               <WalletMultiButton />
             </div>
           </div>
