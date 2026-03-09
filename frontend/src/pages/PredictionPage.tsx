@@ -111,6 +111,7 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
   const isExpired = status === 'expired';
   const isLater = status === 'later';
   const isCalc = status === 'calculating';
+  const isGrace = isLive && timeRemainingMs <= 0;
 
   const total = round.bullAmount + round.bearAmount;
   const upMulti = total > 0 && round.bullAmount > 0 ? (total / round.bullAmount) : 0;
@@ -158,7 +159,9 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
   const isLiveGlow = isLive;
   const isMuted = isExpired || isLater;
   const liveGlowClass = isLiveGlow
-    ? liveDir === 'bull'
+    ? isGrace
+      ? 'live-card-glow-grace border-2'
+      : liveDir === 'bull'
       ? 'live-card-glow-up border-2'
       : liveDir === 'bear'
       ? 'live-card-glow-down border-2'
@@ -179,12 +182,14 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
 
       {/* ═══ HEADER STRIP ═══ */}
       <div className="flex items-center justify-between px-4 py-2" style={{
-        background: isExpired && round.result === 'bull' ? 'rgba(49,208,170,0.15)'
+        background: isGrace ? 'rgba(240,185,11,0.12)'
+          : isExpired && round.result === 'bull' ? 'rgba(49,208,170,0.15)'
           : isExpired && round.result === 'bear' ? 'rgba(237,75,158,0.15)'
           : C.card
       }}>
         <div className="flex items-center gap-1.5">
-          {isLive && <div className="w-2 h-2 rounded-full bg-[#31D0AA] animate-pulse" />}
+          {isLive && !isGrace && <div className="w-2 h-2 rounded-full bg-[#31D0AA] animate-pulse" />}
+          {isGrace && <img src="/sphere.gif" alt="" className="w-4 h-4 object-contain" />}
           {isNext && <div className="w-2 h-2 rounded-full bg-[#7645D9] animate-pulse" />}
           {isCalc && <Loader2 className="w-3 h-3 text-[#F0B90B] animate-spin" />}
           {isLater && <div className="w-2 h-2 rounded-full bg-[#8C8CA1]/40" />}
@@ -196,12 +201,13 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
               : <CheckCircle2 className="w-3 h-3 text-[#8C8CA1]/40" />
           )}
           <span className={`text-[11px] font-bold tracking-wide ${
-            isLive ? 'text-[#31D0AA]' : isNext ? 'text-[#7645D9]' : isCalc ? 'text-[#F0B90B]'
+            isGrace ? 'text-[#F0B90B]'
+            : isLive ? 'text-[#31D0AA]' : isNext ? 'text-[#7645D9]' : isCalc ? 'text-[#F0B90B]'
             : isExpired && round.result === 'bull' ? 'text-[#31D0AA]'
             : isExpired && round.result === 'bear' ? 'text-[#ED4B9E]'
             : 'text-[#8C8CA1]'
           }`}>
-            {isLive ? 'LIVE' : isNext ? 'Next' : isCalc ? 'Calculating'
+            {isGrace ? 'CLOSING...' : isLive ? 'LIVE' : isNext ? 'Next' : isCalc ? 'Calculating'
               : isExpired && round.result === 'bull' ? 'UP Won'
               : isExpired && round.result === 'bear' ? 'DOWN Won'
               : isExpired ? 'Expired'
@@ -215,13 +221,17 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
       {isLive && (
         <div className="w-full h-[3px] relative" style={{ background: 'rgba(255,255,255,0.06)' }}>
           <div
-            className="h-full transition-all duration-1000 rounded-r-full"
+            className={`h-full rounded-r-full ${isGrace ? 'grace-bar' : 'transition-all duration-1000'}`}
             style={{
-              width: `${Math.min(100, pct * 100)}%`,
-              background: timeRemainingMs < 15000
+              width: isGrace ? '100%' : `${Math.min(100, pct * 100)}%`,
+              background: isGrace
+                ? 'linear-gradient(90deg, #F0B90B, #FFD54F)'
+                : timeRemainingMs < 15000
                 ? 'linear-gradient(90deg, #ED4B9E, #ED4B9E)'
                 : `linear-gradient(90deg, ${C.purple}, #31D0AA)`,
-              boxShadow: timeRemainingMs < 15000
+              boxShadow: isGrace
+                ? '0 0 10px rgba(240,185,11,0.6)'
+                : timeRemainingMs < 15000
                 ? '0 0 8px rgba(237,75,158,0.5)'
                 : `0 0 8px rgba(118,69,217,0.4)`,
             }}
@@ -782,6 +792,34 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
         .shield-glow-down {
           filter: drop-shadow(0 -4px 12px rgba(237,75,158,0.35)) drop-shadow(0 -2px 6px rgba(237,75,158,0.2));
         }
+        @keyframes sphere-float {
+          0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 12px rgba(240,185,11,0.5)) drop-shadow(0 0 30px rgba(240,185,11,0.2)); }
+          50% { transform: translateY(-4px); filter: drop-shadow(0 0 20px rgba(240,185,11,0.7)) drop-shadow(0 0 45px rgba(240,185,11,0.35)); }
+        }
+        .sphere-grace {
+          animation: sphere-float 1.8s ease-in-out infinite;
+        }
+        @keyframes grace-bar-pulse {
+          0%, 100% { opacity: 0.7; }
+          50% { opacity: 1; }
+        }
+        @keyframes grace-bar-stripe {
+          0% { background-position: 0 0; }
+          100% { background-position: 24px 0; }
+        }
+        .grace-bar {
+          animation: grace-bar-pulse 1.2s ease-in-out infinite, grace-bar-stripe 0.6s linear infinite;
+          background-image: linear-gradient(45deg, rgba(255,255,255,0.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.15) 75%, transparent 75%, transparent);
+          background-size: 24px 24px;
+        }
+        @keyframes grace-glow-card {
+          0%, 100% { box-shadow: 0 0 15px rgba(240,185,11,0.4), 0 0 30px rgba(240,185,11,0.12); border-color: #F0B90B; }
+          50% { box-shadow: 0 0 28px rgba(240,185,11,0.65), 0 0 55px rgba(240,185,11,0.25); border-color: #FFD54F; }
+        }
+        .live-card-glow-grace {
+          animation: grace-glow-card 1.6s ease-in-out infinite;
+          border-color: #F0B90B;
+        }
       `}</style>
 
       {/* ═══ TOP BAR ═══ */}
@@ -862,39 +900,68 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
           <div
             className="flex items-center gap-2.5 sm:gap-4 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl border"
             style={{
-              background: 'rgba(53,53,71,0.55)',
-              borderColor: timeRemainingMs < 15000
+              background: timeRemainingMs <= 0
+                ? 'rgba(60,50,30,0.6)'
+                : 'rgba(53,53,71,0.55)',
+              borderColor: timeRemainingMs <= 0
+                ? 'rgba(240,185,11,0.4)'
+                : timeRemainingMs < 15000
                 ? 'rgba(237,75,158,0.35)'
                 : 'rgba(118,69,217,0.25)',
               backdropFilter: 'blur(12px)',
-              boxShadow: timeRemainingMs < 15000
+              boxShadow: timeRemainingMs <= 0
+                ? '0 0 25px rgba(240,185,11,0.2), 0 0 50px rgba(240,185,11,0.08)'
+                : timeRemainingMs < 15000
                 ? '0 0 20px rgba(237,75,158,0.15)'
                 : '0 0 20px rgba(118,69,217,0.1)',
             }}
           >
-            {/* Clock / Flame icon */}
-            {timeRemainingMs < 15000
+            {/* Clock / Flame / Sphere icon */}
+            {timeRemainingMs <= 0
+              ? <img src="/sphere.gif" alt="closing" className="w-14 h-14 sm:w-18 sm:h-18 object-contain sphere-grace" />
+              : timeRemainingMs < 15000
               ? <Flame className="w-14 h-14 sm:w-16 sm:h-16 text-[#ED4B9E] animate-pulse" />
               : <img src="/clock.png" alt="clock" className="w-16 h-16 sm:w-20 sm:h-20 object-contain scale-[1.8]" />
             }
 
             {/* Time display */}
             <div className="flex flex-col items-start">
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <span
-                  className="text-[22px] sm:text-[32px] font-extrabold font-mono tabular-nums leading-none"
-                  style={{ color: timeRemainingMs < 15000 ? C.down : C.text }}
-                >
-                  {fmt(timeRemainingMs)}
-                </span>
-                <div className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-md" style={{ background: 'rgba(49,208,170,0.1)' }}>
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#31D0AA] animate-pulse" />
-                  <span className="text-[9px] sm:text-[10px] font-bold text-[#31D0AA] tracking-wide">LIVE</span>
-                </div>
-              </div>
-              <span className="text-[10px] sm:text-[11px] font-medium mt-0.5" style={{ color: C.muted }}>
-                #{liveRound.epoch} · {Math.floor((game?.intervalSeconds ?? 300) / 60)}m rounds
-              </span>
+              {timeRemainingMs <= 0 ? (
+                /* ── Grace period state ── */
+                <>
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <span className="text-[20px] sm:text-[28px] font-extrabold tracking-tight leading-none" style={{ color: '#F0B90B' }}>
+                      Closing
+                    </span>
+                    <div className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-md" style={{ background: 'rgba(240,185,11,0.12)' }}>
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#F0B90B] animate-pulse" />
+                      <span className="text-[9px] sm:text-[10px] font-bold text-[#F0B90B] tracking-wide">GRACE</span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] sm:text-[11px] font-medium mt-0.5" style={{ color: '#F0B90B80' }}>
+                    #{liveRound.epoch} · Locking prices...
+                  </span>
+                </>
+              ) : (
+                /* ── Normal timer state ── */
+                <>
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <span
+                      className="text-[22px] sm:text-[32px] font-extrabold font-mono tabular-nums leading-none"
+                      style={{ color: timeRemainingMs < 15000 ? C.down : C.text }}
+                    >
+                      {fmt(timeRemainingMs)}
+                    </span>
+                    <div className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-md" style={{ background: 'rgba(49,208,170,0.1)' }}>
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#31D0AA] animate-pulse" />
+                      <span className="text-[9px] sm:text-[10px] font-bold text-[#31D0AA] tracking-wide">LIVE</span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] sm:text-[11px] font-medium mt-0.5" style={{ color: C.muted }}>
+                    #{liveRound.epoch} · {Math.floor((game?.intervalSeconds ?? 300) / 60)}m rounds
+                  </span>
+                </>
+              )}
             </div>
           </div>
         </div>
