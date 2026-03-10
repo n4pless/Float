@@ -1028,25 +1028,25 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
       {/* ═══ CARDS CAROUSEL ═══ */}
       <div className="flex-1 flex flex-col min-h-0 relative z-10">
 
-        {/* Nav arrows above cards */}
-        <div className="shrink-0 flex items-center justify-center gap-3 pt-0 pb-1">
+        {/* Nav arrows + Float logo above cards */}
+        <div className="shrink-0 flex items-center justify-center gap-4 pt-1 pb-2">
           <button
             onClick={() => scroll('left')}
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-[#8C8CA1] hover:text-[#F4EEFF] transition-all hover:scale-105"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-[#8C8CA1] hover:text-[#F4EEFF] transition-all hover:scale-110 active:scale-95"
             style={{ background: 'rgba(255,255,255,0.06)' }}
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <button
             onClick={() => scrollToLive('smooth')}
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all hover:scale-105"
-            style={{ background: 'rgba(118,69,217,0.15)', color: C.purple }}
+            className="flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+            title="Go to live round"
           >
-            <Flame className="w-4 h-4" />
+            <img src="/float-logo-v2.svg" alt="Float" className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg shadow-lg shadow-purple-500/30 drop-shadow-[0_0_6px_rgba(118,69,217,0.4)]" />
           </button>
           <button
             onClick={() => scroll('right')}
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-[#8C8CA1] hover:text-[#F4EEFF] transition-all hover:scale-105"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-[#8C8CA1] hover:text-[#F4EEFF] transition-all hover:scale-110 active:scale-95"
             style={{ background: 'rgba(255,255,255,0.06)' }}
           >
             <ChevronRight className="w-5 h-5" />
