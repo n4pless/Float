@@ -28,7 +28,6 @@ const DISC = {
   // Instructions
   bet_bull: new Uint8Array([7, 162, 183, 202, 139, 162, 235, 55]),
   bet_bear: new Uint8Array([185, 134, 109, 63, 188, 166, 162, 105]),
-  add_position: new Uint8Array([87, 116, 106, 156, 24, 216, 38, 243]),
   claim:    new Uint8Array([62, 198, 214, 193, 213, 159, 108, 210]),
   pause:    new Uint8Array([211, 22, 221, 251, 74, 121, 193, 47]),
   unpause:  new Uint8Array([169, 144, 4, 38, 10, 141, 188, 255]),
@@ -213,33 +212,6 @@ export function buildBetBearIx(
   const [userBet] = betPDA(epoch, user);
   const data = Buffer.concat([
     Buffer.from(DISC.bet_bear),
-    u64LE(epoch),
-    u64LE(amountLamports),
-  ]);
-  return new TransactionInstruction({
-    programId: PREDICTION_PROGRAM_ID,
-    keys: [
-      { pubkey: game,                    isSigner: false, isWritable: true  },
-      { pubkey: round,                   isSigner: false, isWritable: true  },
-      { pubkey: userBet,                 isSigner: false, isWritable: true  },
-      { pubkey: user,                    isSigner: true,  isWritable: true  },
-      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-    ],
-    data,
-  });
-}
-
-/** Build an add_position instruction (add SOL to existing bet, same direction) */
-export function buildAddPositionIx(
-  user: PublicKey,
-  epoch: number,
-  amountLamports: number,
-): TransactionInstruction {
-  const [game] = gamePDA();
-  const [round] = roundPDA(epoch);
-  const [userBet] = betPDA(epoch, user);
-  const data = Buffer.concat([
-    Buffer.from(DISC.add_position),
     u64LE(epoch),
     u64LE(amountLamports),
   ]);

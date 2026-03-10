@@ -238,11 +238,6 @@ pub mod prediction {
         _place_bet(ctx, epoch, amount, 1)
     }
 
-    /// Add more SOL to an existing position (same direction only).
-    pub fn add_position(ctx: Context<AddPosition>, epoch: u64, amount: u64) -> Result<()> {
-        _add_position(ctx, epoch, amount)
-    }
-
     /// Claim winnings (or refund) from a closed round.
     pub fn claim(ctx: Context<Claim>, epoch: u64) -> Result<()> {
         let round = &ctx.accounts.round;
@@ -306,59 +301,6 @@ pub mod prediction {
 /* ═══════════════════════════════════════════════════
    Helper
    ═══════════════════════════════════════════════════ */
-
-fn _add_position(ctx: Context<AddPosition>, epoch: u64, amount: u64) -> Result<()> {
-    let g = &ctx.accounts.game;
-    require!(!g.paused, PredError::Paused);
-    require!(amount >= g.min_bet_amount, PredError::BetTooSmall);
-
-    let round = &mut ctx.accounts.round;
-    require!(round.epoch == epoch, PredError::InvalidEpoch);
-
-    let ts = Clock::get()?.unix_timestamp;
-    require!(ts < round.lock_timestamp, PredError::BettingClosed);
-
-    // Transfer SOL from user → game vault
-    system_program::transfer(
-        CpiContext::new(
-            ctx.accounts.system_program.to_account_info(),
-            system_program::Transfer {
-                from: ctx.accounts.user.to_account_info(),
-                to: ctx.accounts.game.to_account_info(),
-            },
-        ),
-        amount,
-    )?;
-
-    round.total_amount = round
-        .total_amount
-        .checked_add(amount)
-        .ok_or(error!(PredError::Overflow))?;
-
-    let position = ctx.accounts.user_bet.position;
-    if position == 0 {
-        round.bull_amount = round
-            .bull_amount
-            .checked_add(amount)
-            .ok_or(error!(PredError::Overflow))?;
-    } else {
-        round.bear_amount = round
-            .bear_amount
-            .checked_add(amount)
-            .ok_or(error!(PredError::Overflow))?;
-    }
-
-    let b = &mut ctx.accounts.user_bet;
-    b.amount = b.amount.checked_add(amount).ok_or(error!(PredError::Overflow))?;
-
-    emit!(BetEvent {
-        user: ctx.accounts.user.key(),
-        epoch,
-        amount,
-        position,
-    });
-    Ok(())
-}
 
 fn _place_bet(ctx: Context<PlaceBet>, epoch: u64, amount: u64, position: u8) -> Result<()> {
     let g = &ctx.accounts.game;
@@ -520,29 +462,10 @@ pub struct PlaceBet<'info> {
     #[account(mut, seeds = [b"round", epoch.to_le_bytes().as_ref()], bump = round.bump)]
     pub round: Account<'info, Round>,
     #[account(
-        init, payer = user,
+        init_if_needed, payer = user,
         space = 8 + UserBet::INIT_SPACE,
         seeds = [b"bet", epoch.to_le_bytes().as_ref(), user.key().as_ref()],
         bump,
-    )]
-    pub user_bet: Account<'info, UserBet>,
-    #[account(mut)]
-    pub user: Signer<'info>,
-    pub system_program: Program<'info, System>,
-}
-
-#[derive(Accounts)]
-#[instruction(epoch: u64)]
-pub struct AddPosition<'info> {
-    #[account(mut, seeds = [b"game"], bump = game.bump)]
-    pub game: Account<'info, Game>,
-    #[account(mut, seeds = [b"round", epoch.to_le_bytes().as_ref()], bump = round.bump)]
-    pub round: Account<'info, Round>,
-    #[account(
-        mut,
-        seeds = [b"bet", epoch.to_le_bytes().as_ref(), user.key().as_ref()],
-        bump = user_bet.bump,
-        has_one = user,
     )]
     pub user_bet: Account<'info, UserBet>,
     #[account(mut)]
@@ -699,4 +622,6 @@ pub enum PredError {
     InvalidTreasury,
     #[msg("Paused")]
     Paused,
+    #[msg("Cannot switch bet direction — add to same side only")]
+    CannotSwitchPosition,
 }
