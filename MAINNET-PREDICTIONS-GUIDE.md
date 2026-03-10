@@ -115,14 +115,14 @@ You'll also need a **mainnet RPC** endpoint. Options:
 
 ## Step 1 — Fund the Admin Wallet
 
-The admin wallet needs **~4 SOL** to cover:
+The admin wallet needs **~3 SOL** to cover:
 - Program deployment rent: ~2.1 SOL (for 295KB program)
 - Transaction fees: ~0.01 SOL
 - Game initialization rent: ~0.003 SOL
 - Buffer for first few rounds: ~0.05 SOL
-- Remaining stays as operating balance
+- Remaining stays as operating balance (self-sustaining with rent reclaim)
 
-**Send 4 SOL to:** `7UbmcfbvxxouKThUp6Z3R5gYLF4qCmcUFDJRVjEWVusb`
+**Send 3 SOL to:** `7UbmcfbvxxouKThUp6Z3R5gYLF4qCmcUFDJRVjEWVusb`
 
 Verify the balance:
 ```bash
@@ -322,6 +322,7 @@ module.exports = {
       INTERVAL: '300',
       MIN_BET: '10000000',
       TREASURY_FEE: '300',
+      CLOSE_GRACE: '172800',
     },
     restart_delay: 5000,
     max_restarts: 100,
@@ -407,11 +408,15 @@ solana transfer <YOUR_MAIN_WALLET> ALL \
 |------|-----|-------------|
 | Program deployment rent (~296KB) | ~2.06 | ✅ Yes (close program) |
 | Game PDA rent (133 bytes) | ~0.002 | ✅ Yes (if closed) |
-| Each Round PDA rent (~125 bytes) | ~0.001 | ❌ No (accumulates) |
+| Each Round PDA rent (~125 bytes) | ~0.001 | ✅ Yes (auto-reclaimed by keeper after 48h) |
 | Transaction fees (deploy) | ~0.01 | ❌ No |
 | Transaction fees (per round) | ~0.000005 | ❌ No |
 | **Total initial cost** | **~2.07** | |
-| **Recommended funding** | **4.00** | (leaves ~1.93 operating balance) |
+| **Recommended funding** | **3.00** | (leaves ~0.93 operating balance) |
+
+> **Running cost with rent reclaim:** The keeper bot now auto-closes expired round PDAs
+> after 48 hours, reclaiming ~0.001 SOL each. Net daily cost is just transaction fees
+> (~0.003 SOL/day), making the operating balance essentially self-sustaining.
 
 ---
 
@@ -450,7 +455,7 @@ solana program deploy \
 | `frontend/src/config.ts` | RPC endpoint → mainnet |
 | `frontend/src/utils/rpc.ts` | Fallback RPC → mainnet |
 | `scripts/prediction-keeper.mjs` | `PROGRAM_ID` → new program ID (or use env vars) |
-| `keys/mainnet/admin-keypair.json` | Deploy authority + operator (fund with 4 SOL) |
+| `keys/mainnet/admin-keypair.json` | Deploy authority + operator (fund with 3 SOL) |
 | `keys/mainnet/program-keypair.json` | Program address on mainnet |
 | `keys/mainnet/treasury-keypair.json` | Fee collection wallet |
 
@@ -461,7 +466,7 @@ solana program deploy \
 - [ ] Back up devnet keypairs ✅ (done → `keys/devnet-backup/`)
 - [ ] Generate mainnet keypairs ✅ (done → `keys/mainnet/`)
 - [ ] Save seed phrases securely
-- [ ] Fund admin wallet with 4 SOL → `7UbmcfbvxxouKThUp6Z3R5gYLF4qCmcUFDJRVjEWVusb`
+- [ ] Fund admin wallet with 3 SOL → `7UbmcfbvxxouKThUp6Z3R5gYLF4qCmcUFDJRVjEWVusb`
 - [ ] Update `declare_id!` in lib.rs
 - [ ] Update Anchor.toml
 - [ ] Build program (`anchor build`)

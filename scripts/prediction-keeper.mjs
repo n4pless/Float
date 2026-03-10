@@ -52,6 +52,7 @@ const IX = {
   genesis_start_round:  disc('global:genesis_start_round'),
   genesis_lock_round:   disc('global:genesis_lock_round'),
   execute_round:        disc('global:execute_round'),
+  close_round:          disc('global:close_round'),
   bet_bull:             disc('global:bet_bull'),
   bet_bear:             disc('global:bet_bear'),
   claim:                disc('global:claim'),
@@ -218,6 +219,54 @@ async function send(ix) {
   return sig;
 }
 
+/* ─── Close old rounds (reclaim rent) ────────────── */
+
+const CLOSE_GRACE = parseInt(process.env.CLOSE_GRACE || String(48 * 3600), 10); // 48h default
+let oldestUnclosed = 1;
+
+function txCloseRound(epoch) {
+  const [game] = gamePDA();
+  const [round] = roundPDA(epoch);
+  const data = Buffer.concat([IX.close_round, u64LE(epoch)]);
+  return new TransactionInstruction({
+    programId: PROGRAM_ID,
+    keys: [
+      { pubkey: game,               isSigner: false, isWritable: false },
+      { pubkey: round,              isSigner: false, isWritable: true  },
+      { pubkey: operator.publicKey, isSigner: true,  isWritable: true  },
+    ],
+    data,
+  });
+}
+
+async function closeOldRounds(currentCloseEpoch) {
+  const now = Math.floor(Date.now() / 1000);
+  let closed = 0;
+  for (let ep = oldestUnclosed; ep <= currentCloseEpoch - 2 && closed < 5; ep++) {
+    try {
+      const [pub] = roundPDA(ep);
+      const info = await conn.getAccountInfo(pub);
+      if (!info) {
+        oldestUnclosed = ep + 1;
+        continue;
+      }
+      const r = parseRound(info.data);
+      if (!r.oracleCalled) { oldestUnclosed = ep + 1; continue; }
+      if (now <= r.closeTimestamp + CLOSE_GRACE) break; // rest are too new
+
+      console.log(`  Closing old round ${ep} (reclaiming ~0.001 SOL)...`);
+      await send(txCloseRound(ep));
+      console.log(`  ✓ Round ${ep} rent reclaimed`);
+      oldestUnclosed = ep + 1;
+      closed++;
+    } catch (err) {
+      console.warn(`  Round ${ep} close failed:`, err.message);
+      oldestUnclosed = ep + 1;
+    }
+  }
+  if (closed > 0) console.log(`  Reclaimed rent from ${closed} old round(s)`);
+}
+
 /* ─── Main loop ──────────────────────────────────── */
 
 async function main() {
@@ -319,6 +368,9 @@ async function main() {
       console.log(`Executing round ${closeEpoch}  |  price=$${(price / PRICE_PRECISION).toFixed(4)}  |  epoch→${closeEpoch + 2}`);
       const sig = await send(txExecuteRound(closeEpoch, price));
       console.log(`  ✓ tx: ${sig}`);
+
+      // Reclaim rent from old rounds (up to 5 per cycle)
+      await closeOldRounds(closeEpoch);
     } catch (err) {
       console.error('Keeper error:', err.message || err);
       await sleep(10_000);

@@ -186,6 +186,25 @@ pub mod prediction {
         Ok(())
     }
 
+    /* ──────────── Operator: reclaim rent from old rounds ──── */
+
+    /// Close an expired round PDA to reclaim its rent.
+    /// Requires: oracle_called = true AND at least 1 hour after close_timestamp.
+    /// The keeper should wait 48h+ before calling this to give users time to claim.
+    pub fn close_round(ctx: Context<CloseRound>, _epoch: u64) -> Result<()> {
+        let round = &ctx.accounts.round;
+        require!(round.oracle_called, PredError::RoundNotClosed);
+
+        let ts = Clock::get()?.unix_timestamp;
+        require!(
+            ts > round.close_timestamp + 3600,
+            PredError::RoundNotClosable,
+        );
+
+        // Anchor's `close = operator` handles draining lamports + zeroing the account.
+        Ok(())
+    }
+
     /* ──────────── User: bet & claim ──────────── */
 
     /// Bet UP (bull).
@@ -396,6 +415,22 @@ pub struct ExecuteRound<'info> {
     #[account(mut, constraint = operator.key() == game.operator @ PredError::NotOperator)]
     pub operator: Signer<'info>,
     pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(epoch: u64)]
+pub struct CloseRound<'info> {
+    #[account(seeds = [b"game"], bump = game.bump)]
+    pub game: Account<'info, Game>,
+    #[account(
+        mut,
+        close = operator,
+        seeds = [b"round", epoch.to_le_bytes().as_ref()],
+        bump = round.bump,
+    )]
+    pub round: Account<'info, Round>,
+    #[account(mut, constraint = operator.key() == game.operator @ PredError::NotOperator)]
+    pub operator: Signer<'info>,
 }
 
 #[derive(Accounts)]
