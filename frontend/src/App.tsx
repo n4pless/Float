@@ -340,9 +340,13 @@ function TradingApp() {
 export default function App() {
   const wallets = useMemo(() => [new PhantomWalletAdapter()], []);
 
+  const onWalletError = useCallback((error: Error) => {
+    console.warn('[Wallet] connection error:', error.message);
+  }, []);
+
   return (
     <ConnectionProvider endpoint={rpcEndpoint} config={connectionProviderConfig}>
-      <WalletProvider wallets={wallets} autoConnect>
+      <WalletProvider wallets={wallets} onError={onWalletError}>
         <WalletModalProvider>
           <TradingApp />
         </WalletModalProvider>

@@ -163,7 +163,11 @@ export function useSetupDrift(
         });
         newClient = client;
 
-        await client.initialize();
+        // Timeout: don't let Drift SDK init block the app forever
+        const initTimeout = new Promise<never>((_, rej) =>
+          setTimeout(() => rej(new Error('Drift init timeout (15s)')), 15_000),
+        );
+        await Promise.race([client.initialize(), initTimeout]);
 
         if (cancelled) {
           client.disconnect().catch(() => {});

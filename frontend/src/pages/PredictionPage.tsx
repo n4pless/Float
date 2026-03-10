@@ -1067,9 +1067,18 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
                 </div>
                 <div>
                   <p className="text-[14px] font-medium" style={{ color: C.muted }}>
-                    {error || 'Connecting to prediction game...'}
+                    {error || 'Loading prediction game...'}
                   </p>
-                  <p className="text-[11px] mt-1" style={{ color: 'rgba(140,140,161,0.4)' }}>On-chain data loading</p>
+                  <p className="text-[11px] mt-1" style={{ color: 'rgba(140,140,161,0.4)' }}>Fetching on-chain data from devnet</p>
+                  {error && (
+                    <button
+                      onClick={() => refresh(publicKey ?? undefined)}
+                      className="mt-3 px-4 py-1.5 rounded-lg text-[12px] font-semibold transition-all hover:brightness-110"
+                      style={{ background: 'rgba(118,69,217,0.2)', color: '#B8ADD2', border: '1px solid rgba(118,69,217,0.3)' }}
+                    >
+                      Retry
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
