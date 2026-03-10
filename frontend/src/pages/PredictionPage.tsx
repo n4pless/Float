@@ -20,6 +20,7 @@ import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { usePredictionStore, type DisplayRound, type DisplayBet, type RoundStatus } from '../stores/usePredictionStore';
 import { PRICE_PRECISION } from '../prediction/client';
 import { toast } from 'sonner';
+import NeuralSwarm from '../components/NeuralSwarm';
 
 /* ═══ PancakeSwap Colour Palette ═══ */
 const C = {
@@ -669,7 +670,9 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
         {/* ── LATER Content ── */}
         {isLater && (
           <div className="flex-1 flex flex-col items-center justify-center space-y-2 text-center">
-            <img src="/clock.png" alt="clock" className="w-8 h-8 opacity-25" />
+            <div className="w-20 h-20 opacity-40">
+              <NeuralSwarm size="small" />
+            </div>
             <div>
               <p className="text-[12px] text-[#8C8CA1]/50 font-medium">Entry starts</p>
               <p className="text-[16px] text-[#8C8CA1] font-mono font-bold mt-0.5">
@@ -1090,7 +1093,9 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
                 }`} />
               : timeRemainingMs < 15000
               ? <Flame className="w-14 h-14 sm:w-16 sm:h-16 text-[#ED4B9E] animate-pulse" />
-              : <img src="/clock.png" alt="clock" className="w-16 h-16 sm:w-20 sm:h-20 object-contain scale-[1.8]" />
+              : <div className="w-24 h-24 sm:w-28 sm:h-28">
+                  <NeuralSwarm size="large" />
+                </div>
             }
 
             {/* Time display */}
