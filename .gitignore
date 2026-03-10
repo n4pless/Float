@@ -10,6 +10,7 @@ build/
 
 # Keys and secrets
 keys/*.json
+keys/**/*.json
 .env
 .env.local
 *.key
