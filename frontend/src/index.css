@@ -183,6 +183,12 @@ input[type="range"]::-moz-range-thumb {
   background: rgba(0, 0, 0, 0.7) !important;
   -webkit-backdrop-filter: blur(8px) !important;
   backdrop-filter: blur(8px) !important;
+  z-index: 99999 !important;
+}
+
+/* ── Wallet modal (portal) — always on top ── */
+.wallet-adapter-modal {
+  z-index: 99999 !important;
 }
 
 /* ── Wallet modal container ── */
@@ -197,6 +203,7 @@ input[type="range"]::-moz-range-thumb {
   max-width: 380px !important;
   padding: 24px !important;
   font-family: 'Inter', system-ui, sans-serif !important;
+  z-index: 100000 !important;
 }
 
 /* ── Modal title ── */

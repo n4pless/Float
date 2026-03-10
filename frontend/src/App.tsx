@@ -5,8 +5,13 @@ import {
   useWallet,
 } from '@solana/wallet-adapter-react';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
-import { PhantomWalletAdapter } from '@solana/wallet-adapter-wallets';
-import { Toaster } from 'sonner';
+import {
+  PhantomWalletAdapter,
+  SolflareWalletAdapter,
+  CoinbaseWalletAdapter,
+  TrustWalletAdapter,
+} from '@solana/wallet-adapter-wallets';
+import { Toaster, toast } from 'sonner';
 import { BarChart2, BookOpen, ArrowRightLeft, Wallet as WalletIcon, Shield, TrendingUp, List } from 'lucide-react';
 import DRIFT_CONFIG from './config';
 import { rpcEndpoint, connectionProviderConfig } from './utils/rpc';
@@ -68,8 +73,28 @@ function pushPageUrl(page: Page, marketIdx?: number) {
   }
 }
 
+/**
+ * Auto-disconnect wallet if stuck in "connecting" state for too long.
+ * Phantom devnet mode + Chrome can hang the connect() call indefinitely.
+ */
+function useWalletConnectionTimeout(timeoutMs = 15_000) {
+  const { connecting, disconnect, wallet } = useWallet();
+  useEffect(() => {
+    if (!connecting) return;
+    const timer = setTimeout(() => {
+      console.warn('[Wallet] connection timed out after', timeoutMs, 'ms — resetting');
+      disconnect().catch(() => {});
+      toast.error('Wallet connection timed out. Please try again.', { duration: 5000 });
+    }, timeoutMs);
+    return () => clearTimeout(timer);
+  }, [connecting, disconnect, timeoutMs]);
+}
+
 function TradingApp() {
   const wallet = useWallet();
+
+  // Auto-reset hung wallet connections after 15s
+  useWalletConnectionTimeout(15_000);
 
   // Read-only client — provides market data without wallet
   const { pauseReadOnly, restoreReadOnly } = useReadOnlyDrift();
@@ -338,7 +363,15 @@ function TradingApp() {
 }
 
 export default function App() {
-  const wallets = useMemo(() => [new PhantomWalletAdapter()], []);
+  const wallets = useMemo(
+    () => [
+      new PhantomWalletAdapter(),
+      new SolflareWalletAdapter(),
+      new CoinbaseWalletAdapter(),
+      new TrustWalletAdapter(),
+    ],
+    [],
+  );
 
   const onWalletError = useCallback((error: Error) => {
     console.warn('[Wallet] connection error:', error.message);
@@ -346,7 +379,7 @@ export default function App() {
 
   return (
     <ConnectionProvider endpoint={rpcEndpoint} config={connectionProviderConfig}>
-      <WalletProvider wallets={wallets} onError={onWalletError}>
+      <WalletProvider wallets={wallets} autoConnect onError={onWalletError}>
         <WalletModalProvider>
           <TradingApp />
         </WalletModalProvider>
