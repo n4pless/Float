@@ -8,7 +8,7 @@ import { create } from 'zustand';
 import { Connection, PublicKey, Transaction } from '@solana/web3.js';
 import {
   fetchGame, fetchRounds, fetchUserBets, fetchRound,
-  buildBetBullIx, buildBetBearIx, buildClaimIx,
+  buildBetBullIx, buildBetBearIx, buildAddPositionIx, buildClaimIx,
   PRICE_PRECISION,
   type GameAccount,
   type RoundAccount,
@@ -84,6 +84,12 @@ interface PredictionStore {
   claimWinnings: (
     wallet: PublicKey,
     epoch: number,
+    signTransaction: (tx: Transaction) => Promise<Transaction>,
+  ) => Promise<string>;
+  addPosition: (
+    wallet: PublicKey,
+    epoch: number,
+    amountSol: number,
     signTransaction: (tx: Transaction) => Promise<Transaction>,
   ) => Promise<string>;
 }
@@ -336,6 +342,34 @@ export const usePredictionStore = create<PredictionStore>((set, get) => ({
     if (!conn) throw new Error('No connection');
 
     const ix = buildClaimIx(wallet, epoch);
+    const tx = new Transaction().add(ix);
+    tx.feePayer = wallet;
+    const { blockhash, lastValidBlockHeight } = await conn.getLatestBlockhash('confirmed');
+    tx.recentBlockhash = blockhash;
+
+    const signed = await signTransaction(tx);
+    const sig = await conn.sendRawTransaction(signed.serialize(), {
+      skipPreflight: false,
+      preflightCommitment: 'confirmed',
+      maxRetries: 3,
+    });
+
+    await conn.confirmTransaction(
+      { signature: sig, blockhash, lastValidBlockHeight },
+      'confirmed',
+    );
+
+    await get().refresh(wallet);
+    return sig;
+  },
+
+  addPosition: async (wallet, epoch, amountSol, signTransaction) => {
+    const conn = get().connection;
+    if (!conn) throw new Error('No connection');
+
+    const lamports = Math.round(amountSol * LAMPORTS);
+    const ix = buildAddPositionIx(wallet, epoch, lamports);
+
     const tx = new Transaction().add(ix);
     tx.feePayer = wallet;
     const { blockhash, lastValidBlockHeight } = await conn.getLatestBlockhash('confirmed');

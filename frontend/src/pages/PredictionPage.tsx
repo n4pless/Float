@@ -94,16 +94,19 @@ interface CardProps {
   livePrice: number;
   intervalSec: number;
   onBet: (epoch: number, dir: 'bull' | 'bear', sol: number) => void;
+  onAddPosition: (epoch: number, sol: number) => void;
   onClaim: (epoch: number) => void;
   walletConnected: boolean;
   timeRemainingMs?: number;
   pct?: number;
 }
 
-const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, onBet, onClaim, walletConnected, timeRemainingMs = 0, pct = 0 }) => {
+const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, onBet, onAddPosition, onClaim, walletConnected, timeRemainingMs = 0, pct = 0 }) => {
   const [betDir, setBetDir] = useState<'bull' | 'bear' | null>(null);
   const [betAmt, setBetAmt] = useState('');
   const [placing, setPlacing] = useState(false);
+  const [showAddMore, setShowAddMore] = useState(false);
+  const [addAmt, setAddAmt] = useState('');
 
   const { status, epoch } = round;
   const isLive = status === 'live';
@@ -174,8 +177,8 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
           : isNext
           ? 'border border-[#7645D9]/30'
           : 'border border-white/[0.08]'
-      } ${isMuted ? 'opacity-70 hover:opacity-90' : ''}`}
-      style={{ background: C.cardDark }}
+      } ${isExpired ? 'opacity-50 hover:opacity-75 saturate-[0.4]' : isLater ? 'opacity-70 hover:opacity-90' : ''}`}
+      style={{ background: isExpired ? '#1a1a20' : C.cardDark }}
     >
 
       {/* ═══ HEADER STRIP ═══ */}
@@ -269,7 +272,7 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
       {/* ═══ GRACE PERIOD — Big Sphere ═══ */}
       {isGrace && (
         <div className="flex flex-col items-center justify-center py-4 sm:py-6 flex-1 min-h-[220px] sm:min-h-[260px]">
-          <img src="/sphere.gif" alt="Closing" className={`w-32 h-32 sm:w-44 sm:h-44 object-contain ${
+          <img src="/sphere.gif" alt="Closing" className={`w-48 h-48 sm:w-56 sm:h-56 object-contain ${
             liveDir === 'bull' ? 'sphere-grace-up' : liveDir === 'bear' ? 'sphere-grace-down' : 'sphere-grace-neutral'
           }`} />
           <span className={`text-[16px] sm:text-[20px] font-extrabold tracking-wide mt-3 ${
@@ -528,7 +531,7 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
         )}
 
         {/* ── NEXT Content — Already Entered ── */}
-        {isNext && bet && (
+        {isNext && bet && !showAddMore && (
           <div className="flex-1 flex flex-col items-center justify-center space-y-2">
             <div className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border ${
               bet.position === 'bull' ? 'border-[#31D0AA]/20 bg-[#31D0AA]/5' : 'border-[#ED4B9E]/20 bg-[#ED4B9E]/5'
@@ -543,6 +546,115 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
             <div className="flex items-center gap-1 text-[#31D0AA] text-[11px] font-semibold">
               <CheckCircle2 className="w-3 h-3" /> ENTERED
             </div>
+            <button
+              onClick={() => setShowAddMore(true)}
+              className="mt-1 px-4 py-2 rounded-xl text-[12px] font-bold transition-all active:scale-[0.97] hover:brightness-110"
+              style={{
+                background: bet.position === 'bull' ? 'rgba(49,208,170,0.15)' : 'rgba(237,75,158,0.15)',
+                color: bet.position === 'bull' ? C.up : C.down,
+                border: `1px solid ${bet.position === 'bull' ? 'rgba(49,208,170,0.25)' : 'rgba(237,75,158,0.25)'}`,
+              }}
+            >
+              + Add More SOL
+            </button>
+          </div>
+        )}
+
+        {/* ── NEXT Content — Add More Form ── */}
+        {isNext && bet && showAddMore && (
+          <div className="flex-1 flex flex-col justify-center space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {bet.position === 'bull'
+                  ? <ArrowUp className="w-4 h-4 text-[#31D0AA]" />
+                  : <ArrowDown className="w-4 h-4 text-[#ED4B9E]" />}
+                <span className={`text-[13px] font-bold ${bet.position === 'bull' ? 'text-[#31D0AA]' : 'text-[#ED4B9E]'}`}>
+                  Add to {bet.position === 'bull' ? 'UP' : 'DOWN'}
+                </span>
+              </div>
+              <button
+                onClick={() => { setShowAddMore(false); setAddAmt(''); }}
+                className="w-6 h-6 rounded-lg flex items-center justify-center text-[#8C8CA1] hover:text-[#F4EEFF] transition-colors text-[12px]"
+                style={{ background: 'rgba(255,255,255,0.06)' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="text-[10px] text-[#8C8CA1]/60 text-center">
+              Current: {fmtSol(bet.amount)} SOL
+            </div>
+
+            <div className="relative">
+              <input
+                type="number" value={addAmt} onChange={e => setAddAmt(e.target.value)}
+                placeholder="0.0" autoFocus step="0.01" min="0.001"
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    const a = parseFloat(addAmt);
+                    if (!isNaN(a) && a > 0) {
+                      setPlacing(true);
+                      onAddPosition(epoch, a);
+                      setPlacing(false);
+                      setAddAmt('');
+                      setShowAddMore(false);
+                    }
+                  }
+                }}
+                className="w-full pl-3 pr-14 py-3 rounded-xl text-[15px] font-mono outline-none transition-all placeholder:text-[#8C8CA1]/30"
+                style={{
+                  background: C.bgDark,
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  color: C.text,
+                }}
+              />
+              <span
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold px-2 py-0.5 rounded"
+                style={{ background: 'rgba(255,255,255,0.04)', color: C.muted }}
+              >
+                SOL
+              </span>
+            </div>
+
+            <div className="flex gap-1 sm:gap-1.5">
+              {[0.01, 0.05, 0.1, 0.25, 0.5, 1].map(a => (
+                <button
+                  key={a}
+                  onClick={() => setAddAmt(a.toString())}
+                  className={`flex-1 py-1.5 rounded-lg text-[8px] sm:text-[9px] font-semibold transition-all border ${
+                    addAmt === a.toString()
+                      ? 'border-[#7645D9] text-[#F4EEFF]'
+                      : 'border-transparent text-[#8C8CA1] hover:text-[#F4EEFF]'
+                  }`}
+                  style={{
+                    background: addAmt === a.toString() ? 'rgba(118,69,217,0.15)' : 'rgba(255,255,255,0.04)',
+                  }}
+                >
+                  {a}
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => {
+                const a = parseFloat(addAmt);
+                if (isNaN(a) || a <= 0) { toast.error('Enter a valid SOL amount'); return; }
+                setPlacing(true);
+                onAddPosition(epoch, a);
+                setPlacing(false);
+                setAddAmt('');
+                setShowAddMore(false);
+              }}
+              disabled={placing || !addAmt || parseFloat(addAmt) <= 0}
+              className="w-full py-3 rounded-xl font-bold text-[14px] text-white transition-all disabled:opacity-30 active:scale-[0.97] hover:brightness-110"
+              style={{ background: bet.position === 'bull' ? C.up : C.down }}
+            >
+              {placing ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Adding...
+                </span>
+              ) : `Add ${addAmt || '0'} SOL`}
+            </button>
           </div>
         )}
 
@@ -614,7 +726,7 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
 
   const {
     game, rounds, userBets, livePrice, timeRemainingMs, loading, error,
-    setConnection, refresh, placeBet, claimWinnings,
+    setConnection, refresh, placeBet, claimWinnings, addPosition,
     setLivePrice, setTimeRemainingMs,
     historyRounds, historyBets, historyLoading, refreshHistory,
   } = usePredictionStore();
@@ -718,6 +830,19 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
       toast.error(err?.message?.slice(0, 80) || 'Prediction failed', { id: 'bet' });
     }
   }, [publicKey, placeBet, signTransaction]);
+
+  const handleAddPosition = useCallback(async (epoch: number, sol: number) => {
+    if (game?.paused) { toast.error('Predictions are currently paused'); return; }
+    if (!publicKey || !signTransaction) { toast.error('Connect wallet'); return; }
+    try {
+      toast.loading('Adding to position...', { id: 'addpos' });
+      await addPosition(publicKey, epoch, sol, signTransaction);
+      toast.success(`Added ${sol} SOL`, { id: 'addpos' });
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message?.slice(0, 80) || 'Add position failed', { id: 'addpos' });
+    }
+  }, [publicKey, addPosition, signTransaction]);
 
   const handleClaim = useCallback(async (epoch: number) => {
     if (!publicKey || !signTransaction) return;
@@ -1102,6 +1227,7 @@ export const PredictionPage: React.FC<Props> = ({ onBack }) => {
                   livePrice={livePrice}
                   intervalSec={game?.intervalSeconds ?? 300}
                   onBet={handleBet}
+                  onAddPosition={handleAddPosition}
                   onClaim={handleClaim}
                   walletConnected={!!publicKey}
                   timeRemainingMs={r.status === 'live' ? timeRemainingMs : undefined}
