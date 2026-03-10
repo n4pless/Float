@@ -25,6 +25,7 @@ pub mod prediction {
     ) -> Result<()> {
         require!(treasury_fee <= 1000, PredError::InvalidFee);
         require!(interval_seconds >= 10, PredError::InvalidInterval);
+        require!(min_bet_amount >= 1_000_000, PredError::BetTooSmall); // >= 0.001 SOL
 
         let g = &mut ctx.accounts.game;
         g.admin = ctx.accounts.admin.key();
@@ -54,6 +55,12 @@ pub mod prediction {
 
     pub fn unpause(ctx: Context<AdminOnly>) -> Result<()> {
         ctx.accounts.game.paused = false;
+        Ok(())
+    }
+
+    /// Change the treasury fee-collection wallet.
+    pub fn set_treasury(ctx: Context<AdminOnly>, new_treasury: Pubkey) -> Result<()> {
+        ctx.accounts.game.treasury = new_treasury;
         Ok(())
     }
 
@@ -89,6 +96,12 @@ pub mod prediction {
 
         let ts = Clock::get()?.unix_timestamp;
         let iv = g.interval_seconds as i64;
+
+        // Security: don't lock before the lock timestamp
+        require!(
+            ts >= ctx.accounts.current_round.lock_timestamp,
+            PredError::RoundNotLockable,
+        );
 
         // Lock round 1
         let r1 = &mut ctx.accounts.current_round;
@@ -127,6 +140,12 @@ pub mod prediction {
         let ts = Clock::get()?.unix_timestamp;
         let iv = ctx.accounts.game.interval_seconds as i64;
         let treasury_fee = ctx.accounts.game.treasury_fee;
+
+        // ── Security: operator cannot close a round before its close_timestamp ──
+        require!(
+            ts >= ctx.accounts.closing_round.close_timestamp,
+            PredError::RoundNotClosable,
+        );
 
         // Grab AccountInfo clones BEFORE mutable borrows (for lamport manipulation)
         let game_ai = ctx.accounts.game.to_account_info();
@@ -196,8 +215,10 @@ pub mod prediction {
         require!(round.oracle_called, PredError::RoundNotClosed);
 
         let ts = Clock::get()?.unix_timestamp;
+        // Minimum 48 hours after close to give users time to claim.
+        // The keeper's CLOSE_GRACE env var controls the off-chain delay (>= 48h).
         require!(
-            ts > round.close_timestamp + 3600,
+            ts > round.close_timestamp + 172_800, // 48 * 3600 = 172,800 seconds
             PredError::RoundNotClosable,
         );
 

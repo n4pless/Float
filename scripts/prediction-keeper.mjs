@@ -121,17 +121,47 @@ function parseRound(data) {
            rewardAmount, treasuryAmount, oracleCalled, bump };
 }
 
-/* ─── Binance price helper ───────────────────────── */
+/* ─── Price helpers (dual-source for security) ───── */
 
-async function getSolPrice() {
+async function getBinancePrice() {
   try {
     const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=SOLUSDT');
     const json = await res.json();
     return Math.round(parseFloat(json.price) * PRICE_PRECISION);
   } catch (e) {
-    console.error('Price fetch error:', e.message);
+    console.error('Binance price error:', e.message);
     return null;
   }
+}
+
+async function getCoinGeckoPrice() {
+  try {
+    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
+    const json = await res.json();
+    return Math.round(json.solana.usd * PRICE_PRECISION);
+  } catch (e) {
+    console.error('CoinGecko price error:', e.message);
+    return null;
+  }
+}
+
+const MAX_PRICE_DEVIATION = parseFloat(process.env.MAX_PRICE_DEVIATION || '0.02'); // 2% max
+
+async function getSolPrice() {
+  const binance = await getBinancePrice();
+  const coingecko = await getCoinGeckoPrice();
+
+  if (binance && coingecko) {
+    const deviation = Math.abs(binance - coingecko) / Math.max(binance, coingecko);
+    if (deviation > MAX_PRICE_DEVIATION) {
+      console.error(`Price deviation too high: Binance=${binance / PRICE_PRECISION} CoinGecko=${coingecko / PRICE_PRECISION} (${(deviation * 100).toFixed(1)}%)`);
+      return null; // Refuse to post — possible manipulation
+    }
+    return binance; // Primary source, validated by secondary
+  }
+  if (binance) return binance;   // Fallback: CoinGecko down
+  if (coingecko) return coingecko; // Fallback: Binance down
+  return null;
 }
 
 /* ─── Transaction builders ───────────────────────── */
