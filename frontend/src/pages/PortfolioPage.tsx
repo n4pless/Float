@@ -24,7 +24,7 @@ import {
   selectUserIfStake,
   type RecentTrade,
 } from '../stores/useDriftStore';
-import { usePredictionStore } from '../stores/usePredictionStore';
+// Prediction store removed — predictions now at predictions.floatdevelopment.online
 import type { UserPosition } from '../sdk/drift-client-wrapper';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
@@ -270,63 +270,6 @@ const TradeRow: React.FC<{ trade: RecentTrade; walletKey?: string }> = ({ trade,
           <ExternalLink className="w-3 h-3" />
         </a>
       )}
-    </div>
-  );
-};
-
-/* ═══════════════════════════════════════════════════════ */
-/*  Prediction Bets Summary                                */
-/* ═══════════════════════════════════════════════════════ */
-const PredictionSummary: React.FC = () => {
-  const userBets = usePredictionStore(s => s.userBets);
-  const rounds = usePredictionStore(s => s.rounds);
-
-  const stats = useMemo(() => {
-    const bets = Array.from(userBets.values());
-    if (bets.length === 0) return null;
-
-    const totalBet = bets.reduce((s, b) => s + b.amount, 0);
-    const totalPayout = bets.reduce((s, b) => s + b.payout, 0);
-    const won = bets.filter(b => b.payout > b.amount).length;
-    const lost = bets.filter(b => b.payout === 0 && !b.claimed).length;
-    const pending = bets.filter(b => {
-      const round = rounds.find(r => r.epoch === b.epoch);
-      return round && (round.status === 'live' || round.status === 'next' || round.status === 'calculating');
-    }).length;
-    const netPnl = totalPayout - totalBet;
-    const winRate = bets.length > 0 ? (won / (won + lost || 1)) * 100 : 0;
-    const unclaimed = bets.filter(b => b.payout > 0 && !b.claimed).reduce((s, b) => s + b.payout, 0);
-
-    return { totalBet, totalPayout, won, lost, pending, netPnl, winRate, unclaimed, total: bets.length };
-  }, [userBets, rounds]);
-
-  if (!stats || stats.total === 0) return null;
-
-  return (
-    <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 overflow-hidden">
-      <div className="px-4 py-3 border-b border-drift-border/40 flex items-center gap-2">
-        <Target className="w-4 h-4 text-txt-2" />
-        <h3 className="text-[13px] font-bold text-txt-0">Prediction Market</h3>
-        <span className="text-[10px] px-2 py-0.5 rounded-full bg-drift-surface text-txt-2 font-semibold">{stats.total} bets</span>
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-drift-border/30">
-        {[
-          { label: 'Total Wagered', value: `${stats.totalBet.toFixed(2)} SOL`, color: 'text-txt-0' },
-          { label: 'Net P&L', value: `${stats.netPnl >= 0 ? '+' : ''}${stats.netPnl.toFixed(3)} SOL`, color: pnlColor(stats.netPnl) },
-          { label: 'Win Rate', value: `${stats.winRate.toFixed(0)}%`, color: stats.winRate >= 50 ? 'text-bull' : 'text-bear' },
-          { label: 'Unclaimed', value: `${stats.unclaimed.toFixed(3)} SOL`, color: stats.unclaimed > 0 ? 'text-accent' : 'text-txt-2' },
-        ].map(item => (
-          <div key={item.label} className="px-4 py-3 bg-drift-panel/80">
-            <div className="text-[10px] text-txt-3 font-medium uppercase tracking-wider">{item.label}</div>
-            <div className={`text-[15px] font-bold font-mono mt-1 ${item.color}`}>{item.value}</div>
-          </div>
-        ))}
-      </div>
-      <div className="px-4 py-2.5 flex items-center gap-4 text-[11px] text-txt-3">
-        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-bull" />{stats.won} Won</span>
-        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-bear" />{stats.lost} Lost</span>
-        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-accent" />{stats.pending} Pending</span>
-      </div>
     </div>
   );
 };
@@ -664,8 +607,7 @@ export const PortfolioPage: React.FC<PortfolioPageProps> = ({ onBack, forceRefre
               </div>
             )}
 
-            {/* Prediction Market Summary */}
-            <PredictionSummary />
+            {/* Prediction Market Summary — removed, now at predictions.floatdevelopment.online */}
 
             {/* Trading Stats */}
             <div className="border border-drift-border/60 rounded-xl bg-drift-panel/80 overflow-hidden">

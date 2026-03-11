@@ -33,8 +33,7 @@ import { AccountPanel } from './components/AccountPanel';
 import { BottomPanel } from './components/BottomPanel';
 import { TickerBar } from './components/TickerBar';
 import { UserManagement } from './components/UserManagement';
-import { PredictionPage } from './pages/PredictionPage';
-import { AdminPage } from './pages/AdminPage';
+// PredictionPage + AdminPage removed — now hosted at predictions.floatdevelopment.online
 import { PortfolioPage } from './pages/PortfolioPage';
 import { LandingPage } from './pages/LandingPage';
 import '@solana/wallet-adapter-react-ui/styles.css';
@@ -47,11 +46,16 @@ for (const [idx, m] of Object.entries(DRIFT_CONFIG.markets)) {
   INDEX_TO_SYMBOL[+idx] = m.symbol;
 }
 
+const PREDICTIONS_URL = 'https://predictions.floatdevelopment.online/';
+
 function pageFromPath(): { page: Page | null; market: number | null } {
   const path = window.location.pathname.replace(/^\/+/, '').toUpperCase();
   if (!path) return { page: null, market: null };
-  if (path === 'PREDICTION' || path === 'PREDICT') return { page: 'prediction', market: null };
-  if (path === 'ADMIN') return { page: 'admin', market: null };
+  // Redirect legacy /prediction and /admin to standalone site
+  if (path === 'PREDICTION' || path === 'PREDICT' || path === 'ADMIN') {
+    window.location.href = PREDICTIONS_URL;
+    return { page: null, market: null };
+  }
   if (path === 'PORTFOLIO') return { page: 'portfolio', market: null };
   const mkt = SYMBOL_TO_INDEX[path] ?? null;
   if (mkt !== null) return { page: 'trade', market: mkt };
@@ -59,11 +63,7 @@ function pageFromPath(): { page: Page | null; market: number | null } {
 }
 
 function pushPageUrl(page: Page, marketIdx?: number) {
-  if (page === 'prediction') {
-    window.history.pushState(null, '', '/prediction');
-  } else if (page === 'admin') {
-    window.history.pushState(null, '', '/admin');
-  } else if (page === 'portfolio') {
+  if (page === 'portfolio') {
     window.history.pushState(null, '', '/portfolio');
   } else if (page === 'home') {
     window.history.pushState(null, '', '/');
@@ -131,11 +131,7 @@ function TradingApp() {
 
   useEffect(() => {
     const { page, market } = pageFromPath();
-    if (page === 'prediction') {
-      setCurrentPage('prediction');
-    } else if (page === 'admin') {
-      setCurrentPage('admin');
-    } else if (page === 'portfolio') {
+    if (page === 'portfolio') {
       setCurrentPage('portfolio');
     } else if (page === 'trade' && market !== null) {
       setCurrentPage('trade');
@@ -146,11 +142,7 @@ function TradingApp() {
     // If URL is just '/' → stay on 'home'
     const handlePopState = () => {
       const parsed = pageFromPath();
-      if (parsed.page === 'prediction') {
-        setCurrentPage('prediction');
-      } else if (parsed.page === 'admin') {
-        setCurrentPage('admin');
-      } else if (parsed.page === 'portfolio') {
+      if (parsed.page === 'portfolio') {
         setCurrentPage('portfolio');
       } else if (parsed.page === 'trade' && parsed.market !== null) {
         setCurrentPage('trade');
@@ -191,7 +183,7 @@ function TradingApp() {
 
   return (
     <div className="h-screen w-screen max-w-[100vw] flex flex-col overflow-x-hidden bg-drift-bg">
-      {currentPage !== 'prediction' && currentPage !== 'home' && currentPage !== 'admin' && (
+      {currentPage !== 'home' && (
         <Header
           currentPage={currentPage}
           onNavigate={navigateTo}
@@ -202,14 +194,10 @@ function TradingApp() {
       {currentPage === 'home' ? (
         <LandingPage
           onSelectPerps={() => navigateTo('trade')}
-          onSelectPrediction={() => navigateTo('prediction')}
+          onSelectPrediction={() => window.open(PREDICTIONS_URL, '_blank')}
         />
       ) : currentPage === 'learn' ? (
         <InfoPage onBack={() => navigateTo('trade')} />
-      ) : currentPage === 'prediction' ? (
-        <PredictionPage onBack={() => navigateTo('home')} />
-      ) : currentPage === 'admin' ? (
-        <AdminPage onBack={() => navigateTo('home')} />
       ) : currentPage === 'portfolio' ? (
         <PortfolioPage onBack={() => navigateTo('trade')} forceRefresh={forceRefresh} trading={trading} />
       ) : currentPage === 'insurance' ? (
