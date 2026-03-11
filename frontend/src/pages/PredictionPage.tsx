@@ -14,7 +14,7 @@ import {
   Trophy, Lock, CheckCircle2, XCircle, Loader2,
   History, Flame, Zap, TrendingUp, Timer,
   HelpCircle, Settings, CircleDollarSign, BarChart3,
-  AlertTriangle, ShieldAlert,
+  AlertTriangle,
 } from 'lucide-react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
@@ -724,97 +724,76 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
       </div>
       )}
 
-      {/* ═══ BET WARNING OVERLAY ═══ */}
+      {/* ═══ BET WARNING POPUP ═══ */}
       {showWarning && (
-        <div className="absolute inset-0 z-30 rounded-2xl flex items-center justify-center p-4"
-          style={{ background: 'rgba(10,8,18,0.92)', backdropFilter: 'blur(12px)' }}>
-          <div className="flex flex-col items-center text-center space-y-3 max-w-[280px]">
-            {/* Warning icon with animated glow */}
-            <div className="relative">
-              <div className="absolute inset-0 rounded-full animate-ping opacity-20"
-                style={{ background: 'rgba(240,185,11,0.4)' }} />
-              <div className="relative w-14 h-14 rounded-2xl flex items-center justify-center border"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(240,185,11,0.15), rgba(237,75,158,0.1))',
-                  borderColor: 'rgba(240,185,11,0.3)',
-                  boxShadow: '0 0 30px rgba(240,185,11,0.15), inset 0 0 20px rgba(240,185,11,0.05)',
-                }}>
-                <AlertTriangle className="w-7 h-7" style={{ color: '#F0B90B' }} />
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center px-4"
+          onClick={cancelWarning}>
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+
+          {/* Popup */}
+          <div className="relative w-full max-w-[340px] rounded-xl bg-[#1E1D2B] border border-white/10 shadow-2xl p-5 sm:p-6"
+            onClick={e => e.stopPropagation()}>
+
+            {/* Icon */}
+            <div className="flex justify-center mb-4">
+              <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-[#ccc]" />
               </div>
             </div>
 
-            <div>
-              <h3 className="text-[15px] font-extrabold tracking-wide" style={{ color: '#F0B90B' }}>
-                Position Locked
-              </h3>
-              <p className="text-[11px] sm:text-[12px] text-[#8C8CA1] mt-1.5 leading-relaxed">
-                Once you enter a position, your SOL is <span className="text-[#F4EEFF] font-semibold">locked until the round ends</span>. 
-                You cannot withdraw or switch sides.
-              </p>
-            </div>
+            {/* Title */}
+            <h3 className="text-center text-[15px] sm:text-base font-semibold text-white mb-2">
+              Confirm Position
+            </h3>
 
-            {/* Direction + Amount summary */}
-            <div className={`w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl border ${
-              pendingDir === 'bull'
-                ? 'border-[#31D0AA]/20 bg-[#31D0AA]/5'
-                : 'border-[#ED4B9E]/20 bg-[#ED4B9E]/5'
-            }`}>
+            {/* Body */}
+            <p className="text-center text-[12px] sm:text-[13px] text-[#9e9eb8] leading-relaxed mb-4">
+              Once entered, your SOL is locked until the round ends. You cannot withdraw or switch sides.
+            </p>
+
+            {/* Summary row */}
+            <div className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg bg-white/[0.04] border border-white/[0.06] mb-4">
               {pendingDir === 'bull'
                 ? <ArrowUp className="w-4 h-4 text-[#31D0AA]" />
                 : <ArrowDown className="w-4 h-4 text-[#ED4B9E]" />}
-              <span className="text-[13px] font-bold text-[#F4EEFF]">
-                {pendingDir === 'bull' ? 'UP' : 'DOWN'} — {betAmt} SOL
+              <span className="text-[13px] sm:text-sm font-medium text-white">
+                {pendingDir === 'bull' ? 'UP' : 'DOWN'} · {betAmt} SOL
               </span>
-              <ShieldAlert className="w-3.5 h-3.5 text-[#F0B90B]/60" />
             </div>
 
             {/* Don't show again */}
-            <label className="flex items-center gap-2 cursor-pointer group mt-1">
-              <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${
+            <label className="flex items-center gap-2 cursor-pointer mb-5 select-none"
+              onClick={() => setDontShowAgain(!dontShowAgain)}>
+              <div className={`w-[15px] h-[15px] rounded-[3px] border flex items-center justify-center transition-colors ${
                 dontShowAgain
-                  ? 'border-[#7645D9] bg-[#7645D9]'
-                  : 'border-[#8C8CA1]/30 bg-transparent group-hover:border-[#8C8CA1]/60'
-              }`}
-                onClick={() => setDontShowAgain(!dontShowAgain)}
-              >
+                  ? 'border-white/40 bg-white/20'
+                  : 'border-white/15 bg-transparent'
+              }`}>
                 {dontShowAgain && (
-                  <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+                  <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 12 12" fill="none">
                     <path d="M2 6l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 )}
               </div>
-              <span className="text-[10px] sm:text-[11px] text-[#8C8CA1] select-none"
-                onClick={() => setDontShowAgain(!dontShowAgain)}>
+              <span className="text-[11px] sm:text-[12px] text-[#8C8CA1]">
                 Don't show this again
               </span>
             </label>
 
-            {/* Action buttons */}
-            <div className="flex gap-2 w-full mt-1">
+            {/* Buttons */}
+            <div className="flex gap-3">
               <button
                 onClick={cancelWarning}
-                className="flex-1 py-2.5 rounded-xl text-[12px] sm:text-[13px] font-bold transition-all active:scale-[0.97] hover:brightness-110"
-                style={{
-                  background: 'rgba(255,255,255,0.06)',
-                  color: '#8C8CA1',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                }}
+                className="flex-1 py-2.5 rounded-lg text-[13px] font-medium text-[#9e9eb8] bg-white/[0.06] border border-white/[0.08] hover:bg-white/[0.1] transition-colors active:scale-[0.98]"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmWarning}
-                className="flex-1 py-2.5 rounded-xl text-[12px] sm:text-[13px] font-bold text-white transition-all active:scale-[0.97] hover:brightness-110"
-                style={{
-                  background: pendingDir === 'bull'
-                    ? `linear-gradient(135deg, ${C.up}, ${C.upDark})`
-                    : `linear-gradient(135deg, ${C.down}, ${C.downDark})`,
-                  boxShadow: pendingDir === 'bull'
-                    ? '0 4px 15px rgba(49,208,170,0.3)'
-                    : '0 4px 15px rgba(237,75,158,0.3)',
-                }}
+                className="flex-1 py-2.5 rounded-lg text-[13px] font-medium text-white bg-white/[0.12] border border-white/[0.15] hover:bg-white/[0.18] transition-colors active:scale-[0.98]"
               >
-                I Understand
+                Confirm
               </button>
             </div>
           </div>
