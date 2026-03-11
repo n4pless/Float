@@ -109,7 +109,7 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
   const [placing, setPlacing] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
   const [pendingDir, setPendingDir] = useState<'bull' | 'bear' | null>(null);
-  const [dontShowAgain, setDontShowAgain] = useState(false);
+  const [dontShowAgain, setDontShowAgain] = useState(true);
 
   const { status, epoch } = round;
   const isLive = status === 'live';
