@@ -73,15 +73,10 @@
 > ⚠️ **IMPORTANT:** These keypair JSON files are in `.gitignore`. Never commit them to git.
 > Back them up to a secure location (USB drive, password manager, etc.).
 
-### Seed Phrases (save these securely, then delete from this doc)
+### Seed Phrases
 
-| Key | Seed Phrase |
-|-----|-------------|
-| Admin | `sheriff gauge dust champion dizzy someone connect planet tell junk hire deer` |
-| Program | `snack lucky poet suggest basic best fee egg wild joy become include` |
-| Treasury | `one crop refuse orient face load enemy morning phrase habit speed worry` |
-
-> 🔐 **After saving these seed phrases securely, delete the table above from this file.**
+> ✅ **Seed phrases have been removed from this file for security.**
+> They are stored securely offline.
 
 ---
 
