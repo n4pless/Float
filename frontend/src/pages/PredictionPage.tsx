@@ -14,6 +14,7 @@ import {
   Trophy, Lock, CheckCircle2, XCircle, Loader2,
   History, Flame, Zap, TrendingUp, Timer,
   HelpCircle, Settings, CircleDollarSign, BarChart3,
+  AlertTriangle, ShieldAlert,
 } from 'lucide-react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
@@ -100,10 +101,15 @@ interface CardProps {
   pct?: number;
 }
 
+const BET_WARNING_KEY = 'float_bet_warning_dismissed';
+
 const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, onBet, onClaim, walletConnected, timeRemainingMs = 0, pct = 0 }) => {
   const [betDir, setBetDir] = useState<'bull' | 'bear' | null>(null);
   const [betAmt, setBetAmt] = useState('');
   const [placing, setPlacing] = useState(false);
+  const [showWarning, setShowWarning] = useState(false);
+  const [pendingDir, setPendingDir] = useState<'bull' | 'bear' | null>(null);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
 
   const { status, epoch } = round;
   const isLive = status === 'live';
@@ -137,7 +143,7 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
   const userLost = isExpired && bet && !userWon;
   const claimable = userWon && bet && !bet.claimed && bet.payout > 0;
 
-  const submit = async (dir: 'bull' | 'bear') => {
+  const doSubmit = async (dir: 'bull' | 'bear') => {
     const a = parseFloat(betAmt);
     if (isNaN(a) || a <= 0) { toast.error('Enter a valid SOL amount'); return; }
     if (!walletConnected) { toast.error('Connect wallet first'); return; }
@@ -148,7 +154,36 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
       setPlacing(false);
       setBetAmt('');
       setBetDir(null);
+      setShowWarning(false);
+      setPendingDir(null);
     }
+  };
+
+  const submit = (dir: 'bull' | 'bear') => {
+    const a = parseFloat(betAmt);
+    if (isNaN(a) || a <= 0) { toast.error('Enter a valid SOL amount'); return; }
+    if (!walletConnected) { toast.error('Connect wallet first'); return; }
+    // Skip warning if user already has a bet (adding to position) or dismissed it
+    const dismissed = localStorage.getItem(BET_WARNING_KEY) === 'true';
+    if (bet || dismissed) {
+      doSubmit(dir);
+      return;
+    }
+    setPendingDir(dir);
+    setShowWarning(true);
+  };
+
+  const confirmWarning = () => {
+    if (dontShowAgain) {
+      localStorage.setItem(BET_WARNING_KEY, 'true');
+    }
+    if (pendingDir) doSubmit(pendingDir);
+  };
+
+  const cancelWarning = () => {
+    setShowWarning(false);
+    setPendingDir(null);
+    setDontShowAgain(false);
   };
 
   /* UP & DOWN banner highlights */
@@ -687,6 +722,103 @@ const RoundCard: React.FC<CardProps> = ({ round, bet, livePrice, intervalSec, on
           )}
         </div>
       </div>
+      )}
+
+      {/* ═══ BET WARNING OVERLAY ═══ */}
+      {showWarning && (
+        <div className="absolute inset-0 z-30 rounded-2xl flex items-center justify-center p-4"
+          style={{ background: 'rgba(10,8,18,0.92)', backdropFilter: 'blur(12px)' }}>
+          <div className="flex flex-col items-center text-center space-y-3 max-w-[280px]">
+            {/* Warning icon with animated glow */}
+            <div className="relative">
+              <div className="absolute inset-0 rounded-full animate-ping opacity-20"
+                style={{ background: 'rgba(240,185,11,0.4)' }} />
+              <div className="relative w-14 h-14 rounded-2xl flex items-center justify-center border"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(240,185,11,0.15), rgba(237,75,158,0.1))',
+                  borderColor: 'rgba(240,185,11,0.3)',
+                  boxShadow: '0 0 30px rgba(240,185,11,0.15), inset 0 0 20px rgba(240,185,11,0.05)',
+                }}>
+                <AlertTriangle className="w-7 h-7" style={{ color: '#F0B90B' }} />
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-[15px] font-extrabold tracking-wide" style={{ color: '#F0B90B' }}>
+                Position Locked
+              </h3>
+              <p className="text-[11px] sm:text-[12px] text-[#8C8CA1] mt-1.5 leading-relaxed">
+                Once you enter a position, your SOL is <span className="text-[#F4EEFF] font-semibold">locked until the round ends</span>. 
+                You cannot withdraw or switch sides.
+              </p>
+            </div>
+
+            {/* Direction + Amount summary */}
+            <div className={`w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl border ${
+              pendingDir === 'bull'
+                ? 'border-[#31D0AA]/20 bg-[#31D0AA]/5'
+                : 'border-[#ED4B9E]/20 bg-[#ED4B9E]/5'
+            }`}>
+              {pendingDir === 'bull'
+                ? <ArrowUp className="w-4 h-4 text-[#31D0AA]" />
+                : <ArrowDown className="w-4 h-4 text-[#ED4B9E]" />}
+              <span className="text-[13px] font-bold text-[#F4EEFF]">
+                {pendingDir === 'bull' ? 'UP' : 'DOWN'} — {betAmt} SOL
+              </span>
+              <ShieldAlert className="w-3.5 h-3.5 text-[#F0B90B]/60" />
+            </div>
+
+            {/* Don't show again */}
+            <label className="flex items-center gap-2 cursor-pointer group mt-1">
+              <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${
+                dontShowAgain
+                  ? 'border-[#7645D9] bg-[#7645D9]'
+                  : 'border-[#8C8CA1]/30 bg-transparent group-hover:border-[#8C8CA1]/60'
+              }`}
+                onClick={() => setDontShowAgain(!dontShowAgain)}
+              >
+                {dontShowAgain && (
+                  <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+                    <path d="M2 6l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </div>
+              <span className="text-[10px] sm:text-[11px] text-[#8C8CA1] select-none"
+                onClick={() => setDontShowAgain(!dontShowAgain)}>
+                Don't show this again
+              </span>
+            </label>
+
+            {/* Action buttons */}
+            <div className="flex gap-2 w-full mt-1">
+              <button
+                onClick={cancelWarning}
+                className="flex-1 py-2.5 rounded-xl text-[12px] sm:text-[13px] font-bold transition-all active:scale-[0.97] hover:brightness-110"
+                style={{
+                  background: 'rgba(255,255,255,0.06)',
+                  color: '#8C8CA1',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmWarning}
+                className="flex-1 py-2.5 rounded-xl text-[12px] sm:text-[13px] font-bold text-white transition-all active:scale-[0.97] hover:brightness-110"
+                style={{
+                  background: pendingDir === 'bull'
+                    ? `linear-gradient(135deg, ${C.up}, ${C.upDark})`
+                    : `linear-gradient(135deg, ${C.down}, ${C.downDark})`,
+                  boxShadow: pendingDir === 'bull'
+                    ? '0 4px 15px rgba(49,208,170,0.3)'
+                    : '0 4px 15px rgba(237,75,158,0.3)',
+                }}
+              >
+                I Understand
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
