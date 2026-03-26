@@ -1,9 +1,8 @@
 # Float Exchange
 
-A perpetual futures exchange built on Solana, forked from [Drift Protocol](https://github.com/drift-labs/protocol-v2).
+A perpetual futures exchange built on Solana
 
-**Live on Solana Devnet** — http://95.217.193.241:5174
-
+**Live on Solana Devnet**
 ---
 
 ## Architecture
